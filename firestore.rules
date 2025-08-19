@@ -4,17 +4,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read and write to their own document
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Site content is publicly readable, but only writable by authenticated users
-    // In a real app, you'd want to restrict writes to faculty members only.
-    match /siteContent/{docId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+    function isFaculty() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'faculty';
     }
 
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+
+    match /siteContent/text {
+      allow read: if true;
+      allow write: if isFaculty();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if request.auth != null;
+      allow create: if isFaculty();
+      
+      // Allow any authenticated user to update only the 'reactions' field.
+      // Disallow changing any other field during an update for non-faculty.
+      allow update: if request.auth != null && request.resource.data.keys().hasOnly(['text', 'authorId', 'authorName', 'authorAvatar', 'createdAt', 'reactions', 'id']);
+
+      // Allow the original author (if faculty) to delete their post.
+      allow delete: if isFaculty() && resource.data.authorId == request.auth.uid;
+    }
   }
 }
