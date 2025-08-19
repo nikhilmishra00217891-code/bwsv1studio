@@ -43,8 +43,8 @@ const prompt = ai.definePrompt({
 
   Here is the conversation history:
   {{#each history}}
-    {{#if (eq role 'user')}}You: {{content.[0].text}}{{/if}}
-    {{#if (eq role 'assistant')}}BhaiyaBot: {{content.[0].text}}{{/if}}
+    {{#if (this.role === 'user')}}You: {{this.content.[0].text}}{{/if}}
+    {{#if (this.role === 'assistant')}}BhaiyaBot: {{this.content.[0].text}}{{/if}}
   {{/each}}
 
   The user just said:
