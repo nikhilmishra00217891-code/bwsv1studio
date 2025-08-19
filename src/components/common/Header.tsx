@@ -54,45 +54,38 @@ export default function Header() {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          {navLinks.map((link) => (
-            <NavLink key={link.href} {...link} />
-          ))}
-           {user && <NavLink href="/dashboard" label="Dashboard" />}
-        </nav>
-
         <div className="flex items-center gap-2 md:gap-4">
           <ThemeToggle />
-          <div className="hidden md:flex items-center gap-4">
-             {loading ? null : user ? (
-              <Link href="/profile" aria-label="View Profile">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
-                  <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
-                </Avatar>
-              </Link>
-            ) : (
-               <Button asChild size="sm">
-                <Link href="/login">Login / Signup</Link>
-              </Button>
-            )}
-          </div>
+          
+          {loading ? null : user ? (
+            <Link href="/profile" aria-label="View Profile">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
+                <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : (
+            <Button asChild size="sm" className="hidden md:flex">
+              <Link href="/login">Login / Signup</Link>
+            </Button>
+          )}
+
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden">
+              <Button variant="outline" size="icon">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Open navigation menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
               <SheetTitle className="sr-only">Menu</SheetTitle>
-              <div className="flex flex-col gap-6 p-6">
-                <div className="flex items-center justify-between">
+               <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between p-6 border-b">
                     <Link href="/" className="flex items-center gap-2">
                         <BookOpenCheck className="h-6 w-6 text-primary" />
                         <span className="font-bold text-lg">BiharWaleSirji</span>
                     </Link>
-                    {user && (
+                     {user && (
                         <Link href="/profile" aria-label="View Profile">
                              <Avatar className="h-9 w-9">
                                 <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
@@ -102,22 +95,25 @@ export default function Header() {
                     )}
                 </div>
 
-                <nav className="flex flex-col gap-4 text-lg">
+                <nav className="flex flex-col gap-4 text-lg p-6 flex-grow">
                   {navLinks.map((link) => (
                     <NavLink key={link.href} {...link} />
                   ))}
                   {user && <NavLink href="/dashboard" label="Dashboard" />}
                   {user && <NavLink href="/profile" label="Profile" />}
                 </nav>
-                {user ? (
-                   <Button variant="outline" onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" /> Logout
-                   </Button>
-                ) : (
-                   <Button asChild className="w-full">
-                      <Link href="/login">Login / Signup</Link>
-                  </Button>
-                )}
+                
+                <div className="p-6 border-t">
+                  {user ? (
+                    <Button variant="outline" onClick={handleLogout} className="w-full">
+                        <LogOut className="mr-2 h-4 w-4" /> Logout
+                    </Button>
+                  ) : (
+                    <Button asChild className="w-full">
+                        <Link href="/login">Login / Signup</Link>
+                    </Button>
+                  )}
+                </div>
               </div>
             </SheetContent>
           </Sheet>
