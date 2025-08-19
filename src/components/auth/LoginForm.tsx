@@ -7,10 +7,10 @@ import { auth } from "@/lib/firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail,
   signInWithPopup,
   GoogleAuthProvider,
-  updateProfile
+  updateProfile,
+  type User
 } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,12 +24,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { KeyRound, Mail, User, LoaderCircle, Sparkles } from "lucide-react";
+import { KeyRound, Mail, User as UserIcon, LoaderCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { createUserProfile } from "@/lib/data";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const FACULTY_SECRET_KEY = "1@*2#\"3₹'";
 
@@ -41,6 +42,9 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isFacultyMode, setIsFacultyMode] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [facultyUser, setFacultyUser] = useState<User | null>(null);
+
   const router = useRouter();
   const { toast } = useToast();
   const { theme } = useTheme();
@@ -71,6 +75,27 @@ export function LoginForm() {
   }, [theme, toast]);
 
 
+  const handleFacultySignup = async () => {
+    if (!facultyUser) return;
+    try {
+        await updateProfile(facultyUser, { displayName: username });
+        await createUserProfile(facultyUser, 'faculty');
+        toast({ title: "Account created!", description: "You've been successfully signed up as faculty." });
+        router.push("/dashboard");
+    } catch(error: any) {
+        toast({
+            variant: "destructive",
+            title: "Creation failed",
+            description: error.message,
+        });
+    } finally {
+        setIsLoading(false);
+        setShowConfirmation(false);
+        setFacultyUser(null);
+    }
+  }
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -89,23 +114,32 @@ export function LoginForm() {
             return;
         }
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+        if(isFacultyMode) {
+            setFacultyUser(userCredential.user);
+            setShowConfirmation(true);
+            // Don't set isLoading to false here, wait for confirmation
+            return;
+        }
+
         await updateProfile(userCredential.user, { displayName: username });
-        await createUserProfile(userCredential.user, isFacultyMode ? 'faculty' : 'student');
+        await createUserProfile(userCredential.user, 'student');
         toast({ title: "Account created!", description: "You've been successfully signed up." });
+        router.push("/dashboard");
+
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Welcome back!" });
+        router.push("/dashboard");
       }
-      router.push("/dashboard");
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Authentication failed",
         description: error.message,
       });
-    } finally {
-      setIsLoading(false);
-    }
+       setIsLoading(false);
+    } 
   };
 
   const handleGoogleSignIn = async () => {
@@ -113,7 +147,12 @@ export function LoginForm() {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      await createUserProfile(result.user, 'student'); // Google sign in is for students only
+      // Check if user already exists before creating profile
+      const userDocRef = doc(db, "users", result.user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (!userDocSnap.exists()) {
+        await createUserProfile(result.user, 'student'); // Google sign in is for students only
+      }
       toast({ title: "Signed in with Google!" });
       router.push("/dashboard");
     } catch (error: any) {
@@ -128,6 +167,7 @@ export function LoginForm() {
   };
 
   return (
+    <>
     <Card className={cn("w-full max-w-sm shadow-xl transition-all", isFacultyMode && "border-primary shadow-primary/20")}>
       <CardHeader className="text-center">
         {isFacultyMode && (
@@ -145,7 +185,7 @@ export function LoginForm() {
              <div className="grid gap-2">
                 <Label htmlFor="username">Username</Label>
                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                         id="username"
                         type="text"
@@ -191,7 +231,7 @@ export function LoginForm() {
               />
             </div>
           </div>
-           {isFacultyMode && (
+           {isFacultyMode && isSignUp && (
              <div className="grid gap-2">
                 <Label htmlFor="secretKey">Secret Key</Label>
                  <div className="relative">
@@ -245,5 +285,28 @@ export function LoginForm() {
         </p>
       </CardFooter>
     </Card>
+
+    <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Ready to Revolutionize?</AlertDialogTitle>
+            <AlertDialogDescription>
+                Confirm your commitment to change the face of education in Bihar.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <Button variant="ghost" onClick={() => {
+                    setShowConfirmation(false);
+                    setIsLoading(false);
+                }}>Cancel</Button>
+                <AlertDialogAction onClick={handleFacultySignup}>
+                    {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/>}
+                    Confirm
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    </>
   );
 }
