@@ -12,9 +12,10 @@ interface EditableTextProps {
   contentId: string;
   defaultValue: string;
   multiline?: boolean;
+  className?: string;
 }
 
-export function EditableText({ contentId, defaultValue, multiline = false }: EditableTextProps) {
+export function EditableText({ contentId, defaultValue, multiline = false, className }: EditableTextProps) {
   const { isEditMode } = useEditMode();
   const [text, setText] = useState(defaultValue);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,6 +40,7 @@ export function EditableText({ contentId, defaultValue, multiline = false }: Edi
   }, [isEditMode, text]);
 
   const handleSave = async (newText: string) => {
+    if (newText === text) return;
     try {
       await saveTextContent(contentId, newText);
       setText(newText);
@@ -57,13 +59,11 @@ export function EditableText({ contentId, defaultValue, multiline = false }: Edi
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-    if (e.target.value !== text) {
-      handleSave(e.target.value);
-    }
+    handleSave(e.target.value);
   };
   
-  if (isLoading) {
-    return <span className="animate-pulse bg-muted-foreground/30 rounded-md">{defaultValue}</span>
+  if (isLoading && !isEditMode) {
+    return <span className={cn("animate-pulse bg-muted-foreground/20 rounded-md", className)}>{defaultValue}</span>
   }
 
   if (isEditMode) {
@@ -79,12 +79,13 @@ export function EditableText({ contentId, defaultValue, multiline = false }: Edi
             }
         }}
         className={cn(
-            "w-full bg-primary/10 border-primary/50 focus-visible:ring-primary text-inherit font-inherit leading-inherit tracking-inherit text-center p-2 resize-none overflow-hidden",
-            multiline ? "" : "h-auto"
+            "w-full bg-primary/10 border-2 border-dashed border-primary/50 focus-visible:ring-primary text-inherit font-inherit leading-inherit tracking-inherit text-center p-2 resize-none overflow-hidden",
+            multiline ? "" : "h-auto",
+            className,
         )}
       />
     );
   }
 
-  return <>{text}</>;
+  return <span className={className}>{text}</span>;
 }

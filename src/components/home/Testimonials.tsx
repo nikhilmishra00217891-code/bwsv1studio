@@ -1,3 +1,4 @@
+
 import { getTestimonials } from "@/lib/data";
 import {
   Carousel,
@@ -9,6 +10,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
+import { EditableText } from "../common/EditableText";
 
 export default async function Testimonials() {
   const testimonials = await getTestimonials();
@@ -17,9 +19,17 @@ export default async function Testimonials() {
     <section className="py-20 md:py-28 bg-card/50">
       <div className="container mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold font-headline">What Our Students Say</h2>
+          <h2 className="text-3xl md:text-4xl font-bold font-headline">
+             <EditableText
+              contentId="testimonialsTitle"
+              defaultValue="What Our Students Say"
+            />
+          </h2>
           <p className="text-lg text-muted-foreground mt-2">
-            Real stories from our growing Parivaar.
+            <EditableText
+              contentId="testimonialsSubtitle"
+              defaultValue="Real stories from our growing Parivaar."
+            />
           </p>
         </div>
         <Carousel

@@ -1,3 +1,4 @@
+
 import { getFeaturedCourses } from "@/lib/data";
 import type { Course } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { ArrowRight } from "lucide-react";
+import { EditableText } from "../common/EditableText";
 
 const CourseCard = ({ course }: { course: Course }) => {
   return (
@@ -48,9 +50,17 @@ export default async function FeaturedCourses() {
     <section className="py-20 md:py-28 bg-background">
       <div className="container mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold font-headline">Featured Courses</h2>
+          <h2 className="text-3xl md:text-4xl font-bold font-headline">
+            <EditableText
+              contentId="featuredCoursesTitle"
+              defaultValue="Featured Courses"
+            />
+          </h2>
           <p className="text-lg text-muted-foreground mt-2">
-            Start your journey with our most popular courses.
+            <EditableText
+              contentId="featuredCoursesSubtitle"
+              defaultValue="Start your journey with our most popular courses."
+            />
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -18,19 +18,14 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useEditMode } from "./EditModeProvider";
 
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/courses", label: "Courses" },
-  { href: "/about", label: "About" },
-];
-
-const NavLink = ({ href, label }: { href: string; label: string }) => {
+const NavLink = ({ href, label, onSelect }: { href: string; label: string, onSelect?: () => void }) => {
   const pathname = usePathname();
   const isActive = pathname === href;
 
   return (
     <Link
       href={href}
+      onClick={onSelect}
       className={cn(
         "transition-colors hover:text-primary",
         isActive ? "text-primary font-semibold" : "text-foreground/80"
@@ -45,6 +40,7 @@ export default function Header() {
   const { user, loading } = useAuth();
   const [isFaculty, setIsFaculty] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { isEditMode, setIsEditMode } = useEditMode();
 
 
@@ -65,6 +61,7 @@ export default function Header() {
 
   const handleLogout = async () => {
     await signOut(auth);
+    setIsSheetOpen(false);
   }
 
   return (
@@ -80,14 +77,22 @@ export default function Header() {
         </div>
         
         <div className="hidden md:flex flex-1 justify-center items-center gap-6">
+          <nav className="flex items-center gap-6 text-sm font-medium">
+             {navLinks.map((link) => (
+                <NavLink key={link.href} {...link} />
+              ))}
+          </nav>
            {isClient && isFaculty && (
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="edit-mode-toggle" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
-                <Pencil className="w-4 h-4" />
-                Edit Mode
-              </Label>
-              <Switch id="edit-mode-toggle" checked={isEditMode} onCheckedChange={setIsEditMode} />
-            </div>
+            <>
+              <div className="h-6 w-px bg-border"></div>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="edit-mode-toggle" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
+                  <Pencil className="w-4 h-4" />
+                  Edit Mode
+                </Label>
+                <Switch id="edit-mode-toggle" checked={isEditMode} onCheckedChange={setIsEditMode} />
+              </div>
+            </>
           )}
         </div>
 
@@ -95,7 +100,7 @@ export default function Header() {
           <ThemeToggle />
           
           {loading ? null : user ? (
-            <div className="relative flex flex-col items-center">
+            <div className="relative flex flex-col items-center justify-center">
               <Link href="/profile" aria-label="View Profile">
                 <Avatar className={cn("h-9 w-9", isFaculty && "ring-2 ring-offset-2 ring-offset-background ring-primary")}>
                   <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
@@ -103,7 +108,7 @@ export default function Header() {
                 </Avatar>
               </Link>
               {isClient && isFaculty && (
-                 <span className="absolute -bottom-4 text-[10px] font-bold text-primary">BWS</span>
+                 <span className="absolute -bottom-4 text-[10px] font-bold text-primary">FACULTY</span>
               )}
             </div>
           ) : (
@@ -112,9 +117,9 @@ export default function Header() {
             </Button>
           )}
 
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="">
+              <Button variant="outline" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Open navigation menu</span>
               </Button>
@@ -123,7 +128,7 @@ export default function Header() {
               <SheetTitle className="sr-only">Menu</SheetTitle>
                <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between p-6 border-b">
-                    <Link href="/" className="flex items-center gap-2">
+                    <Link href="/" className="flex items-center gap-2" onClick={() => setIsSheetOpen(false)}>
                         <BookOpenCheck className="h-6 w-6 text-primary" />
                         <span className="font-bold text-lg">BiharWaleSirji</span>
                     </Link>
@@ -131,17 +136,21 @@ export default function Header() {
 
                 <nav className="flex flex-col gap-4 text-lg p-6 flex-grow">
                   {navLinks.map((link) => (
-                    <NavLink key={link.href} {...link} />
+                    <NavLink key={link.href} {...link} onSelect={() => setIsSheetOpen(false)} />
                   ))}
-                  {user && <NavLink href="/dashboard" label="Dashboard" />}
-                  {user && <NavLink href="/profile" label="Profile" />}
+                  {user && <NavLink href="/dashboard" label="Dashboard" onSelect={() => setIsSheetOpen(false)} />}
+                  {user && <NavLink href="/profile" label="Profile" onSelect={() => setIsSheetOpen(false)} />}
                   {isClient && isFaculty && (
                     <div className="flex items-center justify-between pt-4 mt-4 border-t">
-                      <Label htmlFor="mobile-edit-mode-toggle" className="text-foreground/80 flex items-center gap-2">
+                      <Label htmlFor="mobile-edit-mode-toggle" className="text-foreground/80 flex items-center gap-2 text-base">
                         <Pencil className="w-5 h-5" />
                         Edit Mode
                       </Label>
-                      <Switch id="mobile-edit-mode-toggle" checked={isEditMode} onCheckedChange={setIsEditMode}/>
+                      <Switch id="mobile-edit-mode-toggle" checked={isEditMode} onCheckedChange={(checked) => {
+                          setIsEditMode(checked);
+                          // Consider closing the sheet for a better UX
+                          // setIsSheetOpen(false); 
+                      }}/>
                     </div>
                   )}
                 </nav>
@@ -152,7 +161,7 @@ export default function Header() {
                         <LogOut className="mr-2 h-4 w-4" /> Logout
                     </Button>
                   ) : (
-                    <Button asChild className="w-full">
+                    <Button asChild className="w-full" onClick={() => setIsSheetOpen(false)}>
                         <Link href="/login">Login / Signup</Link>
                     </Button>
                   )}
@@ -165,3 +174,9 @@ export default function Header() {
     </header>
   );
 }
+
+const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/courses", label: "Courses" },
+  { href: "/about", label: "About" },
+];

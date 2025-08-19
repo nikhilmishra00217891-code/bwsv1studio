@@ -4,41 +4,24 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, MessageSquareHeart } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Skeleton } from '../ui/skeleton';
-import { getTextContent } from '@/lib/data';
 import { EditableText } from '../common/EditableText';
-
-interface HeroContent {
-    heroTitle: string;
-    heroSubtitle: string;
-}
-
-const DEFAULT_CONTENT: HeroContent = {
-    heroTitle: "Parivaar. Pratishtha. Parivartan.",
-    heroSubtitle: "India's first platform that teaches like an elder brother, not a stranger."
-};
 
 export default function Hero() {
   return (
     <section className="bg-card/50">
       <div className="container mx-auto px-6 py-24 md:py-32 text-center">
         <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight text-primary">
-                <EditableText
-                    contentId="heroTitle"
-                    defaultValue={DEFAULT_CONTENT.heroTitle}
-                />
-            </h1>
-            <p className="mt-6 text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto">
-                <EditableText
-                    contentId="heroSubtitle"
-                    defaultValue={DEFAULT_CONTENT.heroSubtitle}
-                    multiline
-                />
-            </p>
+            <EditableText
+                contentId="heroTitle"
+                defaultValue="Parivaar. Pratishtha. Parivartan."
+                className="text-4xl md:text-6xl font-bold font-headline tracking-tight text-primary"
+            />
+            <EditableText
+                contentId="heroSubtitle"
+                defaultValue="India's first platform that teaches like an elder brother, not a stranger."
+                multiline
+                className="mt-6 text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto block"
+            />
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button asChild size="lg" className="w-full sm:w-auto">
               <Link href="/courses">
@@ -46,11 +29,17 @@ export default function Hero() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-              <Link href="#ai-mentor">
+            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto" onClick={(e) => {
+                const mentorWidget = document.getElementById('ai-mentor');
+                if (mentorWidget) {
+                    e.preventDefault();
+                    mentorWidget.click();
+                }
+            }}>
+              <a href="#">
                 Ask Our AI Mentor
                 <MessageSquareHeart className="ml-2 h-5 w-5" />
-              </Link>
+              </a>
             </Button>
           </div>
         </div>
