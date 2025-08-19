@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit } from "lucide-react";
@@ -20,6 +20,7 @@ import { useEditMode } from "./EditModeProvider";
 
 const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const isActive = pathname === href;
 
   const content = (
@@ -29,10 +30,17 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
     </>
   )
 
+  const handleClick = () => {
+    if (onSelect) {
+      router.push(href);
+      onSelect();
+    }
+  };
+
   if (onSelect) {
       return (
          <button
-            onClick={onSelect}
+            onClick={handleClick}
             className={cn(
                 "transition-colors hover:text-primary flex items-center gap-4 w-full text-left",
                 isActive ? "text-primary font-semibold" : "text-foreground/80"
