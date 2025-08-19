@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useEditMode } from './EditModeProvider';
 import { getTextContent, saveTextContent } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
