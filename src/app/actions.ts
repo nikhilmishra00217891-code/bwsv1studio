@@ -1,6 +1,7 @@
+
 "use server";
 
-import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses } from "@/ai/flows";
+import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat } from "@/ai/flows";
 
 interface Message {
   role: "user" | "assistant";
@@ -12,6 +13,7 @@ export async function askAiMentor(
   courseContext?: string
 ): Promise<string> {
   const lastUserMessage = messages.findLast((m) => m.role === 'user')?.content;
+  const history = messages.slice(0, -1); // Pass previous messages as history
 
   if (!lastUserMessage) {
     return "I'm sorry, I didn't get your message. Could you please repeat it?";
@@ -54,6 +56,18 @@ export async function askAiMentor(
     }
   }
 
-  // Default response if no specific flow is triggered
-  return "That's a great question! While I'm best at recommending courses or answering questions about a specific one, I'll do my best to help. What subject are you studying?";
+  // Default to the generic chat flow for all other cases
+  try {
+    const result = await genericChat({
+      history: history.map(m => ({
+          role: m.role,
+          content: [{ text: m.content }],
+      })),
+      message: lastUserMessage,
+    });
+    return result.answer;
+  } catch(error) {
+    console.error('Generic AI chat error:', error);
+    return "That's a great question! I'm having a little trouble thinking right now, but please ask me something else.";
+  }
 }
