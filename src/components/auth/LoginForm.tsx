@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -8,7 +9,8 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   signInWithPopup,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  updateProfile
 } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,13 +24,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { KeyRound, Mail, LoaderCircle } from "lucide-react";
+import { KeyRound, Mail, User, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { createUserProfile } from "@/lib/data";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
@@ -40,7 +44,14 @@ export function LoginForm() {
 
     try {
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        if(!username) {
+            toast({ variant: 'destructive', title: 'Username is required.' });
+            setIsLoading(false);
+            return;
+        }
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: username });
+        await createUserProfile(userCredential.user);
         toast({ title: "Account created!", description: "You've been successfully signed up." });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
@@ -62,7 +73,8 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      await createUserProfile(result.user);
       toast({ title: "Signed in with Google!" });
       router.push("/dashboard");
     } catch (error: any) {
@@ -84,6 +96,24 @@ export function LoginForm() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="grid gap-4">
+          {isSignUp && (
+             <div className="grid gap-2">
+                <Label htmlFor="username">Username</Label>
+                 <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                        id="username"
+                        type="text"
+                        placeholder="Chintu Kumar"
+                        required
+                        className="pl-10"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        disabled={isLoading}
+                    />
+                </div>
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
@@ -136,25 +166,10 @@ export function LoginForm() {
           {isLoading ? (
             <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
-              <path fill="none" d="M1 1h22v22H1z" />
-            </svg>
+             <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg">
+                <title>Google</title>
+                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.08-2.58 2.26-4.8 2.26-4.22 0-7.65-3.5-7.65-7.8s3.43-7.8 7.65-7.8c2.44 0 3.99 1.04 4.9 1.98l2.6-2.58C18.44 3.14 15.98 2 12.48 2 7.07 2 3.25 5.74 3.25 10.92s3.82 8.92 9.23 8.92c5.22 0 8.53-3.64 8.53-8.74 0-.82-.07-1.48-.19-2.18h-8.05z" fill="#4285F4"/>
+             </svg>
           )}
           Google
         </Button>

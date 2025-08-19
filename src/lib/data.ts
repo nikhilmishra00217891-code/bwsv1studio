@@ -1,6 +1,8 @@
-import type { Course, Testimonial, EnrolledCourse } from "@/types";
+
+import type { Course, Testimonial, EnrolledCourse, UserProfile } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc } from "firebase/firestore";
+import type { User } from "firebase/auth";
 
 
 export const courses: Course[] = [
@@ -164,4 +166,27 @@ export const getEnrolledCoursesForUser = async (userId: string): Promise<Enrolle
     console.error("Error fetching enrolled courses:", error);
     return []; // Return empty array on error
   }
+};
+
+export const createUserProfile = async (user: User) => {
+    const userDocRef = doc(db, "users", user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+        const { uid, email, displayName } = user;
+        const createdAt = new Date();
+
+        try {
+            await setDoc(userDocRef, {
+                uid,
+                email,
+                displayName,
+                createdAt,
+                enrolledCourses: [],
+                progress: {},
+            });
+        } catch (error) {
+            console.error("Error creating user document:", error);
+        }
+    }
 };

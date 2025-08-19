@@ -1,10 +1,11 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -63,10 +64,10 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-2">
             {loading ? null : user ? (
               <>
-                <Link href="/dashboard">
+                <Link href="/profile">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.photoURL ?? undefined} />
-                    <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                    <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
+                    <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Link>
                  <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -99,6 +100,7 @@ export default function Header() {
                     <NavLink key={link.href} {...link} />
                   ))}
                   {user && <NavLink href="/dashboard" label="Dashboard" />}
+                  {user && <NavLink href="/profile" label="Profile" />}
                 </nav>
                 {user ? (
                    <Button variant="outline" onClick={handleLogout}>
