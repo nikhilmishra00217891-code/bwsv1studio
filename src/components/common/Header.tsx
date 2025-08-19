@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -18,7 +18,7 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useEditMode } from "./EditModeProvider";
 
-const NavLink = ({ href, label, onSelect }: { href: string; label: string, onSelect?: () => void }) => {
+const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void }) => {
   const pathname = usePathname();
   const isActive = pathname === href;
 
@@ -27,11 +27,12 @@ const NavLink = ({ href, label, onSelect }: { href: string; label: string, onSel
       href={href}
       onClick={onSelect}
       className={cn(
-        "transition-colors hover:text-primary",
+        "transition-colors hover:text-primary flex items-center gap-4",
         isActive ? "text-primary font-semibold" : "text-foreground/80"
       )}
     >
-      {label}
+      {Icon && <Icon className="h-6 w-6" />}
+      <span>{label}</span>
     </Link>
   );
 };
@@ -138,18 +139,18 @@ export default function Header() {
                   {navLinks.map((link) => (
                     <NavLink key={link.href} {...link} onSelect={() => setIsSheetOpen(false)} />
                   ))}
-                  {user && <NavLink href="/dashboard" label="Dashboard" onSelect={() => setIsSheetOpen(false)} />}
-                  {user && <NavLink href="/profile" label="Profile" onSelect={() => setIsSheetOpen(false)} />}
+                  <div className="my-2 border-t border-border/50"></div>
+                  {user && futureNavLinks.map((link) => (
+                    <NavLink key={link.href} {...link} onSelect={() => setIsSheetOpen(false)} />
+                  ))}
                   {isClient && isFaculty && (
-                    <div className="flex items-center justify-between pt-4 mt-4 border-t">
+                    <div className="flex items-center justify-between pt-4 mt-auto border-t">
                       <Label htmlFor="mobile-edit-mode-toggle" className="text-foreground/80 flex items-center gap-2 text-base">
                         <Pencil className="w-5 h-5" />
                         Edit Mode
                       </Label>
                       <Switch id="mobile-edit-mode-toggle" checked={isEditMode} onCheckedChange={(checked) => {
                           setIsEditMode(checked);
-                          // Consider closing the sheet for a better UX
-                          // setIsSheetOpen(false); 
                       }}/>
                     </div>
                   )}
@@ -176,7 +177,14 @@ export default function Header() {
 }
 
 const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/courses", label: "Courses" },
-  { href: "/about", label: "About" },
+  { href: "/", label: "Home", icon: Home },
+  { href: "/courses", label: "Courses", icon: Compass },
+  { href: "/about", label: "About", icon: Info },
+];
+
+const futureNavLinks = [
+  { href: "/profile", label: "My Profile", icon: UserCircle },
+  { href: "#", label: "Focus Zone", icon: Target },
+  { href: "#", label: "Warzone", icon: Swords },
+  { href: "#", label: "Parivartan Chamber", icon: BrainCircuit },
 ];
