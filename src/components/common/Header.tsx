@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -30,7 +30,8 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
     </>
   )
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     if (onSelect) {
       router.push(href);
       onSelect();
@@ -94,12 +95,8 @@ export default function Header() {
     setIsSheetOpen(false);
   }
   
-  const handleLinkClick = (isEditToggle = false) => {
-    if (isEditToggle) {
-        setIsEditMode(!isEditMode);
-    } else {
-        setIsSheetOpen(false);
-    }
+  const handleLinkClick = () => {
+    setIsSheetOpen(false);
   }
 
   return (
@@ -173,11 +170,11 @@ export default function Header() {
 
                 <nav className="flex flex-col gap-4 text-lg p-6 flex-grow">
                   {navLinks.map((link) => (
-                    <NavLink key={link.href} {...link} onSelect={() => handleLinkClick()} />
+                    <NavLink key={link.href} {...link} onSelect={handleLinkClick} />
                   ))}
                   <div className="my-2 border-t border-border/50"></div>
                   {user && futureNavLinks.map((link) => (
-                    <NavLink key={link.label} {...link} onSelect={() => handleLinkClick()} />
+                    <NavLink key={link.label} {...link} onSelect={handleLinkClick} />
                   ))}
                   {isClient && isFaculty && (
                     <div className="flex items-center justify-between pt-4 mt-auto border-t">
@@ -213,6 +210,7 @@ export default function Header() {
 const navLinks = [
   { href: "/", label: "Home", icon: Home },
   { href: "/courses", label: "Courses", icon: Compass },
+  { href: "/announcements", label: "Announcements", icon: Megaphone },
   { href: "/about", label: "About", icon: Info },
 ];
 

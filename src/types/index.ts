@@ -1,4 +1,6 @@
 
+import { Timestamp } from "firebase/firestore";
+
 export interface Lesson {
   id: string;
   title: string;
@@ -40,4 +42,14 @@ export interface UserProfile {
     role: 'student' | 'faculty';
     enrolledCourses?: string[];
     preferredSubjects?: string[];
+}
+
+export interface Announcement {
+  id: string;
+  text: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  createdAt: Timestamp;
+  reactions: string[];
 }
