@@ -50,7 +50,7 @@ export default function DashboardPage() {
 
   return (
     <div className="bg-card/50 min-h-screen">
-      <div className="container mx-auto px-6 py-16 md:py-24">
+      <div className="container mx-auto px-6 py-16 md:py-24 animate-fade-in">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10">
           <div>
             <h1 className="text-4xl md:text-5xl font-bold font-headline">Welcome back, {user.displayName || 'Chintu'}!</h1>

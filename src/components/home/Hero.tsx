@@ -11,18 +11,20 @@ export default function Hero() {
     <section className="bg-card/50">
       <div className="container mx-auto px-6 py-24 md:py-32 text-center">
         <div className="max-w-4xl mx-auto">
-            <EditableText
-                contentId="heroTitle"
-                defaultValue="Parivaar. Pratishtha. Parivartan."
-                className="text-4xl md:text-6xl font-bold font-headline tracking-tight text-primary"
-            />
-            <EditableText
-                contentId="heroSubtitle"
-                defaultValue="India's first platform that teaches like an elder brother, not a stranger."
-                multiline
-                className="mt-6 text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto block"
-            />
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="animate-drop-in">
+              <EditableText
+                  contentId="heroTitle"
+                  defaultValue="Parivaar. Pratishtha. Parivartan."
+                  className="text-4xl md:text-6xl font-bold font-headline tracking-tight text-primary"
+              />
+              <EditableText
+                  contentId="heroSubtitle"
+                  defaultValue="India's first platform that teaches like an elder brother, not a stranger."
+                  multiline
+                  className="mt-6 text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto block"
+              />
+            </div>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in animation-delay-500">
             <Button asChild size="lg" className="w-full sm:w-auto">
               <Link href="/courses">
                 Browse Courses

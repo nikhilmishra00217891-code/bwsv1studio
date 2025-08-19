@@ -20,7 +20,7 @@ export default function AboutPage() {
             className="opacity-10"
             data-ai-hint="bihar map vector"
         />
-      <div className="relative container mx-auto px-6 py-24 md:py-32">
+      <div className="relative container mx-auto px-6 py-24 md:py-32 animate-fade-in">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold font-headline text-primary tracking-tight">
             <EditableText
