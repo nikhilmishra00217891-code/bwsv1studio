@@ -33,7 +33,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
-          themes={["light", "dark", "proudshe"]}
+          themes={["light", "dark", "proudshe", "retrogamer"]}
         >
           <AuthProvider>
             <EditModeProvider>

@@ -72,6 +72,28 @@ body {
     --input: 340 100% 90%;
     --ring: 337 90% 60%;
   }
+
+  .retrogamer {
+    --background: 236 65% 10%;
+    --foreground: 240 15% 95%;
+    --card: 236 65% 15%;
+    --card-foreground: 240 15% 95%;
+    --popover: 236 65% 10%;
+    --popover-foreground: 240 15% 95%;
+    --primary: 260 90% 70%;
+    --primary-foreground: 260 90% 10%;
+    --secondary: 45 85% 55%;
+    --secondary-foreground: 45 90% 15%;
+    --muted: 236 65% 20%;
+    --muted-foreground: 240 15% 70%;
+    --accent: 45 85% 55%;
+    --accent-foreground: 45 90% 15%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 236 65% 25%;
+    --input: 236 65% 25%;
+    --ring: 260 90% 70%;
+  }
 }
 
 @layer base {
