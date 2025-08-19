@@ -168,12 +168,12 @@ export const getEnrolledCoursesForUser = async (userId: string): Promise<Enrolle
   }
 };
 
-export const createUserProfile = async (user: User) => {
+export const createUserProfile = async (user: User, role: 'student' | 'faculty' = 'student') => {
     const userDocRef = doc(db, "users", user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
-        const { uid, email, displayName } = user;
+        const { uid, email, displayName, photoURL } = user;
         const createdAt = new Date();
 
         try {
@@ -181,6 +181,8 @@ export const createUserProfile = async (user: User) => {
                 uid,
                 email,
                 displayName,
+                photoURL,
+                role,
                 createdAt,
                 enrolledCourses: [],
                 progress: {},

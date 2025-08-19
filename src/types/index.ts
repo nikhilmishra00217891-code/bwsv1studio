@@ -1,3 +1,4 @@
+
 export interface Lesson {
   id: string;
   title: string;
@@ -36,6 +37,7 @@ export interface UserProfile {
     uid: string;
     email: string | null;
     displayName: string | null;
+    role: 'student' | 'faculty';
     enrolledCourses?: string[];
     preferredSubjects?: string[];
 }

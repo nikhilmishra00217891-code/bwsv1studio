@@ -12,6 +12,9 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { ThemeToggle } from "./ThemeToggle";
+import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -38,7 +41,25 @@ const NavLink = ({ href, label }: { href: string; label: string }) => {
 
 export default function Header() {
   const { user, loading } = useAuth();
-  const router = usePathname();
+  const [isFaculty, setIsFaculty] = useState(false);
+
+  useEffect(() => {
+    const checkFacultyStatus = async () => {
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists() && userDocSnap.data().role === 'faculty') {
+          setIsFaculty(true);
+        } else {
+          setIsFaculty(false);
+        }
+      } else {
+        setIsFaculty(false);
+      }
+    };
+    checkFacultyStatus();
+  }, [user]);
+
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -53,17 +74,28 @@ export default function Header() {
             BiharWaleSirji
           </span>
         </Link>
+        
+        <div className="hidden md:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <NavLink key={link.href} {...link} />
+          ))}
+        </div>
 
         <div className="flex items-center gap-2 md:gap-4">
           <ThemeToggle />
           
           {loading ? null : user ? (
-            <Link href="/profile" aria-label="View Profile">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
-                <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
-              </Avatar>
-            </Link>
+            <div className="relative flex flex-col items-center">
+              <Link href="/profile" aria-label="View Profile">
+                <Avatar className={cn("h-9 w-9", isFaculty && "ring-2 ring-offset-2 ring-offset-background ring-primary animate-pulse")}>
+                  <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
+                  <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
+                </Avatar>
+              </Link>
+              {isFaculty && (
+                 <span className="absolute -bottom-4 text-[10px] font-bold text-primary">BWS</span>
+              )}
+            </div>
           ) : (
             <Button asChild size="sm" className="hidden md:flex">
               <Link href="/login">Login / Signup</Link>
@@ -72,7 +104,7 @@ export default function Header() {
 
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Open navigation menu</span>
               </Button>
@@ -85,14 +117,6 @@ export default function Header() {
                         <BookOpenCheck className="h-6 w-6 text-primary" />
                         <span className="font-bold text-lg">BiharWaleSirji</span>
                     </Link>
-                     {user && (
-                        <Link href="/profile" aria-label="View Profile">
-                             <Avatar className="h-9 w-9">
-                                <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
-                                <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
-                            </Avatar>
-                        </Link>
-                    )}
                 </div>
 
                 <nav className="flex flex-col gap-4 text-lg p-6 flex-grow">

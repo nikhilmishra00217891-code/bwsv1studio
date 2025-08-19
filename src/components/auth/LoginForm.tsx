@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import {
@@ -24,23 +24,62 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { KeyRound, Mail, User, LoaderCircle } from "lucide-react";
+import { KeyRound, Mail, User, LoaderCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { createUserProfile } from "@/lib/data";
+import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
+
+const FACULTY_SECRET_KEY = "1@*2#\"3₹'";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [secretKey, setSecretKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isFacultyMode, setIsFacultyMode] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { theme } = useTheme();
+
+  const themeChangeCount = useRef(0);
+  const lastThemeChangeTime = useRef(Date.now());
+  
+  useEffect(() => {
+    // This effect tracks theme changes to unlock faculty mode
+    if (theme) {
+        const now = Date.now();
+        if(now - lastThemeChangeTime.current < 2000) { // 2 seconds between changes
+            themeChangeCount.current += 1;
+        } else {
+            themeChangeCount.current = 1; // Reset if too slow
+        }
+        lastThemeChangeTime.current = now;
+
+        if(themeChangeCount.current >= 4) {
+            setIsFacultyMode(true);
+            toast({
+                title: "Ritual Complete!",
+                description: "Faculty portal unlocked.",
+            });
+            themeChangeCount.current = 0; // Reset after unlocking
+        }
+    }
+  }, [theme, toast]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    if (isFacultyMode && secretKey !== FACULTY_SECRET_KEY) {
+        toast({ variant: 'destructive', title: 'Invalid Secret Key.' });
+        setIsLoading(false);
+        return;
+    }
 
     try {
       if (isSignUp) {
@@ -51,7 +90,7 @@ export function LoginForm() {
         }
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: username });
-        await createUserProfile(userCredential.user);
+        await createUserProfile(userCredential.user, isFacultyMode ? 'faculty' : 'student');
         toast({ title: "Account created!", description: "You've been successfully signed up." });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
@@ -74,7 +113,7 @@ export function LoginForm() {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      await createUserProfile(result.user);
+      await createUserProfile(result.user, 'student'); // Google sign in is for students only
       toast({ title: "Signed in with Google!" });
       router.push("/dashboard");
     } catch (error: any) {
@@ -89,8 +128,14 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-sm shadow-xl">
+    <Card className={cn("w-full max-w-sm shadow-xl transition-all", isFacultyMode && "border-primary shadow-primary/20")}>
       <CardHeader className="text-center">
+        {isFacultyMode && (
+          <div className="flex justify-center items-center gap-2 text-primary">
+            <Sparkles className="h-5 w-5" />
+            <p className="font-semibold">Faculty Portal</p>
+          </div>
+        )}
         <CardTitle className="text-2xl font-headline">{isSignUp ? 'Create an Account' : 'Welcome!'}</CardTitle>
         <CardDescription>{isSignUp ? 'Enter your details to sign up.' : 'Login or create an account to continue'}</CardDescription>
       </CardHeader>
@@ -146,6 +191,24 @@ export function LoginForm() {
               />
             </div>
           </div>
+           {isFacultyMode && (
+             <div className="grid gap-2">
+                <Label htmlFor="secretKey">Secret Key</Label>
+                 <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                        id="secretKey"
+                        type="password"
+                        placeholder="Enter the secret key"
+                        required
+                        className="pl-10"
+                        value={secretKey}
+                        onChange={(e) => setSecretKey(e.target.value)}
+                        disabled={isLoading}
+                    />
+                </div>
+            </div>
+          )}
           <Button className="w-full" disabled={isLoading}>
             {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
             {isSignUp ? 'Sign Up' : 'Login'}
@@ -162,7 +225,7 @@ export function LoginForm() {
             OR CONTINUE WITH
           </span>
         </div>
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isFacultyMode}>
           {isLoading ? (
             <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
           ) : (
