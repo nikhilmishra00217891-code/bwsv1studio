@@ -112,24 +112,6 @@ export default function DashboardPage() {
 
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-                {userIsFaculty && (
-                  <Card className="bg-primary/10 border-primary">
-                    <CardHeader>
-                      <CardTitle className="font-headline flex items-center gap-2">
-                        <Edit className="w-5 h-5 text-primary"/>
-                        Faculty Controls
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground mb-4">Edit the content of the website.</p>
-                      <Button asChild className="w-full">
-                        <Link href="/dashboard/content">
-                          Manage Content <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
                 <Card className="bg-primary text-primary-foreground text-center p-8">
                     <CardHeader>
                         <MessageSquareHeart className="w-16 h-16 mx-auto mb-4 opacity-80" />

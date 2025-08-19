@@ -205,24 +205,3 @@ export const isFaculty = async (userId: string): Promise<boolean> => {
     return false;
   }
 }
-
-// Functions for editable content
-type ContentData = {
-  [key: string]: any;
-};
-
-export const saveContent = async (data: ContentData) => {
-  // For now, we'll store all homepage content in a single document.
-  // This can be expanded later.
-  const contentDocRef = doc(db, 'siteContent', 'hero');
-  await setDoc(contentDocRef, data, { merge: true });
-};
-
-export const getContent = async (): Promise<ContentData | null> => {
-  const contentDocRef = doc(db, 'siteContent', 'hero');
-  const docSnap = await getDoc(contentDocRef);
-  if (docSnap.exists()) {
-    return docSnap.data();
-  }
-  return null;
-};

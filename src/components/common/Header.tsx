@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Edit } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Edit, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -13,9 +13,9 @@ import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { ThemeToggle } from "./ThemeToggle";
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { isFaculty as checkIsFaculty } from "@/lib/data";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -77,11 +77,11 @@ export default function Header() {
         
         <div className="hidden md:flex flex-1 justify-center items-center gap-6">
            {isClient && isFaculty && (
-             <Button asChild variant="outline" size="sm">
-                <Link href="/dashboard/content">
-                    <Edit className="mr-2 h-4 w-4" /> Edit Content
-                </Link>
-             </Button>
+              <div className="flex items-center space-x-2">
+                <Pencil className="w-4 h-4 text-primary" />
+                <Label htmlFor="edit-mode-toggle">Edit Mode</Label>
+                <Switch id="edit-mode-toggle" />
+              </div>
           )}
         </div>
 
@@ -91,7 +91,7 @@ export default function Header() {
           {loading ? null : user ? (
             <div className="relative flex flex-col items-center">
               <Link href="/profile" aria-label="View Profile">
-                <Avatar className={cn("h-9 w-9", isFaculty && "ring-2 ring-offset-2 ring-offset-background ring-primary animate-pulse")}>
+                <Avatar className={cn("h-9 w-9", isFaculty && "ring-2 ring-offset-2 ring-offset-background ring-primary")}>
                   <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
                   <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
                 </Avatar>
@@ -129,7 +129,6 @@ export default function Header() {
                   ))}
                   {user && <NavLink href="/dashboard" label="Dashboard" />}
                   {user && <NavLink href="/profile" label="Profile" />}
-                   {user && isFaculty && <NavLink href="/dashboard/content" label="Edit Content" />}
                 </nav>
                 
                 <div className="p-6 border-t">

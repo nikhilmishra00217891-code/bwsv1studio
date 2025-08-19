@@ -14,28 +14,19 @@ interface HeroContent {
     heroSubtitle: string;
 }
 
+const DEFAULT_CONTENT: HeroContent = {
+    heroTitle: "Parivaar. Pratishtha. Parivartan.",
+    heroSubtitle: "India's first platform that teaches like an elder brother, not a stranger."
+};
+
 export default function Hero() {
-  const [content, setContent] = useState<HeroContent | null>(null);
+  const [content, setContent] = useState<HeroContent>(DEFAULT_CONTENT);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const contentDocRef = doc(db, 'siteContent', 'hero');
-    
-    const unsubscribe = onSnapshot(contentDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            setContent(docSnap.data() as HeroContent);
-        } else {
-            // Set default content if nothing is in Firestore
-            setContent({
-                heroTitle: "Parivaar. Pratishtha. Parivartan.",
-                heroSubtitle: "India's first platform that teaches like an elder brother, not a stranger."
-            });
-        }
-        setLoading(false);
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+    // For now, we are just using default content. 
+    // This will be replaced with logic to fetch from Firestore.
+    setLoading(false);
   }, []);
 
 
