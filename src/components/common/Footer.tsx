@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpenCheck, Twitter, Youtube, Instagram } from 'lucide-react';
+import { BookOpenCheck, Youtube, Instagram, Send } from 'lucide-react';
 
 const navLinks = [
   { href: '/courses', label: 'Courses' },
@@ -8,9 +8,9 @@ const navLinks = [
 ];
 
 const socialLinks = [
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Youtube, href: '#', label: 'YouTube' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
+    { icon: Youtube, href: 'https://www.youtube.com/@biharwalesirji', label: 'YouTube' },
+    { icon: Send, href: 'https://telegram.me/biharwalesirji', label: 'Telegram' },
+    { icon: Instagram, href: 'https://instagram.com/biharwalesirji?igsh=MTNpOGc4eG00aGZ3', label: 'Instagram' },
 ]
 
 export default function Footer() {
@@ -30,10 +30,10 @@ export default function Footer() {
             </p>
              <div className="flex space-x-4 mt-6">
                 {socialLinks.map(social => (
-                     <Link key={social.label} href={social.href} className="text-foreground/60 hover:text-primary transition-colors">
+                     <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer" className="text-foreground/60 hover:text-primary transition-colors">
                         <social.icon className="h-6 w-6" />
                         <span className="sr-only">{social.label}</span>
-                    </Link>
+                    </a>
                 ))}
             </div>
           </div>
