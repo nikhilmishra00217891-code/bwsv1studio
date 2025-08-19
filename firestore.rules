@@ -1,33 +1,36 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isFaculty() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'faculty';
+    // Helper function to check if a user has a specific role
+    function isRole(role) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
     }
-
+    
+    // User profiles
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
+      allow read: if request.auth != null; // Allow any authenticated user to read profiles (for avatars, names etc.)
+      allow update: if request.auth != null && request.auth.uid == userId; // Users can only update their own profile
+      allow create: if request.auth != null; // Any authenticated user can create their own profile
     }
 
-    match /siteContent/text {
-      allow read: if true;
-      allow write: if isFaculty();
+    // Site content (for editable text)
+    match /siteContent/{docId} {
+        allow read: if true;
+        allow write: if request.auth != null && isRole('faculty');
     }
 
+    // Announcements
     match /announcements/{announcementId} {
-      allow read: if request.auth != null;
-      allow create: if isFaculty();
+      // Any authenticated user can list/read announcements
+      allow list, get: if request.auth != null;
       
-      // Allow any authenticated user to update only the 'reactions' field.
-      // Disallow changing any other field during an update for non-faculty.
-      allow update: if request.auth != null && request.resource.data.keys().hasOnly(['text', 'authorId', 'authorName', 'authorAvatar', 'createdAt', 'reactions', 'id']);
+      // Only faculty can create announcements
+      allow create: if request.auth != null && isRole('faculty');
 
-      // Allow the original author (if faculty) to delete their post.
-      allow delete: if isFaculty() && resource.data.authorId == request.auth.uid;
+      // Authenticated users can update reactions, but nothing else
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
     }
   }
 }

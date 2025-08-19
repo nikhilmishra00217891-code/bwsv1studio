@@ -8,7 +8,6 @@ import {
   getAnnouncements,
   createAnnouncement,
   toggleAnnouncementReaction,
-  type Announcement,
 } from "@/lib/data/announcements";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, LoaderCircle, Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import type { Announcement } from "@/types";
 
 const AnnouncementForm = ({
   onNewAnnouncement,
@@ -117,7 +117,7 @@ const AnnouncementCard = ({
             <div className="flex items-center justify-between">
                 <p className="font-bold">{announcement.authorName}</p>
                 <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true })}
+                    {announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
                 </p>
             </div>
             <p className="mt-2 text-foreground/90 whitespace-pre-wrap">{announcement.text}</p>
@@ -147,18 +147,21 @@ export default function AnnouncementsPage() {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      if (user) {
-        const facultyStatus = await isFaculty(user.uid);
-        setUserIsFaculty(facultyStatus);
-      }
-      try {
-        const fetchedAnnouncements = await getAnnouncements();
-        setAnnouncements(fetchedAnnouncements);
-      } catch (error) {
-        console.error("Failed to fetch announcements:", error)
-      } finally {
-        setDataLoading(false);
-      }
+        setDataLoading(true);
+        if (user) {
+            const facultyStatus = await isFaculty(user.uid);
+            setUserIsFaculty(facultyStatus);
+        } else {
+            setUserIsFaculty(false);
+        }
+        try {
+            const fetchedAnnouncements = await getAnnouncements();
+            setAnnouncements(fetchedAnnouncements);
+        } catch (error) {
+            console.error("Failed to fetch announcements:", error)
+        } finally {
+            setDataLoading(false);
+        }
     };
     if (!authLoading) {
       fetchInitialData();

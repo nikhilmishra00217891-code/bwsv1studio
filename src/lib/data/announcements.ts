@@ -14,16 +14,7 @@ import {
   arrayRemove,
   getDoc,
 } from "firebase/firestore";
-
-export interface Announcement {
-  id: string;
-  text: string;
-  authorId: string;
-  authorName: string;
-  authorAvatar: string;
-  createdAt: Timestamp;
-  reactions: string[]; // Array of user IDs who have reacted
-}
+import type { Announcement } from "@/types";
 
 interface CreateAnnouncementData {
     text: string;
@@ -42,7 +33,12 @@ export const createAnnouncement = async (data: CreateAnnouncementData): Promise<
     
     // We fetch the document again to get the server-generated timestamp
     const newDocSnap = await getDoc(docRef);
-    return { id: newDocSnap.id, ...newDocSnap.data() } as Announcement;
+    const newDocData = newDocSnap.data();
+    return { 
+        id: newDocSnap.id, 
+        ...newDocData,
+        createdAt: newDocData?.createdAt,
+     } as Announcement;
 };
 
 export const getAnnouncements = async (): Promise<Announcement[]> => {
