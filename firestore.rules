@@ -2,35 +2,56 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if a user has a specific role
-    function isRole(role) {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+
+    // Helper function to check if a user is a faculty member
+    function isFaculty(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role == 'faculty';
+    }
+
+    // Default deny all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
     }
     
-    // User profiles
+    // User Profiles
     match /users/{userId} {
-      allow read: if request.auth != null; // Allow any authenticated user to read profiles (for avatars, names etc.)
-      allow update: if request.auth != null && request.auth.uid == userId; // Users can only update their own profile
-      allow create: if request.auth != null; // Any authenticated user can create their own profile
+      // Any authenticated user can create their own profile during signup
+      allow create: if request.auth != null;
+      // Users can only read their own profile
+      allow read: if request.auth.uid == userId;
+      // Users can only update their own profile
+      allow update: if request.auth.uid == userId;
     }
 
-    // Site content (for editable text)
+    // Site Content (for EditableText)
     match /siteContent/{docId} {
-        allow read: if true;
-        allow write: if request.auth != null && isRole('faculty');
+      // Anyone can read site content
+      allow read: if true;
+      // Only faculty can write/update site content
+      allow write: if request.auth != null && isFaculty(request.auth.uid);
     }
-
+    
     // Announcements
     match /announcements/{announcementId} {
-      // Any authenticated user can list/read announcements
-      allow list, get: if request.auth != null;
+      // Any authenticated user can read announcements
+      allow read: if request.auth != null;
       
       // Only faculty can create announcements
-      allow create: if request.auth != null && isRole('faculty');
+      allow create: if request.auth != null && isFaculty(request.auth.uid);
 
-      // Authenticated users can update reactions, but nothing else
-      allow update: if request.auth != null
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
+      // Only the faculty member who created the announcement can delete it
+      allow delete: if request.auth != null 
+                    && isFaculty(request.auth.uid)
+                    && resource.data.authorId == request.auth.uid;
+
+      // Rules for updating announcements
+      allow update: if request.auth != null &&
+        // Case 1: Any authenticated user can update the 'reactions' array and nothing else.
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])) ||
+        // Case 2: The original faculty author can update the 'text' and 'updatedAt' fields.
+        (isFaculty(request.auth.uid) 
+          && resource.data.authorId == request.auth.uid 
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'updatedAt']));
     }
   }
 }

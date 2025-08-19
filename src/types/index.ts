@@ -51,5 +51,6 @@ export interface Announcement {
   authorName: string;
   authorAvatar: string;
   createdAt: Timestamp;
+  updatedAt?: Timestamp;
   reactions: string[];
 }

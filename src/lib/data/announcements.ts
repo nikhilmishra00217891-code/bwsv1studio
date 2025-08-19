@@ -13,6 +13,8 @@ import {
   arrayUnion,
   arrayRemove,
   getDoc,
+  deleteDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import type { Announcement } from "@/types";
 
@@ -31,7 +33,6 @@ export const createAnnouncement = async (data: CreateAnnouncementData): Promise<
         reactions: [],
     });
     
-    // We fetch the document again to get the server-generated timestamp
     const newDocSnap = await getDoc(docRef);
     const newDocData = newDocSnap.data();
     return { 
@@ -41,14 +42,30 @@ export const createAnnouncement = async (data: CreateAnnouncementData): Promise<
      } as Announcement;
 };
 
+// This function can be used for initial load if needed, but real-time is preferred.
 export const getAnnouncements = async (): Promise<Announcement[]> => {
   const announcementsCol = collection(db, "announcements");
-  const q = query(announcementsCol, orderBy("createdAt", "desc"));
+  const q = query(announcementsCol, orderBy("createdAt", "asc"));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(
     (doc) => ({ id: doc.id, ...doc.data() } as Announcement)
   );
 };
+
+export const listenForAnnouncements = (callback: (announcements: Announcement[]) => void) => {
+    const announcementsCol = collection(db, "announcements");
+    const q = query(announcementsCol, orderBy("createdAt", "asc"));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const announcements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement));
+        callback(announcements);
+    }, (error) => {
+        console.error("Error listening for announcements:", error);
+    });
+
+    return unsubscribe;
+}
+
 
 export const toggleAnnouncementReaction = async (announcementId: string, userId: string) => {
     const announcementRef = doc(db, "announcements", announcementId);
@@ -61,14 +78,25 @@ export const toggleAnnouncementReaction = async (announcementId: string, userId:
     const reactions: string[] = announcementSnap.data().reactions || [];
 
     if (reactions.includes(userId)) {
-        // User has already reacted, so remove their reaction
         await updateDoc(announcementRef, {
             reactions: arrayRemove(userId),
         });
     } else {
-        // User has not reacted, so add their reaction
         await updateDoc(announcementRef, {
             reactions: arrayUnion(userId),
         });
     }
+};
+
+export const updateAnnouncement = async (announcementId: string, newText: string) => {
+    const announcementRef = doc(db, 'announcements', announcementId);
+    await updateDoc(announcementRef, {
+        text: newText,
+        updatedAt: serverTimestamp(),
+    });
+};
+
+export const deleteAnnouncement = async (announcementId: string) => {
+    const announcementRef = doc(db, 'announcements', announcementId);
+    await deleteDoc(announcementRef);
 };
