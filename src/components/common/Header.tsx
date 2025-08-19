@@ -15,6 +15,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { isFaculty as checkIsFaculty } from "@/lib/data";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -42,17 +43,14 @@ const NavLink = ({ href, label }: { href: string; label: string }) => {
 export default function Header() {
   const { user, loading } = useAuth();
   const [isFaculty, setIsFaculty] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     const checkFacultyStatus = async () => {
       if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists() && userDocSnap.data().role === 'faculty') {
-          setIsFaculty(true);
-        } else {
-          setIsFaculty(false);
-        }
+        const facultyStatus = await checkIsFaculty(user.uid);
+        setIsFaculty(facultyStatus);
       } else {
         setIsFaculty(false);
       }
@@ -78,7 +76,7 @@ export default function Header() {
         </div>
         
         <div className="hidden md:flex flex-1 justify-center items-center gap-6">
-           {isFaculty && (
+           {isClient && isFaculty && (
              <Button asChild variant="outline" size="sm">
                 <Link href="/dashboard/content">
                     <Edit className="mr-2 h-4 w-4" /> Edit Content
@@ -98,7 +96,7 @@ export default function Header() {
                   <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
                 </Avatar>
               </Link>
-              {isFaculty && (
+              {isClient && isFaculty && (
                  <span className="absolute -bottom-4 text-[10px] font-bold text-primary">BWS</span>
               )}
             </div>
