@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, User } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -61,15 +61,15 @@ export default function Header() {
            {user && <NavLink href="/dashboard" label="Dashboard" />}
         </nav>
 
-        <div className="flex items-center gap-4">
-           <ThemeToggle />
-          <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-2 md:gap-4">
+          <ThemeToggle />
+          <div className="hidden md:flex items-center gap-4">
             {loading ? null : user ? (
               <>
-                <Link href="/profile">
+                 <Link href="/profile" aria-label="View Profile">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
-                    <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
                   </Avatar>
                 </Link>
                  <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -93,10 +93,21 @@ export default function Header() {
             <SheetContent side="right">
               <SheetTitle className="sr-only">Menu</SheetTitle>
               <div className="flex flex-col gap-6 p-6">
-                <Link href="/" className="flex items-center gap-2">
-                  <BookOpenCheck className="h-6 w-6 text-primary" />
-                  <span className="font-bold text-lg">BiharWaleSirji</span>
-                </Link>
+                <div className="flex items-center justify-between">
+                    <Link href="/" className="flex items-center gap-2">
+                        <BookOpenCheck className="h-6 w-6 text-primary" />
+                        <span className="font-bold text-lg">BiharWaleSirji</span>
+                    </Link>
+                    {user && (
+                        <Link href="/profile" aria-label="View Profile">
+                             <Avatar className="h-9 w-9">
+                                <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
+                                <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
+                            </Avatar>
+                        </Link>
+                    )}
+                </div>
+
                 <nav className="flex flex-col gap-4 text-lg">
                   {navLinks.map((link) => (
                     <NavLink key={link.href} {...link} />
