@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -82,6 +82,13 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
+          {isFaculty && (
+             <Button asChild variant="outline" size="sm" className="hidden md:flex">
+                <Link href="/dashboard/content">
+                    <Edit className="mr-2 h-4 w-4" /> Edit Content
+                </Link>
+             </Button>
+          )}
           <ThemeToggle />
           
           {loading ? null : user ? (
@@ -125,6 +132,7 @@ export default function Header() {
                   ))}
                   {user && <NavLink href="/dashboard" label="Dashboard" />}
                   {user && <NavLink href="/profile" label="Profile" />}
+                   {user && isFaculty && <NavLink href="/dashboard/content" label="Edit Content" />}
                 </nav>
                 
                 <div className="p-6 border-t">
