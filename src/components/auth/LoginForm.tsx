@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -12,6 +12,7 @@ import {
   updateProfile,
   type User
 } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -77,6 +78,7 @@ export function LoginForm() {
 
   const handleFacultySignup = async () => {
     if (!facultyUser) return;
+    setIsLoading(true);
     try {
         await updateProfile(facultyUser, { displayName: username });
         await createUserProfile(facultyUser, 'faculty');
@@ -100,7 +102,7 @@ export function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (isFacultyMode && secretKey !== FACULTY_SECRET_KEY) {
+    if (isSignUp && isFacultyMode && secretKey !== FACULTY_SECRET_KEY) {
         toast({ variant: 'destructive', title: 'Invalid Secret Key.' });
         setIsLoading(false);
         return;
