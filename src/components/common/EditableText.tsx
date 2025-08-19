@@ -18,19 +18,18 @@ interface EditableTextProps {
 export function EditableText({ contentId, defaultValue, multiline = false, className }: EditableTextProps) {
   const { isEditMode } = useEditMode();
   const [text, setText] = useState(defaultValue);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const fetchContent = async () => {
-      setIsLoading(true);
       const fetchedText = await getTextContent(contentId);
-      setText(fetchedText || defaultValue);
-      setIsLoading(false);
+      if (fetchedText) {
+        setText(fetchedText);
+      }
     };
     fetchContent();
-  }, [contentId, defaultValue]);
+  }, [contentId]);
   
   useEffect(() => {
     if (isEditMode && textareaRef.current) {
@@ -62,15 +61,11 @@ export function EditableText({ contentId, defaultValue, multiline = false, class
     handleSave(e.target.value);
   };
   
-  if (isLoading && !isEditMode) {
-    return <span className={cn("animate-pulse bg-muted-foreground/20 rounded-md", className)}>{defaultValue}</span>
-  }
-
   if (isEditMode) {
     return (
       <Textarea
         ref={textareaRef}
-        defaultValue={text}
+        value={text}
         onBlur={handleBlur}
         onKeyDown={(e) => {
             if(e.key === 'Enter' && !multiline) {
@@ -79,6 +74,7 @@ export function EditableText({ contentId, defaultValue, multiline = false, class
             }
         }}
         onChange={(e) => {
+            setText(e.target.value);
             if (textareaRef.current) {
                 textareaRef.current.style.height = 'auto';
                 textareaRef.current.style.height = `${e.target.scrollHeight}px`;
