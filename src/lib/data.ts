@@ -1,4 +1,7 @@
 import type { Course, Testimonial, EnrolledCourse } from "@/types";
+import { db } from "./firebase";
+import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
+
 
 export const courses: Course[] = [
   {
@@ -85,7 +88,8 @@ export const testimonials: Testimonial[] = [
   },
 ];
 
-export const enrolledCourses: EnrolledCourse[] = [
+// This is mock data. In a real app, this would be fetched from a user's collection in Firestore.
+const mockEnrolledCourses: EnrolledCourse[] = [
     {
         courseId: "jee-physics-01",
         title: "JEE Physics: Complete Mechanics",
@@ -102,23 +106,62 @@ export const enrolledCourses: EnrolledCourse[] = [
     }
 ]
 
-export const getCourses = async () => {
+export const getCourses = async (): Promise<Course[]> => {
+  // In a real app, you might fetch this from Firestore
   return courses;
 };
 
-export const getCourseById = async (id: string) => {
+export const getCourseById = async (id: string): Promise<Course | undefined> => {
+    // In a real app, you might fetch this from Firestore
     return courses.find(course => course.id === id);
 }
 
-export const getFeaturedCourses = async () => {
+export const getFeaturedCourses = async (): Promise<Course[]> => {
+    // In a real app, you might fetch this from Firestore
   return courses.slice(0, 3);
 };
 
-export const getTestimonials = async () => {
+export const getTestimonials = async (): Promise<Testimonial[]> => {
+    // In a real app, you might fetch this from Firestore
   return testimonials;
 };
 
-export const getEnrolledCourses = async (userId: string) => {
-    // In a real app, you'd fetch this based on the userId
-    return enrolledCourses;
-}
+
+export const getEnrolledCoursesForUser = async (userId: string): Promise<EnrolledCourse[]> => {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (userDocSnap.exists()) {
+      const userData = userDocSnap.data();
+      const enrolledCourseIds: string[] = userData.enrolledCourses || [];
+
+      if(enrolledCourseIds.length === 0) return [];
+
+      const enrolledCoursesPromises = enrolledCourseIds.map(async (courseId) => {
+        const courseData = courses.find(c => c.id === courseId); // finding from mock data for now
+        const progress = userData.progress?.[courseId] || 0;
+        if(courseData) {
+          return {
+            courseId: courseData.id,
+            title: courseData.title,
+            category: courseData.category,
+            thumbnail: courseData.thumbnail,
+            progress: progress,
+          };
+        }
+        return null;
+      });
+      
+      const enrolledCourses = (await Promise.all(enrolledCoursesPromises)).filter(c => c !== null) as EnrolledCourse[];
+      return enrolledCourses;
+
+    } else {
+      console.log("No such user!");
+      return [];
+    }
+  } catch(error) {
+    console.error("Error fetching enrolled courses:", error);
+    return []; // Return empty array on error
+  }
+};

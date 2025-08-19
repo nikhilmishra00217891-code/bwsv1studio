@@ -31,3 +31,11 @@ export interface EnrolledCourse {
   thumbnail: string;
   category: string;
 }
+
+export interface UserProfile {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+    enrolledCourses?: string[];
+    preferredSubjects?: string[];
+}

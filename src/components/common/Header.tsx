@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Menu, BookOpenCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "../auth/AuthProvider";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/courses", label: "Courses" },
   { href: "/about", label: "About" },
-  { href: "/dashboard", label: "Dashboard" },
 ];
 
 const NavLink = ({ href, label }: { href: string; label: string }) => {
@@ -32,6 +35,13 @@ const NavLink = ({ href, label }: { href: string; label: string }) => {
 };
 
 export default function Header() {
+  const { user, loading } = useAuth();
+  const router = usePathname();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-7xl items-center justify-between">
@@ -46,38 +56,62 @@ export default function Header() {
           {navLinks.map((link) => (
             <NavLink key={link.href} {...link} />
           ))}
+           {user && <NavLink href="/dashboard" label="Dashboard" />}
         </nav>
 
         <div className="flex items-center gap-4">
-            <Button asChild className="hidden md:flex">
-                <Link href="/login">Login / Signup</Link>
-            </Button>
-            <Sheet>
-                <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="md:hidden">
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Open navigation menu</span>
+          <div className="hidden md:flex items-center gap-2">
+            {loading ? null : user ? (
+              <>
+                <Link href="/dashboard">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={user.photoURL ?? undefined} />
+                    <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                </Link>
+                 <Button variant="outline" size="sm" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
                 </Button>
-                </SheetTrigger>
-                <SheetContent side="right">
-                <SheetTitle className="sr-only">Mobile Menu</SheetTitle>
-                <SheetDescription className="sr-only">The main navigation menu for mobile devices.</SheetDescription>
-                <div className="flex flex-col gap-6 p-6">
-                    <Link href="/" className="flex items-center gap-2">
-                        <BookOpenCheck className="h-6 w-6 text-primary" />
-                        <span className="font-bold text-lg">BiharWaleSirji</span>
-                    </Link>
-                    <nav className="flex flex-col gap-4 text-lg">
-                    {navLinks.map((link) => (
-                        <NavLink key={link.href} {...link} />
-                    ))}
-                    </nav>
-                     <Button asChild className="w-full">
-                        <Link href="/login">Login / Signup</Link>
-                    </Button>
-                </div>
-                </SheetContent>
-            </Sheet>
+              </>
+            ) : (
+              <Button asChild>
+                <Link href="/login">Login / Signup</Link>
+              </Button>
+            )}
+          </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Open navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetTitle className="sr-only">Menu</SheetTitle>
+              <div className="flex flex-col gap-6 p-6">
+                <Link href="/" className="flex items-center gap-2">
+                  <BookOpenCheck className="h-6 w-6 text-primary" />
+                  <span className="font-bold text-lg">BiharWaleSirji</span>
+                </Link>
+                <nav className="flex flex-col gap-4 text-lg">
+                  {navLinks.map((link) => (
+                    <NavLink key={link.href} {...link} />
+                  ))}
+                  {user && <NavLink href="/dashboard" label="Dashboard" />}
+                </nav>
+                {user ? (
+                   <Button variant="outline" onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" /> Logout
+                   </Button>
+                ) : (
+                   <Button asChild className="w-full">
+                      <Link href="/login">Login / Signup</Link>
+                  </Button>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>

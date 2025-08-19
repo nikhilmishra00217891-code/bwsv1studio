@@ -5,6 +5,7 @@ import Header from "@/components/common/Header";
 import Footer from "@/components/common/Footer";
 import { Toaster } from "@/components/ui/toaster";
 import AiMentorWidget from "@/components/common/AiMentorWidget";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -26,13 +27,15 @@ export default function RootLayout({
   return (
     <html lang="en" className="!scroll-smooth">
       <body className={`${poppins.variable} font-body antialiased`}>
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
-        <AiMentorWidget />
-        <Toaster />
+        <AuthProvider>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+          <AiMentorWidget />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
