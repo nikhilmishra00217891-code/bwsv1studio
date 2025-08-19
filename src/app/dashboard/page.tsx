@@ -69,7 +69,7 @@ export default function DashboardPage() {
             <div className="space-y-6">
               {enrolledCourses.length > 0 ? (
                 enrolledCourses.map(course => (
-                  <Card key={course.courseId} className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                  <Card key={course.courseId} className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
                     <div className="flex flex-col sm:flex-row">
                       <div className="sm:w-1/3 h-48 sm:h-auto relative flex-shrink-0">
                            <Image 
@@ -78,6 +78,7 @@ export default function DashboardPage() {
                               layout="fill"
                               objectFit="cover"
                               data-ai-hint={`${course.category} education`}
+                              className="transition-transform duration-300 group-hover:scale-105"
                            />
                       </div>
                       <div className="p-6 flex flex-col flex-grow">
@@ -114,7 +115,7 @@ export default function DashboardPage() {
 
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-                <Card className="bg-primary text-primary-foreground text-center p-8">
+                <Card className="bg-primary text-primary-foreground text-center p-8 transition-all duration-300 hover:shadow-xl hover:scale-105">
                     <CardHeader>
                         <MessageSquareHeart className="w-16 h-16 mx-auto mb-4 opacity-80" />
                         <CardTitle className="text-2xl font-headline">Stuck on a problem?</CardTitle>

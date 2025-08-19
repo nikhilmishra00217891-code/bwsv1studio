@@ -15,7 +15,7 @@ import { Button } from "../ui/button";
 import { BookText, CircleUserRound, MessageSquareHeart, PlayCircle, Star, Video } from "lucide-react";
 
 const CourseCardTrigger = ({ course }: { course: Course }) => (
-    <Card className="overflow-hidden w-full group transition-all duration-300 hover:bg-secondary/50">
+    <Card className="overflow-hidden w-full group transition-all duration-300 hover:shadow-lg hover:border-primary/50">
         <div className="flex flex-col md:flex-row items-center">
             <div className="w-full md:w-1/4 h-48 md:h-full relative flex-shrink-0">
                  <Image
@@ -31,7 +31,7 @@ const CourseCardTrigger = ({ course }: { course: Course }) => (
                 <div className="flex justify-between items-start">
                     <div>
                         <Badge variant="secondary" className="w-fit mb-2">{course.category}</Badge>
-                        <h3 className="text-xl font-bold font-headline mb-2">{course.title}</h3>
+                        <h3 className="text-xl font-bold font-headline mb-2 group-hover:text-primary transition-colors">{course.title}</h3>
                     </div>
                      {course.isFree && (
                         <Badge className="bg-accent text-accent-foreground ml-4 shrink-0">
@@ -96,8 +96,8 @@ export function CourseList({ courses }: { courses: Course[] }) {
   return (
     <Accordion type="single" collapsible className="w-full space-y-4" defaultValue={defaultCourseId ?? undefined}>
       {courses.map((course) => (
-        <AccordionItem value={course.id} key={course.id} className="border-b-0">
-            <AccordionTrigger className="p-0 hover:no-underline [&[data-state=open]]:rounded-b-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+        <AccordionItem value={course.id} key={course.id} className="border-b-0 rounded-lg overflow-hidden transition-all duration-300 data-[state=open]:shadow-lg data-[state=open]:shadow-primary/20">
+            <AccordionTrigger className="p-0 hover:no-underline [&[data-state=open]]:bg-secondary/50 [&[data-state=open]]:rounded-b-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
                 <CourseCardTrigger course={course} />
             </AccordionTrigger>
           <AccordionContent className="p-0">

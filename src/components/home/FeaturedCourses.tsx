@@ -18,7 +18,7 @@ const CourseCard = ({ course }: { course: Course }) => {
           alt={course.title}
           width={600}
           height={400}
-          className="w-full h-48 object-cover"
+          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
           data-ai-hint={`${course.category} learning`}
         />
         {course.isFree && (
