@@ -1,6 +1,8 @@
+
 import Image from "next/image";
 import { BrainCircuit, HeartHandshake } from "lucide-react";
 import type { Metadata } from "next";
+import { EditableText } from "@/components/common/EditableText";
 
 export const metadata: Metadata = {
     title: "About Us - BiharWaleSirji",
@@ -21,47 +23,76 @@ export default function AboutPage() {
       <div className="relative container mx-auto px-6 py-24 md:py-32">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold font-headline text-primary tracking-tight">
-            We’re not just a platform, we’re Parivaar.
+            <EditableText
+              contentId="aboutPageTitle"
+              defaultValue="We’re not just a platform, we’re Parivaar."
+              className="w-full text-center"
+            />
           </h1>
         </div>
 
         <div className="max-w-3xl mx-auto bg-background/80 backdrop-blur-sm p-8 md:p-12 rounded-lg mt-12 shadow-lg">
-          <p className="text-lg text-foreground/80 leading-relaxed space-y-6">
-            <span>
-                In the heartlands of Bihar, where dreams are forged in the fires of aspiration, education isn't just a path—it's a legacy. We, at BiharWaleSirji, were born from this very soil. We saw students, bright-eyed and brilliant, navigating the labyrinth of competitive exams with courage but often without a guide who truly understood their language, their culture, their spirit.
-            </span>
-            <br/><br/>
-            <span>
-                We are not just another ed-tech platform. We are the elder brother you never had, the 'Sirji' from your own neighborhood who knows how to make complex calculus feel like a friendly chat. Our slogan, "Parivaar. Pratishtha. Parivartan." (Family. Honor. Change.) is the heartbeat of our mission. We are building a family of learners, upholding the honor of your hard work, and bringing a revolution in how education is perceived and delivered.
-            </span>
-             <br/><br/>
-            <span>
-                Welcome home. Welcome to BiharWaleSirji.
-            </span>
-          </p>
+          <EditableText
+            contentId="aboutPageMainText"
+            defaultValue="In the heartlands of Bihar, where dreams are forged in the fires of aspiration, education isn't just a path—it's a legacy. We, at BiharWaleSirji, were born from this very soil. We saw students, bright-eyed and brilliant, navigating the labyrinth of competitive exams with courage but often without a guide who truly understood their language, their culture, their spirit.
+
+We are not just another ed-tech platform. We are the elder brother you never had, the 'Sirji' from your own neighborhood who knows how to make complex calculus feel like a friendly chat. Our slogan, 'Parivaar. Pratishtha. Parivartan.' (Family. Honor. Change.) is the heartbeat of our mission. We are building a family of learners, upholding the honor of your hard work, and bringing a revolution in how education is perceived and delivered.
+
+Welcome home. Welcome to BiharWaleSirji."
+            multiline
+            className="w-full text-lg text-foreground/80 leading-relaxed space-y-6 block whitespace-pre-wrap text-left"
+          />
         </div>
 
         <div className="mt-20 md:mt-28">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold font-headline">Meet the BhaiyaBot</h2>
+            <h2 className="text-3xl md:text-4xl font-bold font-headline">
+              <EditableText
+                contentId="aboutPageBhaiyaBotTitle"
+                defaultValue="Meet the BhaiyaBot"
+                className="w-full text-center"
+              />
+            </h2>
             <p className="text-lg text-muted-foreground mt-2">
-              Your AI Doubt Buddy, available 24x7.
+              <EditableText
+                contentId="aboutPageBhaiyaBotSubtitle"
+                defaultValue="Your AI Doubt Buddy, available 24x7."
+                className="w-full text-center"
+              />
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="bg-background/80 backdrop-blur-sm p-8 rounded-lg shadow-lg flex flex-col items-center text-center">
               <BrainCircuit className="w-16 h-16 text-primary mb-4" />
-              <h3 className="text-2xl font-bold font-headline mb-2">Powered by AI</h3>
-              <p className="text-foreground/80">
-                Leveraging the latest in artificial intelligence to provide instant, accurate, and step-by-step solutions to your toughest questions.
-              </p>
+              <h3 className="text-2xl font-bold font-headline mb-2">
+                <EditableText
+                    contentId="aboutFeatureAITitle"
+                    defaultValue="Powered by AI"
+                    className="w-full text-center"
+                />
+              </h3>
+              <EditableText
+                contentId="aboutFeatureAIDescription"
+                defaultValue="Leveraging the latest in artificial intelligence to provide instant, accurate, and step-by-step solutions to your toughest questions."
+                multiline
+                className="w-full text-foreground/80 block"
+              />
             </div>
             <div className="bg-background/80 backdrop-blur-sm p-8 rounded-lg shadow-lg flex flex-col items-center text-center">
               <HeartHandshake className="w-16 h-16 text-primary mb-4" />
-              <h3 className="text-2xl font-bold font-headline mb-2">Trained to Think Like Your Elder Brother</h3>
-              <p className="text-foreground/80">
-                Our AI isn't just smart; it's empathetic. We've trained it on our unique teaching philosophy to be encouraging, patient, and always ready to help you understand, not just memorize.
-              </p>
+              <h3 className="text-2xl font-bold font-headline mb-2">
+                <EditableText
+                    contentId="aboutFeatureEmpathyTitle"
+                    defaultValue="Trained to Think Like Your Elder Brother"
+                    className="w-full text-center"
+                />
+              </h3>
+              <EditableText
+                contentId="aboutFeatureEmpathyDescription"
+                defaultValue="Our AI isn't just smart; it's empathetic. We've trained it on our unique teaching philosophy to be encouraging, patient, and always ready to help you understand, not just memorize."
+                multiline
+                className="w-full text-foreground/80 block"
+              />
             </div>
           </div>
         </div>

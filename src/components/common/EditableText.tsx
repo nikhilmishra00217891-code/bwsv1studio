@@ -78,12 +78,31 @@ export function EditableText({ contentId, defaultValue, multiline = false, class
                 (e.target as HTMLTextAreaElement).blur();
             }
         }}
+        onChange={(e) => {
+            if (textareaRef.current) {
+                textareaRef.current.style.height = 'auto';
+                textareaRef.current.style.height = `${e.target.scrollHeight}px`;
+            }
+        }}
         className={cn(
-            "w-full bg-primary/10 border-2 border-dashed border-primary/50 focus-visible:ring-primary text-inherit font-inherit leading-inherit tracking-inherit text-center p-2 resize-none overflow-hidden",
-            multiline ? "" : "h-auto",
-            className,
+            "w-full bg-primary/10 border-2 border-dashed border-primary/50 focus-visible:ring-primary text-inherit font-inherit leading-inherit tracking-inherit p-2 resize-none overflow-hidden",
+            className
         )}
       />
+    );
+  }
+
+  // To handle newlines in display mode
+  if (multiline) {
+    return (
+        <span className={className}>
+            {text.split('\n').map((line, index, array) => (
+                <React.Fragment key={index}>
+                    {line}
+                    {index < array.length - 1 && <br />}
+                </React.Fragment>
+            ))}
+        </span>
     );
   }
 
