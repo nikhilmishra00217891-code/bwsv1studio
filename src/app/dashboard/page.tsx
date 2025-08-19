@@ -1,30 +1,35 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getEnrolledCoursesForUser } from "@/lib/data";
+import { getEnrolledCoursesForUser, isFaculty } from "@/lib/data";
 import type { EnrolledCourse } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { MessageSquareHeart, Play, LogOut, ArrowRight, LoaderCircle } from "lucide-react";
+import { MessageSquareHeart, Play, LogOut, ArrowRight, LoaderCircle, Edit } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [userIsFaculty, setUserIsFaculty] = useState(false);
 
   useEffect(() => {
     if (user) {
       const fetchCourses = async () => {
         setDataLoading(true);
         const courses = await getEnrolledCoursesForUser(user.uid);
+        const facultyStatus = await isFaculty(user.uid);
         setEnrolledCourses(courses);
+        setUserIsFaculty(facultyStatus);
         setDataLoading(false);
       };
       fetchCourses();
@@ -107,6 +112,24 @@ export default function DashboardPage() {
 
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
+                {userIsFaculty && (
+                  <Card className="bg-primary/10 border-primary">
+                    <CardHeader>
+                      <CardTitle className="font-headline flex items-center gap-2">
+                        <Edit className="w-5 h-5 text-primary"/>
+                        Faculty Controls
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4">Edit the content of the website.</p>
+                      <Button asChild className="w-full">
+                        <Link href="/dashboard/content">
+                          Manage Content <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
                 <Card className="bg-primary text-primary-foreground text-center p-8">
                     <CardHeader>
                         <MessageSquareHeart className="w-16 h-16 mx-auto mb-4 opacity-80" />
