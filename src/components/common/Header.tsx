@@ -64,21 +64,15 @@ export default function Header() {
         <div className="flex items-center gap-2 md:gap-4">
           <ThemeToggle />
           <div className="hidden md:flex items-center gap-4">
-            {loading ? null : user ? (
-              <>
-                 <Link href="/profile" aria-label="View Profile">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
-                    <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
-                  </Avatar>
-                </Link>
-                 <Button variant="outline" size="sm" onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                </Button>
-              </>
+             {loading ? null : user ? (
+              <Link href="/profile" aria-label="View Profile">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
+                  <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
+                </Avatar>
+              </Link>
             ) : (
-              <Button asChild>
+               <Button asChild size="sm">
                 <Link href="/login">Login / Signup</Link>
               </Button>
             )}
