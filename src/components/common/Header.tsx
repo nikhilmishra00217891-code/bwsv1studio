@@ -22,17 +22,36 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
   const pathname = usePathname();
   const isActive = pathname === href;
 
+  const content = (
+    <>
+      {Icon && <Icon className="h-6 w-6" />}
+      <span>{label}</span>
+    </>
+  )
+
+  if (onSelect) {
+      return (
+         <button
+            onClick={onSelect}
+            className={cn(
+                "transition-colors hover:text-primary flex items-center gap-4 w-full text-left",
+                isActive ? "text-primary font-semibold" : "text-foreground/80"
+            )}
+        >
+            {content}
+        </button>
+      )
+  }
+
   return (
     <Link
       href={href}
-      onClick={onSelect}
       className={cn(
         "transition-colors hover:text-primary flex items-center gap-4",
         isActive ? "text-primary font-semibold" : "text-foreground/80"
       )}
     >
-      {Icon && <Icon className="h-6 w-6" />}
-      <span>{label}</span>
+      {content}
     </Link>
   );
 };
@@ -56,13 +75,23 @@ export default function Header() {
         setIsEditMode(false); // Ensure edit mode is off if user logs out
       }
     };
-    checkFacultyStatus();
-  }, [user, setIsEditMode]);
+    if(isClient){
+      checkFacultyStatus();
+    }
+  }, [user, isClient, setIsEditMode]);
 
 
   const handleLogout = async () => {
     await signOut(auth);
     setIsSheetOpen(false);
+  }
+  
+  const handleLinkClick = (isEditToggle = false) => {
+    if (isEditToggle) {
+        setIsEditMode(!isEditMode);
+    } else {
+        setIsSheetOpen(false);
+    }
   }
 
   return (
@@ -77,25 +106,24 @@ export default function Header() {
             </Link>
         </div>
         
-        <div className="hidden md:flex flex-1 justify-center items-center gap-6">
-          <nav className="flex items-center gap-6 text-sm font-medium">
-             {navLinks.map((link) => (
-                <NavLink key={link.href} {...link} />
-              ))}
-          </nav>
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+            {navLinks.map((link) => (
+            <NavLink key={link.href} {...link} />
+            ))}
+        </nav>
+        
+        <div className="hidden md:flex flex-1 justify-center items-center">
            {isClient && isFaculty && (
-            <>
-              <div className="h-6 w-px bg-border"></div>
-              <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
                 <Label htmlFor="edit-mode-toggle" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
                   <Pencil className="w-4 h-4" />
                   Edit Mode
                 </Label>
                 <Switch id="edit-mode-toggle" checked={isEditMode} onCheckedChange={setIsEditMode} />
-              </div>
-            </>
+            </div>
           )}
         </div>
+
 
         <div className="flex items-center gap-2 md:gap-4 ml-auto">
           <ThemeToggle />
@@ -129,7 +157,7 @@ export default function Header() {
               <SheetTitle className="sr-only">Menu</SheetTitle>
                <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between p-6 border-b">
-                    <Link href="/" className="flex items-center gap-2" onClick={() => setIsSheetOpen(false)}>
+                    <Link href="/" className="flex items-center gap-2" onClick={() => handleLinkClick()}>
                         <BookOpenCheck className="h-6 w-6 text-primary" />
                         <span className="font-bold text-lg">BiharWaleSirji</span>
                     </Link>
@@ -137,21 +165,19 @@ export default function Header() {
 
                 <nav className="flex flex-col gap-4 text-lg p-6 flex-grow">
                   {navLinks.map((link) => (
-                    <NavLink key={link.href} {...link} onSelect={() => setIsSheetOpen(false)} />
+                    <NavLink key={link.href} {...link} onSelect={() => handleLinkClick()} />
                   ))}
                   <div className="my-2 border-t border-border/50"></div>
                   {user && futureNavLinks.map((link) => (
-                    <NavLink key={link.href} {...link} onSelect={() => setIsSheetOpen(false)} />
+                    <NavLink key={link.label} {...link} onSelect={() => handleLinkClick()} />
                   ))}
                   {isClient && isFaculty && (
                     <div className="flex items-center justify-between pt-4 mt-auto border-t">
-                      <Label htmlFor="mobile-edit-mode-toggle" className="text-foreground/80 flex items-center gap-2 text-base">
+                      <Label htmlFor="mobile-edit-mode-toggle" className="text-foreground/80 flex items-center gap-2 text-base cursor-pointer">
                         <Pencil className="w-5 h-5" />
                         Edit Mode
                       </Label>
-                      <Switch id="mobile-edit-mode-toggle" checked={isEditMode} onCheckedChange={(checked) => {
-                          setIsEditMode(checked);
-                      }}/>
+                      <Switch id="mobile-edit-mode-toggle" checked={isEditMode} onCheckedChange={setIsEditMode}/>
                     </div>
                   )}
                 </nav>
@@ -162,7 +188,7 @@ export default function Header() {
                         <LogOut className="mr-2 h-4 w-4" /> Logout
                     </Button>
                   ) : (
-                    <Button asChild className="w-full" onClick={() => setIsSheetOpen(false)}>
+                    <Button asChild className="w-full" onClick={() => handleLinkClick()}>
                         <Link href="/login">Login / Signup</Link>
                     </Button>
                   )}
