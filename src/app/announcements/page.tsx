@@ -11,7 +11,7 @@ import {
   updateAnnouncement,
   deleteAnnouncement,
 } from "@/lib/data/announcements";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, LoaderCircle, Send, MoreVertical, Pencil, Trash2 } from "lucide-react";
