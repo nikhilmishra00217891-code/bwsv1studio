@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { isFaculty as checkIsFaculty } from "@/lib/data";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
+import { useEditMode } from "./EditModeProvider";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -44,6 +45,8 @@ export default function Header() {
   const { user, loading } = useAuth();
   const [isFaculty, setIsFaculty] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const { isEditMode, setIsEditMode } = useEditMode();
+
 
   useEffect(() => {
     setIsClient(true);
@@ -53,10 +56,11 @@ export default function Header() {
         setIsFaculty(facultyStatus);
       } else {
         setIsFaculty(false);
+        setIsEditMode(false); // Ensure edit mode is off if user logs out
       }
     };
     checkFacultyStatus();
-  }, [user]);
+  }, [user, setIsEditMode]);
 
 
   const handleLogout = async () => {
@@ -76,6 +80,15 @@ export default function Header() {
         </div>
         
         <div className="hidden md:flex flex-1 justify-center items-center gap-6">
+           {isClient && isFaculty && (
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="edit-mode-toggle" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
+                <Pencil className="w-4 h-4" />
+                Edit Mode
+              </Label>
+              <Switch id="edit-mode-toggle" checked={isEditMode} onCheckedChange={setIsEditMode} />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 md:gap-4 ml-auto">
@@ -124,11 +137,11 @@ export default function Header() {
                   {user && <NavLink href="/profile" label="Profile" />}
                   {isClient && isFaculty && (
                     <div className="flex items-center justify-between pt-4 mt-4 border-t">
-                      <Label htmlFor="edit-mode-toggle" className="text-foreground/80 flex items-center gap-2">
+                      <Label htmlFor="mobile-edit-mode-toggle" className="text-foreground/80 flex items-center gap-2">
                         <Pencil className="w-5 h-5" />
                         Edit Mode
                       </Label>
-                      <Switch id="edit-mode-toggle" />
+                      <Switch id="mobile-edit-mode-toggle" checked={isEditMode} onCheckedChange={setIsEditMode}/>
                     </div>
                   )}
                 </nav>

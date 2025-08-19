@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
+import { getTextContent } from '@/lib/data';
+import { EditableText } from '../common/EditableText';
 
 interface HeroContent {
     heroTitle: string;
@@ -20,47 +22,23 @@ const DEFAULT_CONTENT: HeroContent = {
 };
 
 export default function Hero() {
-  const [content, setContent] = useState<HeroContent>(DEFAULT_CONTENT);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    const unsub = onSnapshot(doc(db, "siteContent", "hero"), (doc) => {
-        if (doc.exists()) {
-            setContent(doc.data() as HeroContent);
-        } else {
-            setContent(DEFAULT_CONTENT);
-        }
-        setLoading(false);
-    }, (error) => {
-        console.error("Error fetching hero content:", error);
-        setContent(DEFAULT_CONTENT);
-        setLoading(false);
-    });
-
-    return () => unsub();
-  }, []);
-
-
   return (
     <section className="bg-card/50">
       <div className="container mx-auto px-6 py-24 md:py-32 text-center">
         <div className="max-w-4xl mx-auto">
-          {loading ? (
-            <>
-              <Skeleton className="h-16 w-3/4 mx-auto" />
-              <Skeleton className="h-6 w-full max-w-2xl mx-auto mt-6" />
-            </>
-          ) : (
-            <>
-              <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight text-primary">
-                {content?.heroTitle}
-              </h1>
-              <p className="mt-6 text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto">
-                {content?.heroSubtitle}
-              </p>
-            </>
-          )}
+            <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tight text-primary">
+                <EditableText
+                    contentId="heroTitle"
+                    defaultValue={DEFAULT_CONTENT.heroTitle}
+                />
+            </h1>
+            <p className="mt-6 text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto">
+                <EditableText
+                    contentId="heroSubtitle"
+                    defaultValue={DEFAULT_CONTENT.heroSubtitle}
+                    multiline
+                />
+            </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button asChild size="lg" className="w-full sm:w-auto">
               <Link href="/courses">

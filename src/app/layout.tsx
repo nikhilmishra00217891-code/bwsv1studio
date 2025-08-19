@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import AiMentorWidget from "@/components/common/AiMentorWidget";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/common/ThemeProvider";
+import { EditModeProvider } from "@/components/common/EditModeProvider";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -35,13 +36,15 @@ export default function RootLayout({
           themes={["light", "dark", "proudshe"]}
         >
           <AuthProvider>
-            <div className="flex min-h-screen flex-col">
-              <Header />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </div>
-            <AiMentorWidget />
-            <Toaster />
+            <EditModeProvider>
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </div>
+              <AiMentorWidget />
+              <Toaster />
+            </EditModeProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
