@@ -24,9 +24,21 @@ export default function Hero() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // For now, we are just using default content. 
-    // This will be replaced with logic to fetch from Firestore.
-    setLoading(false);
+    setLoading(true);
+    const unsub = onSnapshot(doc(db, "siteContent", "hero"), (doc) => {
+        if (doc.exists()) {
+            setContent(doc.data() as HeroContent);
+        } else {
+            setContent(DEFAULT_CONTENT);
+        }
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching hero content:", error);
+        setContent(DEFAULT_CONTENT);
+        setLoading(false);
+    });
+
+    return () => unsub();
   }, []);
 
 

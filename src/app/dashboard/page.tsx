@@ -56,9 +56,11 @@ export default function DashboardPage() {
             <h1 className="text-4xl md:text-5xl font-bold font-headline">Welcome back, {user.displayName || 'Chintu'}!</h1>
             <p className="text-lg text-muted-foreground mt-2">Ready to continue your learning journey?</p>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" /> Logout
-          </Button>
+          <div className="flex items-center gap-4">
+             <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" /> Logout
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
