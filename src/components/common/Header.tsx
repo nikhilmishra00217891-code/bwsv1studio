@@ -11,6 +11,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { ThemeToggle } from "./ThemeToggle";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -61,6 +62,7 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
+           <ThemeToggle />
           <div className="hidden md:flex items-center gap-2">
             {loading ? null : user ? (
               <>
