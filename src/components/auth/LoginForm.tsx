@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { KeyRound, Mail, User as UserIcon, LoaderCircle, Sparkles } from "lucide-react";
+import { KeyRound, Mail, User as UserIcon, LoaderCircle, Sparkles, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { createUserProfile } from "@/lib/data";
@@ -134,4 +134,148 @@ export function LoginForm() {
         toast({ title: "Welcome back!" });
         router.push("/dashboard");
       }
-    } catch (error: any).
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: isSignUp ? "Sign Up Failed" : "Login Failed",
+        description: error.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Card className={cn("w-full max-w-md transition-all duration-500", isFacultyMode && "border-primary shadow-lg shadow-primary/20")}>
+        <form onSubmit={handleSubmit}>
+          <CardHeader className="text-center">
+            {isFacultyMode ? (
+                <>
+                 <Sparkles className="w-10 h-10 mx-auto text-primary animate-pulse"/>
+                 <CardTitle className="text-2xl font-headline">Faculty Portal</CardTitle>
+                 <CardDescription>Enter the realm of creators.</CardDescription>
+                </>
+            ) : (
+                <>
+                <CardTitle className="text-2xl font-headline">{isSignUp ? "Create an Account" : "Welcome Back"}</CardTitle>
+                <CardDescription>
+                    {isSignUp ? "Join our family to start your journey." : "Sign in to access your dashboard."}
+                </CardDescription>
+                </>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-4">
+             {isSignUp && (
+              <div className="relative">
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            )}
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10"
+                required
+              />
+            </div>
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10"
+                required
+              />
+            </div>
+             {isSignUp && isFacultyMode && (
+                <div className="relative">
+                    <LockKeyhole className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                        id="secretKey"
+                        type="password"
+                        placeholder="Secret Key"
+                        value={secretKey}
+                        onChange={(e) => setSecretKey(e.target.value)}
+                        className="pl-10"
+                        required
+                    />
+                </div>
+            )}
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <LoaderCircle className="animate-spin" />
+              ) : isSignUp ? "Sign Up" : "Login"}
+            </Button>
+            <div className="text-sm text-center text-muted-foreground">
+              {isSignUp ? (
+                <>
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setIsSignUp(false)}
+                    className="text-primary hover:underline font-semibold"
+                  >
+                    Login
+                  </button>
+                </>
+              ) : (
+                <>
+                  Don't have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setIsSignUp(true)}
+                    className="text-primary hover:underline font-semibold"
+                  >
+                    Sign Up
+                  </button>
+                </>
+              )}
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
+
+      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center text-2xl font-headline">Ready to Revolutionize?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Confirm your commitment to change the face of education.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center">
+             <Button variant="outline" onClick={() => {
+                setShowConfirmation(false);
+                setIsLoading(false);
+                setFacultyUser(null);
+             }}>
+                Cancel
+             </Button>
+            <Button onClick={handleFacultySignup} disabled={isLoading}>
+              {isLoading ? <LoaderCircle className="animate-spin" /> : "Confirm"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
