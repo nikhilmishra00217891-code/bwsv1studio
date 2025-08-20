@@ -27,11 +27,13 @@ import {
   CheckCircle2,
   Clock,
   Heart,
+  LoaderCircle,
   PlayCircle,
   Video,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Course } from "@/types";
+import { cn } from "@/lib/utils";
 
 const CourseHero = ({ course }: { course: Course }) => (
     <div className="relative bg-card/50 rounded-xl overflow-hidden p-6 md:p-8 border border-primary/20 shadow-lg shadow-primary/10">
@@ -141,22 +143,33 @@ const CourseCurriculum = ({ course }: { course: Course }) => (
 
 export default function SingleCoursePage({ params }: { params: { courseId: string }}) {
   const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCourse = async () => {
+        setLoading(true);
         const courseData = await getCourseById(params.courseId);
         if (courseData) {
             setCourse(courseData);
         } else {
             notFound();
         }
+        setLoading(false);
     }
     fetchCourse();
   }, [params.courseId]);
 
+  if (loading) {
+    return (
+        <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
+  
   if (!course) {
-    // You can return a loader here
-    return <div>Loading...</div>;
+      // This will be handled by notFound() but as a fallback
+      return <div className="text-center py-20">Course not found.</div>
   }
 
   return (
