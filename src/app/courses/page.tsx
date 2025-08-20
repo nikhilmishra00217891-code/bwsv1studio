@@ -29,6 +29,8 @@ export default function CoursesPage() {
       if (user) {
         facultyStatus = await isFaculty(user.uid);
         setUserIsFaculty(facultyStatus);
+      } else {
+        setUserIsFaculty(false);
       }
       const fetchedCourses = await getCourses(facultyStatus);
       setCourses(fetchedCourses);
