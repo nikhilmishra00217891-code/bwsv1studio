@@ -124,7 +124,7 @@ function CoursePageClient({ course }: { course: Course }) {
               <div className="bg-card rounded-lg overflow-hidden border aspect-video">
                   <iframe
                     className="w-full h-full"
-                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?si=FihpS4bjYgM475w5&amp;controls=0&amp;autoplay=1&amp;mute=1&amp;loop=1&amp;playlist=dQw4w9WgXcQ"
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?si=FihpS4bjYgM475w5&amp;controls=0&amp;loop=1&amp;playlist=dQw4w9WgXcQ"
                     title="YouTube video player"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen>
