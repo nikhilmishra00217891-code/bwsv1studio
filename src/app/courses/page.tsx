@@ -1,17 +1,72 @@
 
-import { getCourses } from "@/lib/data";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getCourses, createCourse, isFaculty } from "@/lib/data";
 import { CourseList } from "@/components/courses/CourseList";
-import type { Metadata } from "next";
+import { useAuth } from '@/components/auth/AuthProvider';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, LoaderCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import type { Course } from '@/types';
 
-export const metadata: Metadata = {
-    title: "All Courses - BiharWaleSirji",
-    description: "Browse all our available courses and start your learning journey.",
-}
 
-// This page now acts as a directory of all available courses.
-// Clicking on a course will navigate to the new dynamic course page.
-export default async function CoursesPage() {
-  const courses = await getCourses();
+export default function CoursesPage() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [userIsFaculty, setUserIsFaculty] = useState(false);
+
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchCoursesAndCheckFaculty = async () => {
+      setLoading(true);
+      let facultyStatus = false;
+      if (user) {
+        facultyStatus = await isFaculty(user.uid);
+        setUserIsFaculty(facultyStatus);
+      }
+      const fetchedCourses = await getCourses(facultyStatus);
+      setCourses(fetchedCourses);
+      setLoading(false);
+    };
+
+    if (!authLoading) {
+      fetchCoursesAndCheckFaculty();
+    }
+  }, [user, authLoading]);
+
+  const handleCreateCourse = async () => {
+    setIsCreating(true);
+    try {
+      const newCourseId = await createCourse();
+      toast({
+        title: "Course Created!",
+        description: "Your new course placeholder is ready.",
+      });
+      router.push(`/courses/${newCourseId}`);
+    } catch (error) {
+      console.error("Failed to create course", error);
+      toast({
+        variant: "destructive",
+        title: "Creation Failed",
+        description: "Could not create the course.",
+      });
+      setIsCreating(false);
+    }
+  };
+  
+  if (loading || authLoading) {
+    return (
+        <div className="flex justify-center items-center h-[calc(100vh-8rem)]">
+            <LoaderCircle className="w-12 h-12 animate-spin text-primary" />
+        </div>
+    )
+  }
 
   return (
     <div className="bg-background">
@@ -21,9 +76,26 @@ export default async function CoursesPage() {
           <p className="text-lg text-muted-foreground mt-3 max-w-2xl mx-auto">
             Find the right course to help you achieve your academic goals. We are with you at every step.
           </p>
+           {userIsFaculty && (
+            <div className="mt-8">
+              <Button onClick={handleCreateCourse} disabled={isCreating}>
+                {isCreating ? (
+                  <>
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Create New Course
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
-        {/* CourseList will now link to the dynamic pages */}
-        <CourseList courses={courses} />
+        
+        <CourseList courses={courses} isFaculty={userIsFaculty} />
       </div>
     </div>
   );

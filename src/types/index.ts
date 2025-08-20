@@ -17,6 +17,7 @@ export interface Course {
   mentorName: string;
   description: string;
   lessons: Lesson[];
+  isActive: boolean;
 }
 
 export interface Testimonial {

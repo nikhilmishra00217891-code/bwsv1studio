@@ -1,5 +1,5 @@
 
-import { getCourseById } from "@/lib/data";
+import { getCourseById, isFaculty as checkIsFaculty } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +27,32 @@ import {
   Heart,
   PlayCircle,
   Video,
+  Eye,
+  EyeOff,
+  Trash2,
+  Pencil,
+  LoaderCircle,
 } from "lucide-react";
 import type { Course } from "@/types";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { deleteCourse, updateCourse } from "@/lib/data";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 // This is now a Server Component responsible for fetching data
 export default async function SingleCoursePage({ params }: { params: { courseId: string }}) {
@@ -40,14 +64,106 @@ export default async function SingleCoursePage({ params }: { params: { courseId:
 
   return (
     <div className="animate-fade-in">
-        <CoursePageClient course={course} />
+        <CoursePageClient courseData={course} />
     </div>
   );
 }
 
 // All client-side logic is moved into this new component
-function CoursePageClient({ course }: { course: Course }) {
+function CoursePageClient({ courseData }: { courseData: Course }) {
   'use client';
+
+  const [course, setCourse] = useState(courseData);
+  const { user, loading: authLoading } = useAuth();
+  const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkFaculty = async () => {
+      if (user) {
+        const facultyStatus = await checkIsFaculty(user.uid);
+        setIsCurrentUserFaculty(facultyStatus);
+      }
+    };
+    if (!authLoading) {
+      checkFaculty();
+    }
+  }, [user, authLoading]);
+
+  const handleActiveToggle = async (isActive: boolean) => {
+    try {
+      await updateCourse(course.id, { isActive });
+      setCourse({ ...course, isActive });
+      toast({
+        title: "Course Updated",
+        description: `Course is now ${isActive ? "active" : "inactive"}.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: "Could not change the course status.",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+        await deleteCourse(course.id);
+        toast({
+            title: "Course Deleted",
+            description: "The course has been permanently removed.",
+        });
+        router.push("/courses");
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Deletion Failed",
+            description: "Could not delete the course.",
+        });
+    }
+  }
+
+  const CourseFacultyControls = () => (
+    <Card className="mb-8 border-primary/30">
+      <CardHeader>
+        <CardTitle>Faculty Controls</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col sm:flex-row items-center gap-6">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="active-mode"
+            checked={course.isActive}
+            onCheckedChange={handleActiveToggle}
+          />
+          <Label htmlFor="active-mode" className="flex items-center gap-2">
+            {course.isActive ? (
+              <><Eye className="w-4 h-4" /> Active</>
+            ) : (
+              <><EyeOff className="w-4 h-4" /> Inactive</>
+            )}
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline"><Pencil className="mr-2 w-4 h-4" /> Edit Course</Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="destructive"><Trash2 className="mr-2 w-4 h-4" /> Delete</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                <AlertDialogDescription>This will permanently delete the course and all its content. This action cannot be undone.</AlertDialogDescription>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className={cn(buttonVariants({variant: "destructive"}))}>Delete Course</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   const CourseHero = ({ course }: { course: Course }) => (
     <div className="relative bg-card/50 rounded-xl overflow-hidden p-6 md:p-8 border border-primary/20 shadow-lg shadow-primary/10">
@@ -124,7 +240,7 @@ function CoursePageClient({ course }: { course: Course }) {
               <div className="bg-card rounded-lg overflow-hidden border aspect-video">
                   <iframe
                     className="w-full h-full"
-                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?si=FihpS4bjYgM475w5&amp;controls=0&amp;loop=1&amp;playlist=dQw4w9WgXcQ"
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?si=FihpS4bjYgM475w5"
                     title="YouTube video player"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen>
@@ -141,7 +257,8 @@ function CoursePageClient({ course }: { course: Course }) {
       <div>
           <h3 className="text-2xl font-bold font-headline mb-4">Course Curriculum</h3>
           <Accordion type="multiple" className="w-full space-y-3">
-               {course.lessons.map((lesson, index) => (
+               {course.lessons && course.lessons.length > 0 ? (
+                course.lessons.map((lesson, index) => (
                   <AccordionItem value={`item-${index}`} key={lesson.id} className="bg-card rounded-lg border-b-0">
                       <AccordionTrigger className="p-4 hover:no-underline font-semibold">
                            <div className="flex items-center gap-4">
@@ -156,13 +273,25 @@ function CoursePageClient({ course }: { course: Course }) {
                           </Button>
                       </AccordionContent>
                   </AccordionItem>
-              ))}
+              ))
+              ) : (
+                <Card>
+                    <CardContent className="p-6 text-center text-muted-foreground">
+                        No lessons have been added to this course yet.
+                    </CardContent>
+                </Card>
+              )}
           </Accordion>
       </div>
   )
+  
+  if (authLoading) {
+    return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
+  }
 
   return (
     <div className="container mx-auto px-6 py-12 md:py-20 space-y-12">
+        {isCurrentUserFaculty && <CourseFacultyControls />}
         <CourseHero course={course} />
         <CourseMentor course={course} />
 

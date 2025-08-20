@@ -1,70 +1,79 @@
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 
-export const courses: Course[] = [
-  {
-    id: "jee-physics-01",
-    title: "JEE Physics: Complete Mechanics",
-    category: "Physics",
-    isFree: true,
+export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> => {
+  const coursesCol = collection(db, "courses");
+  
+  let q;
+  if (isFaculty) {
+    // Faculty sees all courses
+    q = query(coursesCol, orderBy("title"));
+  } else {
+    // Students only see active courses
+    q = query(coursesCol, where("isActive", "==", true), orderBy("title"));
+  }
+
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) {
+    return [];
+  }
+  return snapshot.docs.map(
+    (doc) => ({ id: doc.id, ...doc.data() } as Course)
+  );
+};
+
+export const getCourseById = async (id: string): Promise<Course | null> => {
+    const courseDocRef = doc(db, 'courses', id);
+    const docSnap = await getDoc(courseDocRef);
+
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as Course;
+    } else {
+        return null;
+    }
+}
+
+export const createCourse = async (): Promise<string> => {
+  const coursesCol = collection(db, "courses");
+  const newCourseData = {
+    title: "New Course Title",
+    category: "New Category",
+    description: "A brief description of your new course. You can edit this later.",
+    mentorName: "Faculty Name",
     thumbnail: "https://placehold.co/600x400.png",
-    mentorName: "Rahul Bhaiya",
-    description: "Master the fundamentals of mechanics for your JEE preparation. This course covers everything from Kinematics to Rotational Motion with a focus on problem-solving techniques.",
-    lessons: [
-      { id: "l1", title: "Introduction to Kinematics", type: "video", duration: "25 min" },
-      { id: "l2", title: "Newton's Laws of Motion", type: "video", duration: "45 min" },
-      { id: "l3", title: "Work, Energy, and Power", type: "video", duration: "35 min" },
-      { id: "l4", title: "Rotational Motion", type: "pdf", duration: "50 pages" },
-    ],
-  },
-  {
-    id: "neet-biology-01",
-    title: "NEET Biology: Human Physiology",
-    category: "Biology",
     isFree: false,
-    thumbnail: "https://placehold.co/600x400.png",
-    mentorName: "Priya Didi",
-    description: "A deep dive into the systems of the human body. This course is crucial for any NEET aspirant aiming for a top score in Biology.",
-    lessons: [
-      { id: "l1", title: "Digestive System", type: "video", duration: "40 min" },
-      { id: "l2", title: "Respiratory System", type: "video", duration: "30 min" },
-      { id: "l3", title: "Nervous System - Part 1", type: "video", duration: "50 min" },
-      { id: "l4", title: "Endocrine System", type: "pdf", duration: "60 pages" },
-    ],
-  },
-  {
-    id: "jee-chemistry-01",
-    title: "JEE Advanced: Organic Chemistry",
-    category: "Chemistry",
-    isFree: false,
-    thumbnail: "https://placehold.co/600x400.png",
-    mentorName: "Amit Bhaiya",
-    description: "Tackle the most challenging topics in Organic Chemistry. This course is designed to build a strong conceptual foundation for JEE Advanced.",
-    lessons: [
-        { id: "l1", title: "General Organic Chemistry (GOC)", type: "video", duration: "60 min" },
-        { id: "l2", title: "Reaction Mechanisms", type: "video", duration: "55 min" },
-        { id: "l3", title: "Biomolecules", type: "pdf", duration: "45 pages" },
-    ],
-  },
-    {
-    id: "bpsc-history-01",
-    title: "BPSC Special: History of Bihar",
-    category: "History",
-    isFree: true,
-    thumbnail: "https://placehold.co/600x400.png",
-    mentorName: "Sanjay Sir",
-    description: "Explore the rich history of Bihar, from ancient empires to its role in modern India. A must-know for all BPSC aspirants.",
-    lessons: [
-        { id: "l1", title: "Ancient History of Bihar", type: "video", duration: "45 min" },
-        { id: "l2", title: "Bihar during the Freedom Struggle", type: "video", duration: "50 min" },
-        { id: "l3", title: "Post-Independence Bihar", type: "pdf", duration: "40 pages" },
-    ],
-  },
-];
+    isActive: false, // Default to inactive
+    lessons: [],
+  };
+  const docRef = await addDoc(coursesCol, newCourseData);
+  return docRef.id;
+}
+
+export const updateCourse = async (courseId: string, data: Partial<Course>) => {
+    const courseRef = doc(db, "courses", courseId);
+    await updateDoc(courseRef, data);
+}
+
+export const deleteCourse = async (courseId: string) => {
+    const courseRef = doc(db, "courses", courseId);
+    await deleteDoc(courseRef);
+}
+
+
+export const getFeaturedCourses = async (): Promise<Course[]> => {
+  const coursesCol = collection(db, "courses");
+  const q = query(coursesCol, where("isActive", "==", true));
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) return [];
+  
+  const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+  return courses.slice(0, 3); // In a real app, you might have a 'isFeatured' flag
+};
 
 export const testimonials: Testimonial[] = [
   {
@@ -90,41 +99,7 @@ export const testimonials: Testimonial[] = [
   },
 ];
 
-// This is mock data. In a real app, this would be fetched from a user's collection in Firestore.
-const mockEnrolledCourses: EnrolledCourse[] = [
-    {
-        courseId: "jee-physics-01",
-        title: "JEE Physics: Complete Mechanics",
-        category: "Physics",
-        thumbnail: "https://placehold.co/600x400.png",
-        progress: 75,
-    },
-    {
-        courseId: "jee-chemistry-01",
-        title: "JEE Advanced: Organic Chemistry",
-        category: "Chemistry",
-        thumbnail: "https://placehold.co/600x400.png",
-        progress: 40,
-    }
-]
-
-export const getCourses = async (): Promise<Course[]> => {
-  // In a real app, you might fetch this from Firestore
-  return courses;
-};
-
-export const getCourseById = async (id: string): Promise<Course | undefined> => {
-    // In a real app, you might fetch this from Firestore
-    return courses.find(course => course.id === id);
-}
-
-export const getFeaturedCourses = async (): Promise<Course[]> => {
-    // In a real app, you might fetch this from Firestore
-  return courses.slice(0, 3);
-};
-
 export const getTestimonials = async (): Promise<Testimonial[]> => {
-    // In a real app, you might fetch this from Firestore
   return testimonials;
 };
 
@@ -141,7 +116,7 @@ export const getEnrolledCoursesForUser = async (userId: string): Promise<Enrolle
       if(enrolledCourseIds.length === 0) return [];
 
       const enrolledCoursesPromises = enrolledCourseIds.map(async (courseId) => {
-        const courseData = courses.find(c => c.id === courseId); // finding from mock data for now
+        const courseData = await getCourseById(courseId);
         const progress = userData.progress?.[courseId] || 0;
         if(courseData) {
           return {
