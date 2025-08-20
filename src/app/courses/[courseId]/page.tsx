@@ -73,6 +73,8 @@ function CoursePageClient({ courseData }: { courseData: Course }) {
       if (user) {
         const facultyStatus = await checkIsFaculty(user.uid);
         setIsCurrentUserFaculty(facultyStatus);
+      } else {
+        setIsCurrentUserFaculty(false);
       }
     };
     if (!authLoading) {
