@@ -1,7 +1,7 @@
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 
@@ -24,6 +24,34 @@ export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> 
   return snapshot.docs.map(
     (doc) => ({ id: doc.id, ...doc.data() } as Course)
   );
+};
+
+export const listenForCourses = (isFaculty: boolean, callback: (courses: Course[]) => void): () => void => {
+    const coursesCol = collection(db, "courses");
+    
+    let q;
+    if (isFaculty) {
+        // Faculty sees all courses, ordered by title
+        q = query(coursesCol, orderBy("title"));
+    } else {
+        // Students only see active courses, ordered by title
+        q = query(coursesCol, where("isActive", "==", true), orderBy("title"));
+    }
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+            callback([]);
+            return;
+        }
+        const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+        callback(courses);
+    }, (error) => {
+        console.error("Error listening for courses:", error);
+        // You might want to handle errors in the callback as well
+        callback([]);
+    });
+
+    return unsubscribe; // Return the unsubscribe function
 };
 
 export const getCourseById = async (id: string): Promise<Course | null> => {

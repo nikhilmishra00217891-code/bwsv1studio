@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCourses, createCourse, isFaculty } from "@/lib/data";
+import { listenForCourses, createCourse, isFaculty } from "@/lib/data";
 import { CourseList } from "@/components/courses/CourseList";
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -23,23 +23,32 @@ export default function CoursesPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchCoursesAndCheckFaculty = async () => {
-      setLoading(true);
-      let facultyStatus = false;
-      if (user) {
-        facultyStatus = await isFaculty(user.uid);
-        setUserIsFaculty(facultyStatus);
-      } else {
-        setUserIsFaculty(false);
-      }
-      const fetchedCourses = await getCourses(facultyStatus);
-      setCourses(fetchedCourses);
-      setLoading(false);
-    };
+    if (authLoading) return;
 
-    if (!authLoading) {
-      fetchCoursesAndCheckFaculty();
+    let unsubscribe: () => void;
+
+    const checkFacultyAndSubscribe = async () => {
+        setLoading(true);
+        let facultyStatus = false;
+        if (user) {
+            facultyStatus = await isFaculty(user.uid);
+        }
+        setUserIsFaculty(facultyStatus);
+
+        unsubscribe = listenForCourses(facultyStatus, (fetchedCourses) => {
+            setCourses(fetchedCourses);
+            setLoading(false);
+        });
     }
+
+    checkFacultyAndSubscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+        if (unsubscribe) {
+            unsubscribe();
+        }
+    };
   }, [user, authLoading]);
 
   const handleCreateCourse = async () => {
