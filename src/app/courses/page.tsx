@@ -23,31 +23,33 @@ export default function CoursesPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading) {
+      return;
+    }
 
     let unsubscribe: () => void;
 
     const checkFacultyAndSubscribe = async () => {
-        setLoading(true);
-        let facultyStatus = false;
-        if (user) {
-            facultyStatus = await isFaculty(user.uid);
-        }
-        setUserIsFaculty(facultyStatus);
+      let facultyStatus = false;
+      if (user) {
+        facultyStatus = await isFaculty(user.uid);
+      }
+      setUserIsFaculty(facultyStatus);
 
-        unsubscribe = listenForCourses(facultyStatus, (fetchedCourses) => {
-            setCourses(fetchedCourses);
-            setLoading(false);
-        });
-    }
+      // Now that faculty status is known, subscribe to the appropriate course list
+      unsubscribe = listenForCourses(facultyStatus, (fetchedCourses) => {
+        setCourses(fetchedCourses);
+        setLoading(false);
+      });
+    };
 
     checkFacultyAndSubscribe();
 
-    // Cleanup subscription on unmount
+    // Cleanup subscription on component unmount
     return () => {
-        if (unsubscribe) {
-            unsubscribe();
-        }
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [user, authLoading]);
 

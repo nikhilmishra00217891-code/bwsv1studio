@@ -23,6 +23,17 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   BookText,
   CheckCircle2,
   Clock,
@@ -42,31 +53,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 
 // This is the client component that contains all interactive logic.
-function CoursePageClient({ courseData }: { courseData: Course }) {
-  const [course, setCourse] = useState(courseData);
+function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
+  const [course, setCourse] = useState(initialCourse);
   const { user, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
-    setCourse(courseData);
-  }, [courseData]);
+    setCourse(initialCourse);
+  }, [initialCourse]);
 
   useEffect(() => {
     const checkFaculty = async () => {
@@ -311,7 +311,7 @@ export default async function SingleCoursePage({ params }: { params: { courseId:
 
     return (
         <div className="animate-fade-in">
-            <CoursePageClient courseData={course} />
+            <CoursePageClient initialCourse={course} />
         </div>
     );
 }
