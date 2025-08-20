@@ -58,36 +58,43 @@ import {
 import { cn } from "@/lib/utils";
 
 // This is now a Server Component responsible for fetching data
-export default function SingleCoursePage({ params }: { params: { courseId: string }}) {
-  const [course, setCourse] = useState<Course | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function SingleCoursePageWrapper({ params }: { params: { courseId: string }}) {
+    const [course, setCourse] = useState<Course | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
 
-  useEffect(() => {
-    const fetchCourse = async () => {
-      const courseData = await getCourseById(params.courseId);
-      if (courseData) {
-        setCourse(courseData);
-      } else {
-        notFound();
-      }
-      setLoading(false);
-    };
-    fetchCourse();
-  }, [params.courseId]);
+    useEffect(() => {
+        const fetchCourse = async () => {
+            try {
+                const courseData = await getCourseById(params.courseId);
+                if (courseData) {
+                    setCourse(courseData);
+                } else {
+                    setError(true);
+                }
+            } catch (e) {
+                console.error(e);
+                setError(true);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCourse();
+    }, [params.courseId]);
 
-  if (loading) {
-    return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
-  }
-  
-  if (!course) {
-    return notFound();
-  }
+    if (loading) {
+        return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
+    }
+    
+    if (error || !course) {
+        return notFound();
+    }
 
-  return (
-    <div className="animate-fade-in">
-        <CoursePageClient courseData={course} />
-    </div>
-  );
+    return (
+        <div className="animate-fade-in">
+            <CoursePageClient courseData={course} />
+        </div>
+    );
 }
 
 // All client-side logic is moved into this new component
@@ -328,3 +335,5 @@ function CoursePageClient({ courseData }: { courseData: Course }) {
     </div>
   );
 }
+
+    
