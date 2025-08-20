@@ -1,6 +1,8 @@
 
-import { getCourseById } from "@/lib/data";
-import { notFound } from "next/navigation";
+'use client';
+
+import { getCourseById, updateCourse, deleteCourse, isFaculty as checkIsFaculty } from "@/lib/data";
+import { notFound, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,10 +40,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, updateCourse, isFaculty as checkIsFaculty } from "@/lib/data";
-import { useRouter } from "next/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,26 +55,53 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
+// This wrapper handles fetching the initial data on the server.
+export default function SingleCoursePageWrapper({ params }: { params: { courseId: string } }) {
+    const [course, setCourse] = useState<Course | null>(null);
+    const [loading, setLoading] = useState(true);
+    const { toast } = useToast();
 
-// This is now a Server Component responsible for fetching data
-export default async function SingleCoursePage({ params }: { params: { courseId: string }}) {
-    const courseData = await getCourseById(params.courseId);
-    
-    if (!courseData) {
+    useEffect(() => {
+        const fetchCourse = async () => {
+            try {
+                const courseData = await getCourseById(params.courseId);
+                if (courseData) {
+                    setCourse(courseData);
+                } else {
+                    notFound();
+                }
+            } catch (error) {
+                console.error("Failed to fetch course:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Could not fetch course data.",
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCourse();
+    }, [params.courseId, toast]);
+
+    if (loading) {
+        return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
+    }
+
+    if (!course) {
         return notFound();
     }
 
     return (
         <div className="animate-fade-in">
-            <CoursePageClient courseData={courseData} />
+            <CoursePageClient courseData={course} />
         </div>
     );
 }
 
+
 // All client-side logic is moved into this new component
 function CoursePageClient({ courseData }: { courseData: Course }) {
-  'use client';
-  
   const [course, setCourse] = useState(courseData);
   const { user, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
@@ -311,4 +338,6 @@ function CoursePageClient({ courseData }: { courseData: Course }) {
     </div>
   );
 }
+    
+
     
