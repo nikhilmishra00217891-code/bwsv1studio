@@ -172,7 +172,7 @@ export default function SingleCoursePage({ params }: { params: { courseId: strin
               </TabsList>
               <TabsContent value="overview" className="mt-8">
                 <CourseOverview course={course} />
-              </Tabs.Content>
+              </TabsContent>
               <TabsContent value="curriculum" className="mt-8">
                 <CourseCurriculum course={course} />
               </TabsContent>
