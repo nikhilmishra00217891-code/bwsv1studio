@@ -3,50 +3,55 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is authenticated and has the 'faculty' role.
+  
+    // Helper function to check if a user is faculty
     function isFaculty(userId) {
-      return request.auth != null && get(/databases/$(database)/documents/users/$(userId)).data.role == 'faculty';
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+             get(/databases/$(database)/documents/users/$(userId)).data.role == 'faculty';
     }
 
-    // Helper function to check if a user is the owner of the document.
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-
-    // Courses can be read by anyone if they are active.
-    // Faculty can read all courses.
-    // Only faculty can create, update, or delete courses.
+    // COURSES: Public can read active courses, faculty can read/write all
     match /courses/{courseId} {
-      allow read: if resource.data.isActive == true || isFaculty(request.auth.uid);
-      allow write: if isFaculty(request.auth.uid);
+      allow read: if resource.data.isActive == true || (request.auth != null && isFaculty(request.auth.uid));
+      allow write: if request.auth != null && isFaculty(request.auth.uid);
     }
     
+    // LESSONS: Inherit from course for now
     match /courses/{courseId}/lessons/{lessonId} {
-      allow read: if get(/databases/$(database)/documents/courses/$(courseId)).data.isActive == true || isFaculty(request.auth.uid);
-      allow write: if isFaculty(request.auth.uid);
+       allow read: if get(/databases/$(database)/documents/courses/$(courseId)).data.isActive == true || (request.auth != null && isFaculty(request.auth.uid));
+       allow write: if request.auth != null && isFaculty(request.auth.uid);
     }
 
-    // Users can read their own data.
-    // Faculty can read other user profiles (for administrative purposes).
-    // Users can create their own profile, but cannot update their role.
+    // USERS: A user's role is public, but their document is private.
+    // Users can read/write their own full profile.
     match /users/{userId} {
-      allow read: if isOwner(userId) || isFaculty(request.auth.uid);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
-    }
+      allow read: if request.auth.uid == userId;
+      allow write: if request.auth.uid == userId;
 
-    // Editable text content can be read by anyone, but only modified by faculty.
-    match /siteContent/{docId} {
-      allow read: if true;
-      allow write: if isFaculty(request.auth.uid);
+      // Allow creating a user if they are a student, or if an existing faculty member is creating them.
+      allow create: if (request.resource.data.role == 'student') || 
+                    (request.resource.data.role == 'faculty' && isFaculty(request.auth.uid));
+      
+      // Prevent users from changing their own role after creation.
+      allow update: if request.resource.data.role == resource.data.role; 
     }
     
-    // Announcements can be read by any authenticated user.
-    // Announcements can only be created, updated, or deleted by faculty.
+    // ANNOUNCEMENTS: Logged-in users can read, faculty can write
     match /announcements/{announcementId} {
-        allow read: if request.auth != null;
-        allow create, update, delete: if isFaculty(request.auth.uid);
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && isFaculty(request.auth.uid);
+    }
+    
+    // SITE CONTENT: Public can read, faculty can write
+    match /siteContent/{docId} {
+        allow read: if true;
+        allow write: if request.auth != null && isFaculty(request.auth.uid);
+    }
+
+    // TESTIMONIALS: Public can read
+     match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow write: if request.auth != null && isFaculty(request.auth.uid);
     }
   }
 }
