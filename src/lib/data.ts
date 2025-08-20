@@ -76,6 +76,7 @@ export const createCourse = async (): Promise<string> => {
     isFree: false,
     isActive: false, // Default to inactive
     lessons: [],
+    youtubeLink: "",
   };
   const docRef = await addDoc(coursesCol, newCourseData);
   return docRef.id;

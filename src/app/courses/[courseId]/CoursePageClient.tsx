@@ -19,6 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Accordion,
@@ -49,23 +51,49 @@ import {
   Trash2,
   Pencil,
   LoaderCircle,
-  ArrowLeft,
+  Youtube,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+const extractYouTubeVideoId = (url: string): string | null => {
+    if (!url) return null;
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname === 'youtu.be') {
+            return urlObj.pathname.slice(1);
+        }
+        if (urlObj.hostname.includes('youtube.com')) {
+            const videoId = urlObj.searchParams.get('v');
+            if (videoId) {
+                return videoId;
+            }
+        }
+    } catch (e) {
+        // Fallback for invalid URLs, just in case
+        const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+    }
+    return null;
+}
 
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
   const [course, setCourse] = useState(initialCourse);
   const { user, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(initialCourse);
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
     setCourse(initialCourse);
+    setEditingCourse(initialCourse);
   }, [initialCourse]);
 
   useEffect(() => {
@@ -81,6 +109,29 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       checkFaculty();
     }
   }, [user, authLoading]);
+  
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditingCourse(prev => ({ ...prev, [name]: value }));
+  }
+  
+  const handleEditSubmit = async () => {
+    try {
+      await updateCourse(course.id, editingCourse);
+      setCourse(editingCourse); // Update the main course state
+      toast({
+        title: "Course Updated",
+        description: "Your changes have been saved successfully.",
+      });
+      setIsEditing(false);
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: "Could not save your changes.",
+      });
+    }
+  }
 
   const handleActiveToggle = async (isActive: boolean) => {
     try {
@@ -137,7 +188,9 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           </Label>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline"><Pencil className="mr-2 w-4 h-4" /> Edit Course</Button>
+          <Button variant="outline" onClick={() => setIsEditing(true)}>
+            <Pencil className="mr-2 w-4 h-4" /> Edit Course
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
                 <Button variant="destructive"><Trash2 className="mr-2 w-4 h-4" /> Delete</Button>
@@ -214,6 +267,34 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           </DialogContent>
       </Dialog>
   )
+  
+  const CourseVideo = ({ course }: { course: Course }) => {
+    const videoId = extractYouTubeVideoId(course.youtubeLink || "");
+
+    if (!videoId) {
+        return (
+            <div className="bg-card rounded-lg border aspect-video flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                    <Youtube className="w-12 h-12 mx-auto mb-2"/>
+                    <p>No video has been linked for this course yet.</p>
+                     {isCurrentUserFaculty && <p className="text-sm">(Faculty can add a link in Edit Mode)</p>}
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="bg-card rounded-lg overflow-hidden border aspect-video">
+            <iframe
+                className="w-full h-full"
+                src={`https://www.youtube.com/embed/${videoId}`}
+                title="YouTube video player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen>
+            </iframe>
+        </div>
+    )
+  }
 
   const CourseOverview = ({ course }: { course: Course }) => (
       <div className="grid md:grid-cols-3 gap-8">
@@ -227,15 +308,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                </div>
           </div>
           <div className="space-y-4">
-              <div className="bg-card rounded-lg overflow-hidden border aspect-video">
-                  <iframe
-                    className="w-full h-full"
-                    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                    title="YouTube video player"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen>
-                  </iframe>
-              </div>
+              <CourseVideo course={course} />
                <Button size="lg" className="w-full !h-14 text-lg">
                   <PlayCircle className="mr-2 h-6 w-6" /> Enroll Now
               </Button>
@@ -275,13 +348,57 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       </div>
   )
   
+  const EditCourseDialog = () => (
+    <Dialog open={isEditing} onOpenChange={setIsEditing}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Edit Course Details</DialogTitle>
+          <DialogDescription>
+            Make changes to your course here. Click save when you're done.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="title" className="text-right">Title</Label>
+            <Input id="title" name="title" value={editingCourse.title} onChange={handleEditInputChange} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="category" className="text-right">Category</Label>
+            <Input id="category" name="category" value={editingCourse.category} onChange={handleEditInputChange} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="mentorName" className="text-right">Mentor</Label>
+            <Input id="mentorName" name="mentorName" value={editingCourse.mentorName} onChange={handleEditInputChange} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="youtubeLink" className="text-right">YouTube Link</Label>
+            <Input id="youtubeLink" name="youtubeLink" value={editingCourse.youtubeLink || ''} onChange={handleEditInputChange} className="col-span-3" placeholder="e.g., https://www.youtube.com/watch?v=..." />
+          </div>
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="description" className="text-right pt-2">Description</Label>
+            <Textarea id="description" name="description" value={editingCourse.description} onChange={handleEditInputChange} className="col-span-3 min-h-[120px]" />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+          <Button onClick={handleEditSubmit}>Save Changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+
   if (authLoading) {
     return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
   }
 
   return (
     <div className="container mx-auto px-6 py-12 md:py-20 space-y-12">
-      {isCurrentUserFaculty && <CourseFacultyControls />}
+      {isCurrentUserFaculty && (
+        <>
+          <CourseFacultyControls />
+          <EditCourseDialog />
+        </>
+      )}
       <CourseHero course={course} />
       <CourseMentor course={course} />
 

@@ -18,6 +18,7 @@ export interface Course {
   description: string;
   lessons: Lesson[];
   isActive: boolean;
+  youtubeLink?: string;
 }
 
 export interface Testimonial {
