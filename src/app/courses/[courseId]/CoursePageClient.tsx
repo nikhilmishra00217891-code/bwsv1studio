@@ -49,6 +49,7 @@ import {
   Trash2,
   Pencil,
   LoaderCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -280,6 +281,11 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
 
   return (
     <div className="container mx-auto px-6 py-12 md:py-20 space-y-12">
+        <Button variant="ghost" onClick={() => router.back()} className="mb-8">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Courses
+        </Button>
+
         {isCurrentUserFaculty && <CourseFacultyControls />}
         <CourseHero course={course} />
         <CourseMentor course={course} />
