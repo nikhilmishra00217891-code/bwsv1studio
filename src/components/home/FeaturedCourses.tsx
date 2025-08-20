@@ -34,7 +34,7 @@ const CourseCard = ({ course }: { course: Course }) => {
           By {course.mentorName}
         </p>
         <Button asChild variant="outline" className="mt-auto w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-            <Link href={`/courses?course=${course.id}`}>
+            <Link href={`/courses/${course.id}`}>
                 View Course
             </Link>
         </Button>

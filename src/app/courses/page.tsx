@@ -8,6 +8,8 @@ export const metadata: Metadata = {
     description: "Browse all our available courses and start your learning journey.",
 }
 
+// This page now acts as a directory of all available courses.
+// Clicking on a course will navigate to the new dynamic course page.
 export default async function CoursesPage() {
   const courses = await getCourses();
 
@@ -20,6 +22,7 @@ export default async function CoursesPage() {
             Find the right course to help you achieve your academic goals. We are with you at every step.
           </p>
         </div>
+        {/* CourseList will now link to the dynamic pages */}
         <CourseList courses={courses} />
       </div>
     </div>

@@ -89,7 +89,7 @@ export default function DashboardPage() {
                           <span className="text-sm font-semibold text-muted-foreground">{course.progress}%</span>
                         </div>
                         <Button asChild className="w-full sm:w-auto self-start">
-                          <Link href={`/courses?course=${course.courseId}`}>
+                          <Link href={`/courses/${course.courseId}`}>
                               <Play className="mr-2 h-4 w-4" /> Continue Learning
                           </Link>
                         </Button>
