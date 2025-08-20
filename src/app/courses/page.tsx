@@ -30,6 +30,7 @@ export default function CoursesPage() {
     let unsubscribe: () => void;
 
     const checkFacultyAndSubscribe = async () => {
+      setLoading(true);
       let facultyStatus = false;
       if (user) {
         facultyStatus = await isFaculty(user.uid);

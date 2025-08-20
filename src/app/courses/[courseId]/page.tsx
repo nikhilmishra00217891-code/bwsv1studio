@@ -306,7 +306,7 @@ export default async function SingleCoursePage({ params }: { params: { courseId:
     const course = await getCourseById(params.courseId);
 
     if (!course) {
-        return notFound();
+        notFound();
     }
 
     return (
