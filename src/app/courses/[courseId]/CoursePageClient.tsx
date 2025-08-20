@@ -287,7 +287,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         <div className="bg-card rounded-lg overflow-hidden border aspect-video">
             <iframe
                 className="w-full h-full"
-                src={`https://www.youtube.com/embed/${videoId}`}
+                src={`https://www.youtube.com/embed/${videoId}?rel=0`}
                 title="YouTube video player"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen>
