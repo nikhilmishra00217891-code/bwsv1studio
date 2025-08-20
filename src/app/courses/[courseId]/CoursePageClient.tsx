@@ -45,6 +45,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { EditableText } from "@/components/common/EditableText";
+import { useEditMode } from "@/components/common/EditModeProvider";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
@@ -155,7 +157,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   const [course, setCourse] = useState(initialCourse);
   const { user, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { isEditMode, setIsEditMode } = useEditMode();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -177,10 +179,10 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     }
   }, [user, authLoading]);
   
-  const handleSave = async (updatedData: Partial<Course>) => {
+  const handleSave = async (field: keyof Course, value: any) => {
     try {
-        await updateCourse(course.id, updatedData);
-        setCourse(prev => ({...prev, ...updatedData}));
+        await updateCourse(course.id, { [field]: value });
+        setCourse(prev => ({...prev, [field]: value}));
         toast({
             title: "Course Updated",
             description: `Your changes have been saved.`
@@ -249,7 +251,16 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             )}
           </Label>
         </div>
-         <Button onClick={() => setIsEditDialogOpen(true)}><Pencil className="mr-2 w-4 h-4" /> Edit Course</Button>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="edit-mode"
+            checked={isEditMode}
+            onCheckedChange={setIsEditMode}
+          />
+          <Label htmlFor="edit-mode" className="flex items-center gap-2">
+            <Pencil className="w-4 h-4" /> Edit Page
+          </Label>
+        </div>
         <div className="flex items-center gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -280,9 +291,9 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         />
         <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
             <div className="md:col-span-2">
-                 <Badge variant="secondary" className="mb-2">{course.category}</Badge>
+                 <EditableText as="badge" contentId={`course_category_${course.id}`} defaultValue={course.category} onSave={(val) => handleSave('category', val)} />
                 <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">
-                   {course.title}
+                   <EditableText contentId={`course_title_${course.id}`} defaultValue={course.title} onSave={(val) => handleSave('title', val)} />
                 </h1>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
@@ -303,7 +314,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
               </Avatar>
               <div className="flex-grow text-center sm:text-left">
                   <h3 className="text-xl font-bold font-headline">
-                    {course.mentorName} & Team
+                    <EditableText contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} onSave={(val) => handleSave('mentorName', val)} /> & Team
                   </h3>
                   <p className="text-muted-foreground">Your Mentors</p>
               </div>
@@ -335,13 +346,26 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   const CourseVideo = ({ course }: { course: Course }) => {
     const videoId = extractYouTubeVideoId(course.youtubeLink || "");
     
+    if(isEditMode) {
+      return (
+        <div className="space-y-2">
+          <Label htmlFor="youtubeLink">YouTube Video Link</Label>
+          <Input 
+            id="youtubeLink"
+            defaultValue={course.youtubeLink} 
+            onBlur={(e) => handleSave('youtubeLink', e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=..."
+          />
+        </div>
+      )
+    }
+    
     if (!videoId) {
         return (
             <div className="bg-card rounded-lg border aspect-video flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                     <Youtube className="w-12 h-12 mx-auto mb-2"/>
                     <p>No video has been linked for this course yet.</p>
-                     {isCurrentUserFaculty && <p className="text-sm">(Click 'Edit Course' to add a link)</p>}
                 </div>
             </div>
         )
@@ -364,9 +388,9 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
                <h3 className="text-2xl font-bold font-headline">About This Course</h3>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {course.description}
-                </p>
+                <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    <EditableText multiline contentId={`course_description_${course.id}`} defaultValue={course.description} onSave={(val) => handleSave('description', val)} />
+                </div>
                <div className="flex flex-wrap gap-2">
                   <Badge>Exam Prep 🔥</Badge>
                   <Badge>Conceptual 🧠</Badge>
@@ -436,7 +460,8 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           <CourseCurriculum course={course} />
         </TabsContent>
       </Tabs>
-       {isCurrentUserFaculty && <CourseEditDialog course={course} isOpen={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} onSave={handleSave} />}
     </div>
   );
 }
+
+    

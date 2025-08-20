@@ -130,17 +130,7 @@ export default function Header() {
             ))}
         </nav>
         
-        <div className="hidden md:flex flex-1 justify-center items-center">
-           {isClient && isFaculty && (
-            <div className="flex items-center space-x-2">
-                <Label htmlFor="edit-mode-toggle" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
-                  <Pencil className="w-4 h-4" />
-                  Edit Mode
-                </Label>
-                <Switch id="edit-mode-toggle" checked={isEditMode} onCheckedChange={setIsEditMode} />
-            </div>
-          )}
-        </div>
+        <div className="flex-1"></div>
 
 
         <div className="flex items-center gap-2 md:gap-4 ml-auto">
@@ -233,3 +223,5 @@ const futureNavLinks = [
   { href: "#", label: "Warzone", icon: Swords },
   { href: "#", label: "Parivartan Chamber", icon: BrainCircuit },
 ];
+
+    
