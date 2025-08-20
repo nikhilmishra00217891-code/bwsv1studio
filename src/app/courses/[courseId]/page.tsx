@@ -142,13 +142,14 @@ const CourseCurriculum = ({ course }: { course: Course }) => (
 )
 
 export default function SingleCoursePage({ params }: { params: { courseId: string }}) {
+  const { courseId } = params;
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCourse = async () => {
         setLoading(true);
-        const courseData = await getCourseById(params.courseId);
+        const courseData = await getCourseById(courseId);
         if (courseData) {
             setCourse(courseData);
         } else {
@@ -157,7 +158,7 @@ export default function SingleCoursePage({ params }: { params: { courseId: strin
         setLoading(false);
     }
     fetchCourse();
-  }, [params.courseId]);
+  }, [courseId]);
 
   if (loading) {
     return (
