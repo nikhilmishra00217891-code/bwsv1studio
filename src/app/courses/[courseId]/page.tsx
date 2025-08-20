@@ -1,5 +1,5 @@
 
-import { getCourseById, isFaculty as checkIsFaculty } from "@/lib/data";
+import { getCourseById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Accordion,
@@ -41,7 +40,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, updateCourse } from "@/lib/data";
+import { deleteCourse, updateCourse, isFaculty as checkIsFaculty } from "@/lib/data";
 import { useRouter } from "next/navigation";
 import {
   AlertDialog,
