@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -65,12 +65,18 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
   );
 };
 
+const mainNavPaths = ["/", "/courses", "/announcements", "/about"];
+
+
 export default function Header() {
   const { user, loading } = useAuth();
   const [isFaculty, setIsFaculty] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { isEditMode, setIsEditMode } = useEditMode();
+  const router = useRouter();
+  const pathname = usePathname();
+  const showBackButton = isClient && !mainNavPaths.includes(pathname);
 
 
   useEffect(() => {
@@ -103,12 +109,19 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-7xl items-center">
         <div className="flex items-center gap-4 mr-auto">
-             <Link href="/" className="flex items-center gap-2">
-              <BookOpenCheck className="h-7 w-7 text-primary" />
-              <span className="font-bold text-xl font-headline tracking-wide">
-                BiharWaleSirji
-              </span>
-            </Link>
+             {showBackButton ? (
+                 <Button variant="ghost" size="icon" className="mr-2" onClick={() => router.back()}>
+                    <ArrowLeft />
+                    <span className="sr-only">Back</span>
+                 </Button>
+             ) : (
+                <Link href="/" className="flex items-center gap-2">
+                    <BookOpenCheck className="h-7 w-7 text-primary" />
+                    <span className="font-bold text-xl font-headline tracking-wide">
+                        BiharWaleSirji
+                    </span>
+                </Link>
+             )}
         </div>
         
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">

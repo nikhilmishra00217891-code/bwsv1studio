@@ -281,27 +281,22 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
 
   return (
     <div className="container mx-auto px-6 py-12 md:py-20 space-y-12">
-        <Button variant="ghost" onClick={() => router.back()} className="mb-8">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Courses
-        </Button>
+      {isCurrentUserFaculty && <CourseFacultyControls />}
+      <CourseHero course={course} />
+      <CourseMentor course={course} />
 
-        {isCurrentUserFaculty && <CourseFacultyControls />}
-        <CourseHero course={course} />
-        <CourseMentor course={course} />
-
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:w-1/2 mx-auto h-auto">
-            <TabsTrigger value="overview" className="py-2.5">Overview</TabsTrigger>
-            <TabsTrigger value="curriculum" className="py-2.5">Curriculum</TabsTrigger>
-          </TabsList>
-          <TabsContent value="overview" className="mt-8">
-            <CourseOverview course={course} />
-          </TabsContent>
-          <TabsContent value="curriculum" className="mt-8">
-            <CourseCurriculum course={course} />
-          </TabsContent>
-        </Tabs>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 md:w-1/2 mx-auto h-auto">
+          <TabsTrigger value="overview" className="py-2.5">Overview</TabsTrigger>
+          <TabsTrigger value="curriculum" className="py-2.5">Curriculum</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="mt-8">
+          <CourseOverview course={course} />
+        </TabsContent>
+        <TabsContent value="curriculum" className="mt-8">
+          <CourseCurriculum course={course} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
