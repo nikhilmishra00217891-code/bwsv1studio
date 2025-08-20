@@ -4,29 +4,49 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper function to check if a user is authenticated and has the 'faculty' role.
     function isFaculty(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role == 'faculty';
+      return request.auth != null && get(/databases/$(database)/documents/users/$(userId)).data.role == 'faculty';
     }
 
+    // Helper function to check if a user is the owner of the document.
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Courses can be read by anyone if they are active.
+    // Faculty can read all courses.
+    // Only faculty can create, update, or delete courses.
     match /courses/{courseId} {
-      allow read: if true;
-      allow write: if request.auth != null && isFaculty(request.auth.uid);
+      allow read: if resource.data.isActive == true || isFaculty(request.auth.uid);
+      allow write: if isFaculty(request.auth.uid);
+    }
+    
+    match /courses/{courseId}/lessons/{lessonId} {
+      allow read: if get(/databases/$(database)/documents/courses/$(courseId)).data.isActive == true || isFaculty(request.auth.uid);
+      allow write: if isFaculty(request.auth.uid);
     }
 
+    // Users can read their own data.
+    // Faculty can read other user profiles (for administrative purposes).
+    // Users can create their own profile, but cannot update their role.
     match /users/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId) || isFaculty(request.auth.uid);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
     }
 
+    // Editable text content can be read by anyone, but only modified by faculty.
     match /siteContent/{docId} {
-        allow read: if true;
-        allow write: if request.auth != null && isFaculty(request.auth.uid);
+      allow read: if true;
+      allow write: if isFaculty(request.auth.uid);
     }
-
+    
+    // Announcements can be read by any authenticated user.
+    // Announcements can only be created, updated, or deleted by faculty.
     match /announcements/{announcementId} {
-      allow read: if request.auth != null;
-      allow create, update, delete: if request.auth != null && isFaculty(request.auth.uid);
-      allow update (reactions): if request.auth != null; // Allow any authenticated user to react
+        allow read: if request.auth != null;
+        allow create, update, delete: if isFaculty(request.auth.uid);
     }
   }
 }
