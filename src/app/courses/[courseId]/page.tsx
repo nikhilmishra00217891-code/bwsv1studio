@@ -121,8 +121,14 @@ function CoursePageClient({ course }: { course: Course }) {
                </div>
           </div>
           <div className="space-y-4">
-              <div className="bg-card rounded-lg overflow-hidden border">
-                  <video src="https://placehold.co/1920x1080.mp4" muted autoPlay loop className="w-full aspect-video"></video>
+              <div className="bg-card rounded-lg overflow-hidden border aspect-video">
+                  <iframe
+                    className="w-full h-full"
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?si=FihpS4bjYgM475w5&amp;controls=0&amp;autoplay=1&amp;mute=1&amp;loop=1&amp;playlist=dQw4w9WgXcQ"
+                    title="YouTube video player"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen>
+                  </iframe>
               </div>
                <Button size="lg" className="w-full !h-14 text-lg">
                   <PlayCircle className="mr-2 h-6 w-6" /> Enroll Now
