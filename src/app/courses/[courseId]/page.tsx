@@ -40,7 +40,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useEffect, useState, use } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -55,58 +55,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
-// This wrapper handles fetching the initial data on the server.
-export default function SingleCoursePageWrapper({ params }: { params: { courseId: string } }) {
-    const [course, setCourse] = useState<Course | null>(null);
-    const [loading, setLoading] = useState(true);
-    const { toast } = useToast();
 
-    useEffect(() => {
-        const fetchCourse = async () => {
-            try {
-                const courseData = await getCourseById(params.courseId);
-                if (courseData) {
-                    setCourse(courseData);
-                } else {
-                    notFound();
-                }
-            } catch (error) {
-                console.error("Failed to fetch course:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Could not fetch course data.",
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCourse();
-    }, [params.courseId, toast]);
-
-    if (loading) {
-        return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
-    }
-
-    if (!course) {
-        return notFound();
-    }
-
-    return (
-        <div className="animate-fade-in">
-            <CoursePageClient courseData={course} />
-        </div>
-    );
-}
-
-
-// All client-side logic is moved into this new component
+// This is the client component that contains all interactive logic.
 function CoursePageClient({ courseData }: { courseData: Course }) {
   const [course, setCourse] = useState(courseData);
   const { user, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    setCourse(courseData);
+  }, [courseData]);
 
   useEffect(() => {
     const checkFaculty = async () => {
@@ -338,6 +298,18 @@ function CoursePageClient({ courseData }: { courseData: Course }) {
     </div>
   );
 }
-    
 
-    
+// This is the server component that fetches the data.
+export default async function SingleCoursePage({ params }: { params: { courseId: string } }) {
+    const course = await getCourseById(params.courseId);
+
+    if (!course) {
+        return notFound();
+    }
+
+    return (
+        <div className="animate-fade-in">
+            <CoursePageClient courseData={course} />
+        </div>
+    );
+}
