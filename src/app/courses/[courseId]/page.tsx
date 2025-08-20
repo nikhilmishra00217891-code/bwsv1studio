@@ -1,4 +1,6 @@
 
+'use client';
+
 import { getCourseById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -6,6 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Accordion,
   AccordionContent,
@@ -17,35 +27,13 @@ import {
   CheckCircle2,
   Clock,
   Heart,
-  MessageSquare,
   PlayCircle,
   Video,
 } from "lucide-react";
-import type { Metadata, ResolvingMetadata } from 'next'
+import { useEffect, useState } from "react";
+import type { Course } from "@/types";
 
-type Props = {
-  params: { courseId: string }
-}
-
-export async function generateMetadata(
-  { params }: Props,
-  parent: ResolvingMetadata
-): Promise<Metadata> {
-  const course = await getCourseById(params.courseId)
- 
-  if (!course) {
-    return {
-      title: "Course Not Found",
-    }
-  }
- 
-  return {
-    title: `${course.title} - BiharWaleSirji`,
-    description: course.description,
-  }
-}
-
-const CourseHero = ({ course }: { course: NonNullable<Awaited<ReturnType<typeof getCourseById>>> }) => (
+const CourseHero = ({ course }: { course: Course }) => (
     <div className="relative bg-card/50 rounded-xl overflow-hidden p-6 md:p-8 border border-primary/20 shadow-lg shadow-primary/10">
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10"></div>
         <Image 
@@ -61,32 +49,51 @@ const CourseHero = ({ course }: { course: NonNullable<Awaited<ReturnType<typeof 
                  <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">{course.title}</h1>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total ⏳</span></div>
-                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{course.lessons.length} lessons 📖</span></div>
-                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <span>25% complete ✅</span></div>
+                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total</span></div>
+                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{course.lessons.length} lessons</span></div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <span>25% complete</span></div>
             </div>
         </div>
     </div>
 )
 
-const CourseMentor = ({ course }: { course: NonNullable<Awaited<ReturnType<typeof getCourseById>>> }) => (
-    <div className="bg-card p-6 rounded-lg flex flex-col sm:flex-row items-center gap-6">
-        <Avatar className="w-20 h-20 border-4 border-primary">
-            <AvatarImage src="https://placehold.co/100x100.png" />
-            <AvatarFallback>{course.mentorName.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="flex-grow text-center sm:text-left">
-            <h3 className="text-xl font-bold font-headline">{course.mentorName}</h3>
-            <p className="text-muted-foreground">Your Mentor</p>
+const CourseMentor = ({ course }: { course: Course }) => (
+    <Dialog>
+        <div className="bg-card p-6 rounded-lg flex flex-col sm:flex-row items-center gap-6">
+            <Avatar className="w-20 h-20 border-4 border-primary">
+                <AvatarImage src="https://placehold.co/100x100.png" />
+                <AvatarFallback>{course.mentorName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-grow text-center sm:text-left">
+                <h3 className="text-xl font-bold font-headline">{course.mentorName}</h3>
+                <p className="text-muted-foreground">Your Mentor</p>
+            </div>
+            <div className="flex gap-2">
+                <DialogTrigger asChild>
+                    <Button variant="outline">Know Your Mentor</Button>
+                </DialogTrigger>
+                <Button variant="outline" size="icon"><Heart /></Button>
+            </div>
         </div>
-        <div className="flex gap-2">
-            <Button variant="outline">Know Your Mentor</Button>
-            <Button variant="outline" size="icon"><Heart /></Button>
-        </div>
-    </div>
+        <DialogContent>
+            <DialogHeader className="items-center text-center">
+                 <Avatar className="w-24 h-24 border-4 border-primary">
+                    <AvatarImage src="https://placehold.co/100x100.png" />
+                    <AvatarFallback>{course.mentorName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <DialogTitle className="text-2xl font-headline">{course.mentorName}</DialogTitle>
+                <DialogDescription>Your guide, friend, and mentor on this journey.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 text-center text-muted-foreground">
+                <p>
+                    With over a decade of experience in making physics feel like a story, {course.mentorName} is here to ensure you not only crack your exams but also fall in love with the subject. They believe in the 'Parivaar' philosophy - teaching with the care of an elder brother.
+                </p>
+            </div>
+        </DialogContent>
+    </Dialog>
 )
 
-const CourseOverview = ({ course }: { course: NonNullable<Awaited<ReturnType<typeof getCourseById>>> }) => (
+const CourseOverview = ({ course }: { course: Course }) => (
     <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
              <h3 className="text-2xl font-bold font-headline">About This Course</h3>
@@ -108,8 +115,7 @@ const CourseOverview = ({ course }: { course: NonNullable<Awaited<ReturnType<typ
     </div>
 )
 
-
-const CourseCurriculum = ({ course }: { course: NonNullable<Awaited<ReturnType<typeof getCourseById>>> }) => (
+const CourseCurriculum = ({ course }: { course: Course }) => (
     <div>
         <h3 className="text-2xl font-bold font-headline mb-4">Course Curriculum</h3>
         <Accordion type="multiple" className="w-full space-y-3">
@@ -133,11 +139,24 @@ const CourseCurriculum = ({ course }: { course: NonNullable<Awaited<ReturnType<t
     </div>
 )
 
-export default async function SingleCoursePage({ params }: Props) {
-  const course = await getCourseById(params.courseId);
+export default function SingleCoursePage({ params }: { params: { courseId: string }}) {
+  const [course, setCourse] = useState<Course | null>(null);
+
+  useEffect(() => {
+    const fetchCourse = async () => {
+        const courseData = await getCourseById(params.courseId);
+        if (courseData) {
+            setCourse(courseData);
+        } else {
+            notFound();
+        }
+    }
+    fetchCourse();
+  }, [params.courseId]);
 
   if (!course) {
-    notFound();
+    // You can return a loader here
+    return <div>Loading...</div>;
   }
 
   return (
@@ -153,7 +172,7 @@ export default async function SingleCoursePage({ params }: Props) {
               </TabsList>
               <TabsContent value="overview" className="mt-8">
                 <CourseOverview course={course} />
-              </TabsContent>
+              </Tabs.Content>
               <TabsContent value="curriculum" className="mt-8">
                 <CourseCurriculum course={course} />
               </TabsContent>
@@ -162,5 +181,3 @@ export default async function SingleCoursePage({ params }: Props) {
     </div>
   );
 }
-
-    
