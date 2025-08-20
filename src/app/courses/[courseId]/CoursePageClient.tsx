@@ -43,8 +43,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
@@ -440,5 +440,3 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     </div>
   );
 }
-
-    
