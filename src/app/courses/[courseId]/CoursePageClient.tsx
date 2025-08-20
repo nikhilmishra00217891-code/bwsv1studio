@@ -5,29 +5,15 @@ import type { Course } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, updateCourse, isFaculty as checkIsFaculty } from "@/lib/data";
+import { deleteCourse, updateCourse, isFaculty as checkIsFaculty, saveTextContent, getTextContent } from "@/lib/data";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -51,14 +37,14 @@ import {
   Trash2,
   LoaderCircle,
   Youtube,
-  Edit,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useEditMode } from "@/components/common/EditModeProvider";
+import { EditableText } from "@/components/common/EditableText";
+import { Textarea } from "@/components/ui/textarea";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
@@ -82,87 +68,18 @@ const extractYouTubeVideoId = (url: string): string | null => {
     return null;
 }
 
-function EditCourseDialog({ course, onSave, children }: { course: Course, onSave: (updatedCourse: Partial<Course>) => void, children: React.ReactNode }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [formData, setFormData] = useState({
-        title: course.title,
-        category: course.category,
-        description: course.description,
-        mentorName: course.mentorName,
-        youtubeLink: course.youtubeLink || '',
-    });
-
-    useEffect(() => {
-        setFormData({
-            title: course.title,
-            category: course.category,
-            description: course.description,
-            mentorName: course.mentorName,
-            youtubeLink: course.youtubeLink || '',
-        });
-    }, [course]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { id, value } = e.target;
-        setFormData(prev => ({...prev, [id]: value}));
-    }
-
-    const handleSave = () => {
-        onSave(formData);
-        setIsOpen(false);
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                {children}
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
-                <DialogHeader>
-                    <DialogTitle>Edit Course Details</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="title" className="text-right">Title</Label>
-                        <Input id="title" value={formData.title} onChange={handleChange} className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="category" className="text-right">Category</Label>
-                        <Input id="category" value={formData.category} onChange={handleChange} className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="mentorName" className="text-right">Mentor</Label>
-                        <Input id="mentorName" value={formData.mentorName} onChange={handleChange} className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="youtubeLink" className="text-right">YouTube Link</Label>
-                        <Input id="youtubeLink" value={formData.youtubeLink} onChange={handleChange} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-start gap-4">
-                        <Label htmlFor="description" className="text-right pt-2">Description</Label>
-                        <Textarea id="description" value={formData.description} onChange={handleChange} className="col-span-3 min-h-[120px]" />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button onClick={handleSave}>Save Changes</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
   const [course, setCourse] = useState(initialCourse);
   const { user, loading: authLoading } = useAuth();
+  const { isEditMode } = useEditMode();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
+  const [youtubeLink, setYoutubeLink] = useState(initialCourse.youtubeLink || "");
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
     setCourse(initialCourse);
+    setYoutubeLink(initialCourse.youtubeLink || "");
   }, [initialCourse]);
 
   useEffect(() => {
@@ -179,15 +96,17 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     }
   }, [user, authLoading]);
   
-  const handleSave = async (updatedData: Partial<Course>) => {
+  const handleSave = async (field: keyof Course, value: any) => {
+    if (course[field] === value) return; // No change
     try {
-        await updateCourse(course.id, updatedData);
-        setCourse(prev => ({...prev, ...updatedData}));
+        await updateCourse(course.id, { [field]: value });
+        setCourse(prev => ({...prev, [field]: value}));
         toast({
             title: "Course Updated",
-            description: "Your changes have been saved."
+            description: `The ${field} has been saved.`
         });
     } catch(error) {
+        console.error("Update error:", error);
         toast({
             variant: "destructive",
             title: "Update Failed",
@@ -251,9 +170,6 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           </Label>
         </div>
         <div className="flex items-center gap-2">
-           <EditCourseDialog course={course} onSave={handleSave}>
-               <Button variant="outline"><Edit className="mr-2 w-4 h-4"/> Edit Course</Button>
-            </EditCourseDialog>
           <AlertDialog>
             <AlertDialogTrigger asChild>
                 <Button variant="destructive"><Trash2 className="mr-2 w-4 h-4" /> Delete Course</Button>
@@ -283,8 +199,20 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         />
         <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
             <div className="md:col-span-2">
-                <Badge variant="secondary" className="mb-2">{course.category}</Badge>
-                <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">{course.title}</h1>
+                <EditableText
+                  contentId={`course-category-${course.id}`}
+                  defaultValue={course.category}
+                  onSave={(value) => handleSave('category', value)}
+                  as="badge"
+                  className="mb-2"
+                />
+                <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">
+                    <EditableText
+                        contentId={`course-title-${course.id}`}
+                        defaultValue={course.title}
+                        onSave={(value) => handleSave('title', value)}
+                    />
+                </h1>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total</span></div>
@@ -303,7 +231,14 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                   <AvatarFallback>{course.mentorName.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-grow text-center sm:text-left">
-                  <h3 className="text-xl font-bold font-headline">{course.mentorName} & Team</h3>
+                  <h3 className="text-xl font-bold font-headline">
+                    <EditableText
+                        contentId={`course-mentor-${course.id}`}
+                        defaultValue={course.mentorName}
+                        onSave={(value) => handleSave('mentorName', value)}
+                    />
+                     & Team
+                  </h3>
                   <p className="text-muted-foreground">Your Mentors</p>
               </div>
               <div className="flex gap-2">
@@ -332,15 +267,31 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   )
   
   const CourseVideo = ({ course }: { course: Course }) => {
-    const videoId = extractYouTubeVideoId(course.youtubeLink || "");
+    const videoId = extractYouTubeVideoId(youtubeLink);
 
+    if (isEditMode) {
+      return (
+        <div className="space-y-2">
+          <Label htmlFor="youtubeLink">YouTube Video Link</Label>
+          <Textarea
+            id="youtubeLink"
+            placeholder="Paste YouTube link here..."
+            value={youtubeLink}
+            onChange={(e) => setYoutubeLink(e.target.value)}
+            onBlur={() => handleSave('youtubeLink', youtubeLink)}
+            className="bg-primary/10 border-2 border-dashed border-primary/50"
+          />
+        </div>
+      );
+    }
+    
     if (!videoId) {
         return (
             <div className="bg-card rounded-lg border aspect-video flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                     <Youtube className="w-12 h-12 mx-auto mb-2"/>
                     <p>No video has been linked for this course yet.</p>
-                     {isCurrentUserFaculty && <p className="text-sm">(Faculty can add a link in Edit Mode)</p>}
+                     {isCurrentUserFaculty && <p className="text-sm">(Enter Edit Mode to add a link)</p>}
                 </div>
             </div>
         )
@@ -363,7 +314,13 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
                <h3 className="text-2xl font-bold font-headline">About This Course</h3>
-               <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{course.description}</p>
+                <EditableText
+                    contentId={`course-desc-${course.id}`}
+                    defaultValue={course.description}
+                    onSave={(value) => handleSave('description', value)}
+                    multiline
+                    className="text-muted-foreground leading-relaxed whitespace-pre-wrap block"
+                />
                <div className="flex flex-wrap gap-2">
                   <Badge>Exam Prep 🔥</Badge>
                   <Badge>Conceptual 🧠</Badge>
@@ -436,3 +393,5 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     </div>
   );
 }
+
+    
