@@ -3,7 +3,7 @@
 
 import type { Course } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { deleteCourse, updateCourse, isFaculty as checkIsFaculty } from "@/lib/data";
 import { useRouter } from "next/navigation";
@@ -15,10 +15,11 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Accordion,
@@ -49,7 +50,7 @@ import {
   Trash2,
   LoaderCircle,
   Youtube,
-  Save,
+  Edit,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -57,7 +58,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useEditMode } from "@/components/common/EditModeProvider";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
@@ -81,88 +81,77 @@ const extractYouTubeVideoId = (url: string): string | null => {
     return null;
 }
 
-// A generic, reusable inline editor component
-function InlineEditor<T extends HTMLInputElement | HTMLTextAreaElement>({
-  value,
-  onSave,
-  children,
-  className,
-  as: Component = 'input',
-  multiline = false
-}: {
-  value: string;
-  onSave: (newValue: string) => void;
-  children: React.ReactNode;
-  className?: string;
-  as?: 'input' | 'textarea';
-  multiline?: boolean;
-}) {
-  const { isEditMode } = useEditMode();
-  const [internalValue, setInternalValue] = useState(value);
-  const [isEditing, setIsEditing] = useState(false);
-  const inputRef = useRef<T>(null);
-  
-  useEffect(() => {
-    setInternalValue(value);
-  }, [value]);
-  
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-        inputRef.current.focus();
-        if (Component === 'textarea' && multiline) {
-             inputRef.current.style.height = 'auto';
-             inputRef.current.style.height = `${inputRef.current.scrollHeight}px`;
-        }
+function EditCourseDialog({ course, onSave, children }: { course: Course, onSave: (updatedCourse: Partial<Course>) => void, children: React.ReactNode }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        title: course.title,
+        category: course.category,
+        description: course.description,
+        mentorName: course.mentorName,
+        youtubeLink: course.youtubeLink || '',
+    });
+
+    useEffect(() => {
+        setFormData({
+            title: course.title,
+            category: course.category,
+            description: course.description,
+            mentorName: course.mentorName,
+            youtubeLink: course.youtubeLink || '',
+        });
+    }, [course]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({...prev, [id]: value}));
     }
-  }, [isEditing, Component, multiline]);
 
-  const handleSave = () => {
-    if (internalValue !== value) {
-      onSave(internalValue);
+    const handleSave = () => {
+        onSave(formData);
+        setIsOpen(false);
     }
-    setIsEditing(false);
-  };
-  
-  const handleKeyDown = (e: React.KeyboardEvent<T>) => {
-      if (e.key === 'Enter' && !multiline) {
-          e.preventDefault();
-          handleSave();
-      }
-      if (e.key === 'Escape') {
-          setInternalValue(value);
-          setIsEditing(false);
-      }
-  }
 
-  if (isEditMode) {
-    return isEditing ? (
-      <Component
-        ref={inputRef as any}
-        value={internalValue}
-        onChange={(e: React.ChangeEvent<T>) => {
-            setInternalValue(e.target.value);
-             if (Component === 'textarea' && multiline) {
-                (e.target as HTMLTextAreaElement).style.height = 'auto';
-                (e.target as HTMLTextAreaElement).style.height = `${e.target.scrollHeight}px`;
-            }
-        }}
-        onBlur={handleSave}
-        onKeyDown={handleKeyDown}
-        className={cn(
-            Component === 'input' ? "w-full bg-primary/10 border-2 border-dashed border-primary/50 focus-visible:ring-primary text-inherit font-inherit leading-inherit tracking-inherit p-1 rounded-md" : "w-full bg-primary/10 border-2 border-dashed border-primary/50 focus-visible:ring-primary text-inherit font-inherit leading-inherit tracking-inherit p-2 resize-none overflow-hidden rounded-md",
-            className
-        )}
-      />
-    ) : (
-      <div onClick={() => setIsEditing(true)} className={cn("cursor-pointer border-2 border-dashed border-transparent hover:border-primary/50 p-1 rounded-md", className)}>
-        {children}
-      </div>
-    );
-  }
-
-  return <>{children}</>;
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                {children}
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[625px]">
+                <DialogHeader>
+                    <DialogTitle>Edit Course Details</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="title" className="text-right">Title</Label>
+                        <Input id="title" value={formData.title} onChange={handleChange} className="col-span-3" />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="category" className="text-right">Category</Label>
+                        <Input id="category" value={formData.category} onChange={handleChange} className="col-span-3" />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="mentorName" className="text-right">Mentor</Label>
+                        <Input id="mentorName" value={formData.mentorName} onChange={handleChange} className="col-span-3" />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="youtubeLink" className="text-right">YouTube Link</Label>
+                        <Input id="youtubeLink" value={formData.youtubeLink} onChange={handleChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label htmlFor="description" className="text-right pt-2">Description</Label>
+                        <Textarea id="description" value={formData.description} onChange={handleChange} className="col-span-3 min-h-[120px]" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleSave}>Save Changes</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
 }
-
 
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
   const [course, setCourse] = useState(initialCourse);
@@ -189,13 +178,13 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     }
   }, [user, authLoading]);
   
-  const handleSave = async (field: keyof Course, value: any) => {
+  const handleSave = async (updatedData: Partial<Course>) => {
     try {
-        await updateCourse(course.id, { [field]: value });
-        setCourse(prev => ({...prev, [field]: value}));
+        await updateCourse(course.id, updatedData);
+        setCourse(prev => ({...prev, ...updatedData}));
         toast({
             title: "Course Updated",
-            description: `The ${field} has been saved.`
+            description: "Your changes have been saved."
         });
     } catch(error) {
         toast({
@@ -261,9 +250,12 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           </Label>
         </div>
         <div className="flex items-center gap-2">
+           <EditCourseDialog course={course} onSave={handleSave}>
+               <Button variant="outline"><Edit className="mr-2 w-4 h-4"/> Edit Course</Button>
+            </EditCourseDialog>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-                <Button variant="destructive"><Trash2 className="mr-2 w-4 h-4" /> Delete</Button>
+                <Button variant="destructive"><Trash2 className="mr-2 w-4 h-4" /> Delete Course</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
@@ -290,12 +282,8 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         />
         <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
             <div className="md:col-span-2">
-                 <InlineEditor value={course.category} onSave={(val) => handleSave('category', val)}>
-                    <Badge variant="secondary" className="mb-2">{course.category}</Badge>
-                 </InlineEditor>
-                 <InlineEditor value={course.title} onSave={(val) => handleSave('title', val)}>
-                    <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">{course.title}</h1>
-                 </InlineEditor>
+                <Badge variant="secondary" className="mb-2">{course.category}</Badge>
+                <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">{course.title}</h1>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total</span></div>
@@ -314,9 +302,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                   <AvatarFallback>{course.mentorName.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-grow text-center sm:text-left">
-                  <InlineEditor value={course.mentorName} onSave={(val) => handleSave('mentorName', val)}>
-                    <h3 className="text-xl font-bold font-headline">{course.mentorName} & Team</h3>
-                  </InlineEditor>
+                  <h3 className="text-xl font-bold font-headline">{course.mentorName} & Team</h3>
                   <p className="text-muted-foreground">Your Mentors</p>
               </div>
               <div className="flex gap-2">
@@ -345,23 +331,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   )
   
   const CourseVideo = ({ course }: { course: Course }) => {
-    const { isEditMode } = useEditMode();
     const videoId = extractYouTubeVideoId(course.youtubeLink || "");
-
-    if (isEditMode) {
-        return (
-            <div className="space-y-2">
-                <Label htmlFor="youtubeLink">YouTube Video Link</Label>
-                <Input 
-                    id="youtubeLink"
-                    placeholder="Paste a YouTube link here..."
-                    defaultValue={course.youtubeLink}
-                    onBlur={(e) => handleSave('youtubeLink', e.target.value)}
-                />
-                 {!videoId && course.youtubeLink && <p className="text-sm text-destructive">Invalid YouTube URL.</p>}
-            </div>
-        )
-    }
 
     if (!videoId) {
         return (
@@ -392,9 +362,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
                <h3 className="text-2xl font-bold font-headline">About This Course</h3>
-               <InlineEditor value={course.description} onSave={(val) => handleSave('description', val)} as="textarea" multiline>
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{course.description}</p>
-               </InlineEditor>
+               <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{course.description}</p>
                <div className="flex flex-wrap gap-2">
                   <Badge>Exam Prep 🔥</Badge>
                   <Badge>Conceptual 🧠</Badge>
@@ -467,5 +435,3 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     </div>
   );
 }
-
-    
