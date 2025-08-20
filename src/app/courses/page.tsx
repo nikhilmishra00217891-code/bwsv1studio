@@ -23,21 +23,20 @@ export default function CoursesPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (authLoading) {
-      return;
-    }
+    // This effect handles data fetching and real-time updates.
+    if (authLoading) return;
 
     let unsubscribe: () => void;
 
     const checkFacultyAndSubscribe = async () => {
-      setLoading(true);
       let facultyStatus = false;
       if (user) {
         facultyStatus = await isFaculty(user.uid);
       }
       setUserIsFaculty(facultyStatus);
 
-      // Now that faculty status is known, subscribe to the appropriate course list
+      // Now that faculty status is known, subscribe to the appropriate course list.
+      // This listener will handle the initial fetch and subsequent real-time updates.
       unsubscribe = listenForCourses(facultyStatus, (fetchedCourses) => {
         setCourses(fetchedCourses);
         setLoading(false);
