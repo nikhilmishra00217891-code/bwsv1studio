@@ -1,6 +1,4 @@
 
-'use client';
-
 import { getCourseById, isFaculty as checkIsFaculty } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -15,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Accordion,
@@ -57,48 +56,26 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
+
 // This is now a Server Component responsible for fetching data
-export default function SingleCoursePageWrapper({ params }: { params: { courseId: string }}) {
-    const [course, setCourse] = useState<Course | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
-
-    useEffect(() => {
-        const fetchCourse = async () => {
-            try {
-                const courseData = await getCourseById(params.courseId);
-                if (courseData) {
-                    setCourse(courseData);
-                } else {
-                    setError(true);
-                }
-            } catch (e) {
-                console.error(e);
-                setError(true);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCourse();
-    }, [params.courseId]);
-
-    if (loading) {
-        return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
-    }
+export default async function SingleCoursePage({ params }: { params: { courseId: string }}) {
+    const courseData = await getCourseById(params.courseId);
     
-    if (error || !course) {
+    if (!courseData) {
         return notFound();
     }
 
     return (
         <div className="animate-fade-in">
-            <CoursePageClient courseData={course} />
+            <CoursePageClient courseData={courseData} />
         </div>
     );
 }
 
 // All client-side logic is moved into this new component
 function CoursePageClient({ courseData }: { courseData: Course }) {
+  'use client';
+  
   const [course, setCourse] = useState(courseData);
   const { user, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
@@ -335,5 +312,4 @@ function CoursePageClient({ courseData }: { courseData: Course }) {
     </div>
   );
 }
-
     
