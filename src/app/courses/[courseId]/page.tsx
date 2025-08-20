@@ -1,11 +1,13 @@
 
+'use client';
+
 import { getCourseById, isFaculty as checkIsFaculty } from "@/lib/data";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -55,11 +57,29 @@ import {
 import { cn } from "@/lib/utils";
 
 // This is now a Server Component responsible for fetching data
-export default async function SingleCoursePage({ params }: { params: { courseId: string }}) {
-  const course = await getCourseById(params.courseId);
+export default function SingleCoursePage({ params }: { params: { courseId: string }}) {
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchCourse = async () => {
+      const courseData = await getCourseById(params.courseId);
+      if (courseData) {
+        setCourse(courseData);
+      } else {
+        notFound();
+      }
+      setLoading(false);
+    };
+    fetchCourse();
+  }, [params.courseId]);
+
+  if (loading) {
+    return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
+  }
+  
   if (!course) {
-    notFound();
+    return notFound();
   }
 
   return (
@@ -71,8 +91,6 @@ export default async function SingleCoursePage({ params }: { params: { courseId:
 
 // All client-side logic is moved into this new component
 function CoursePageClient({ courseData }: { courseData: Course }) {
-  'use client';
-
   const [course, setCourse] = useState(courseData);
   const { user, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
@@ -171,9 +189,8 @@ function CoursePageClient({ courseData }: { courseData: Course }) {
         <Image 
             src={course.thumbnail}
             alt={course.title}
-            layout="fill"
-            objectFit="cover"
-            className="opacity-20"
+            fill
+            className="object-cover opacity-20"
         />
         <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
             <div className="md:col-span-2">
@@ -240,7 +257,7 @@ function CoursePageClient({ courseData }: { courseData: Course }) {
               <div className="bg-card rounded-lg overflow-hidden border aspect-video">
                   <iframe
                     className="w-full h-full"
-                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?si=FihpS4bjYgM475w5"
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
                     title="YouTube video player"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen>
