@@ -20,6 +20,7 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Accordion,
@@ -32,7 +33,7 @@ import {
     AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
-    AlertDialogDescription,
+    AlertDialogDescription as AlertDialogDescriptionComponent,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
@@ -259,7 +260,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
-                <AlertDialogDescription>This will permanently delete the course and all its content. This action cannot be undone.</AlertDialogDescription>
+                <AlertDialogDescriptionComponent>This will permanently delete the course and all its content. This action cannot be undone.</AlertDialogDescriptionComponent>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDelete} className={cn(buttonVariants({variant: "destructive"}))}>Delete Course</AlertDialogAction>
