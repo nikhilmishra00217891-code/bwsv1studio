@@ -81,12 +81,12 @@ function CoursePageClient({ course }: { course: Course }) {
                   <AvatarFallback>{course.mentorName.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-grow text-center sm:text-left">
-                  <h3 className="text-xl font-bold font-headline">{course.mentorName}</h3>
-                  <p className="text-muted-foreground">Your Mentor</p>
+                  <h3 className="text-xl font-bold font-headline">{course.mentorName} & Team</h3>
+                  <p className="text-muted-foreground">Your Mentors</p>
               </div>
               <div className="flex gap-2">
                   <DialogTrigger asChild>
-                      <Button variant="outline">Know Your Mentor</Button>
+                      <Button variant="outline">Know Your Mentors</Button>
                   </DialogTrigger>
                   <Button variant="outline" size="icon"><Heart /></Button>
               </div>
@@ -97,12 +97,12 @@ function CoursePageClient({ course }: { course: Course }) {
                       <AvatarImage src="https://placehold.co/100x100.png" />
                       <AvatarFallback>{course.mentorName.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <DialogTitle className="text-2xl font-headline">{course.mentorName}</DialogTitle>
-                  <DialogDescription>Your guide, friend, and mentor on this journey.</DialogDescription>
+                  <DialogTitle className="text-2xl font-headline">{course.mentorName} & Team</DialogTitle>
+                  <DialogDescription>Your guides, friends, and mentors on this journey.</DialogDescription>
               </DialogHeader>
               <div className="py-4 text-center text-muted-foreground">
                   <p>
-                      With over a decade of experience in making physics feel like a story, {course.mentorName} is here to ensure you not only crack your exams but also fall in love with the subject. They believe in the 'Parivaar' philosophy - teaching with the care of an elder brother.
+                      With over a decade of experience in making complex topics feel like a story, our mentors are here to ensure you not only crack your exams but also fall in love with the subject. We believe in the 'Parivaar' philosophy - teaching with the care of an elder brother.
                   </p>
               </div>
           </DialogContent>
