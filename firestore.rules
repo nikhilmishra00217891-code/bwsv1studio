@@ -1,37 +1,12 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is faculty
-    function isFaculty() {
-      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'faculty';
-    }
-
-    // Courses are publicly readable, but only faculty can write.
-    match /courses/{courseId} {
-      allow read: if true;
-      allow write: if isFaculty();
-    }
-    
-    // Announcements are publicly readable, but only faculty can write.
-    match /announcements/{announcementId} {
-      allow read: if true;
-      allow write: if isFaculty();
-      // Allow any logged-in user to react (update the reactions array)
-      allow update: if request.auth != null;
-    }
-
-    // Site content is publicly readable, but only faculty can write.
-    match /siteContent/{docId} {
-      allow read: if true;
-      allow write: if isFaculty();
-    }
-
-    // User data can only be read or written by the owner of the document.
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // TEMPORARY: Allow all reads and writes to all collections to diagnose permission issues.
+    // This is NOT secure and should be replaced before production.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
