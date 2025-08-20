@@ -46,7 +46,7 @@ export async function generateMetadata(
 }
 
 const CourseHero = ({ course }: { course: NonNullable<Awaited<ReturnType<typeof getCourseById>>> }) => (
-    <div className="relative bg-card/50 rounded-xl overflow-hidden p-6 md:p-8">
+    <div className="relative bg-card/50 rounded-xl overflow-hidden p-6 md:p-8 border border-primary/20 shadow-lg shadow-primary/10">
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10"></div>
         <Image 
             src={course.thumbnail}
@@ -61,9 +61,9 @@ const CourseHero = ({ course }: { course: NonNullable<Awaited<ReturnType<typeof 
                  <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">{course.title}</h1>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total</span></div>
-                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{course.lessons.length} lessons</span></div>
-                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <span>25% complete</span></div>
+                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total ⏳</span></div>
+                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{course.lessons.length} lessons 📖</span></div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <span>25% complete ✅</span></div>
             </div>
         </div>
     </div>
@@ -98,12 +98,12 @@ const CourseOverview = ({ course }: { course: NonNullable<Awaited<ReturnType<typ
              </div>
         </div>
         <div className="space-y-4">
-             <Button size="lg" className="w-full !h-14 text-lg animate-pulse">
-                <PlayCircle className="mr-2 h-6 w-6" /> Start Course
-            </Button>
-            <div className="bg-card rounded-lg overflow-hidden">
-                <video src="https://placehold.co/1920x1080.mp4" muted autoPlay loop className="w-full"></video>
+            <div className="bg-card rounded-lg overflow-hidden border">
+                <video src="https://placehold.co/1920x1080.mp4" muted autoPlay loop className="w-full aspect-video"></video>
             </div>
+             <Button size="lg" className="w-full !h-14 text-lg">
+                <PlayCircle className="mr-2 h-6 w-6" /> Enroll Now
+            </Button>
         </div>
     </div>
 )
@@ -162,3 +162,5 @@ export default async function SingleCoursePage({ params }: Props) {
     </div>
   );
 }
+
+    
