@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -68,9 +68,20 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
 
 const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact"];
 
+const avatarIcons: { [key: string]: React.ElementType } = {
+  rocket: Rocket,
+  brain: Brain,
+  trophy: Trophy,
+  ninja: VenetianMask,
+  star: StarIcon,
+  award: Award,
+  eagle: Bird,
+  dragon: FerrisWheel,
+};
+
 
 export default function Header() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const [isFaculty, setIsFaculty] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -104,6 +115,14 @@ export default function Header() {
   
   const handleLinkClick = () => {
     setIsSheetOpen(false);
+  }
+
+  const renderAvatarContent = () => {
+    if (userProfile?.avatar) {
+      const Icon = avatarIcons[userProfile.avatar];
+      if(Icon) return <Icon className="w-5 h-5" />;
+    }
+    return user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'
   }
 
   return (
@@ -141,8 +160,9 @@ export default function Header() {
             <div className="relative flex flex-col items-center justify-center">
               <Link href="/profile" aria-label="View Profile">
                 <Avatar className={cn("h-9 w-9", isFaculty && "ring-2 ring-offset-2 ring-offset-background ring-primary")}>
-                  <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
-                  <AvatarFallback>{user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'}</AvatarFallback>
+                  <AvatarFallback className="flex items-center justify-center text-primary">
+                    {renderAvatarContent()}
+                  </AvatarFallback>
                 </Avatar>
               </Link>
               {isClient && isFaculty && (

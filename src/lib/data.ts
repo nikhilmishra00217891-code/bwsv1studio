@@ -177,7 +177,7 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
-        const { uid, email, displayName, photoURL } = user;
+        const { uid, email, displayName } = user;
         const createdAt = new Date();
 
         try {
@@ -185,7 +185,7 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
                 uid,
                 email,
                 displayName,
-                photoURL,
+                // Do not set photoURL here, it will be handled by avatar selection
                 role,
                 createdAt,
                 onboardingComplete: false,
@@ -200,7 +200,15 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
 
 export const updateUserProfile = async (userId: string, data: Partial<UserProfile>) => {
     const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, data);
+    const updateData = { ...data };
+
+    // If an avatar is being set, we update the photoURL field to match.
+    // This allows us to use the standard photoURL field for our custom avatars.
+    if (data.avatar) {
+        updateData.photoURL = data.avatar;
+    }
+    
+    await updateDoc(userRef, updateData);
 };
 
 

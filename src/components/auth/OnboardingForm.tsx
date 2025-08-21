@@ -7,7 +7,7 @@ import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare, Palette, Smile, Dices, Mail, Phone } from "lucide-react";
+import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare, Palette, Smile, Dices, Mail, Phone, Rocket, VenetianMask, Award, StarIcon, Cat, Bird, FerrisWheel } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent } from "../ui/card";
@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTheme } from "next-themes";
+import { Badge } from "../ui/badge";
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
     return (
@@ -106,14 +107,14 @@ const learningStyleOptions = [
 ]
 
 const avatarOptions = [
-    { id: 'rocket', icon: '🚀' },
-    { id: 'brain', icon: '🧠' },
-    { id: 'trophy', icon: '🏆' },
-    { id: 'ninja', icon: '🥷' },
-    { id: 'star', icon: '🌟' },
-    { id: 'lion', icon: '🦁' },
-    { id: 'eagle', icon: '🦅' },
-    { id: 'dragon', icon: '🐲' },
+    { id: 'rocket', icon: Rocket },
+    { id: 'brain', icon: Brain },
+    { id: 'trophy', icon: Trophy },
+    { id: 'ninja', icon: VenetianMask },
+    { id: 'star', icon: StarIcon },
+    { id: 'award', icon: Award },
+    { id: 'eagle', icon: Bird },
+    { id: 'dragon', icon: FerrisWheel }, // No dragon, using something playful
 ];
 
 const themeOptions = [
@@ -741,11 +742,32 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
     const [accentSaturation, setAccentSaturation] = useState(80);
     const [accentLightness, setAccentLightness] = useState(97);
     
+    const primaryColorRef = useRef(data.customTheme?.primary);
+    const accentColorRef = useRef(data.customTheme?.accent);
+    const themeRef = useRef(data.theme);
+
     useEffect(() => {
         if (isCustomizing) {
             const root = document.documentElement;
             root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
             root.style.setProperty('--card', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
+            
+            const newThemeData = {
+                theme: 'custom',
+                customTheme: {
+                    primary: { h: primaryHue, s: primarySaturation, l: primaryLightness },
+                    accent: { h: accentHue, s: accentSaturation, l: accentLightness },
+                }
+            };
+            if (JSON.stringify(newThemeData.customTheme.primary) !== JSON.stringify(primaryColorRef.current) ||
+                JSON.stringify(newThemeData.customTheme.accent) !== JSON.stringify(accentColorRef.current) ||
+                newThemeData.theme !== themeRef.current
+            ) {
+                 setData(newThemeData);
+                 primaryColorRef.current = newThemeData.customTheme.primary;
+                 accentColorRef.current = newThemeData.customTheme.accent;
+                 themeRef.current = newThemeData.theme;
+            }
         }
     }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
     
@@ -844,7 +866,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                             <div className="grid md:grid-cols-2 gap-8">
                                 {/* Primary Color */}
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold text-center">Primary Color</h4>
+                                    <h4 className="font-semibold text-center" style={{ color: `hsl(${primaryHue}, ${primarySaturation}%, ${primaryLightness}%)` }}>Primary Color</h4>
                                     <div className="space-y-2">
                                         <Label>Hue ({primaryHue})</Label>
                                         <Slider value={[primaryHue]} onValueChange={([val]) => setPrimaryHue(val)} max={360} step={1} />
@@ -895,13 +917,13 @@ const EngagementBoostStep = ({ data, setData, totalSteps }: { data: Partial<User
                     {avatarOptions.map(option => (
                         <Card
                             key={option.id}
-                            onClick={() => setData({ avatar: option.icon })}
+                            onClick={() => setData({ avatar: option.id })}
                             className={cn(
                                 "p-4 flex items-center justify-center text-center cursor-pointer transition-all duration-200 transform hover:scale-110 hover:shadow-lg",
-                                data.avatar === option.icon && "ring-4 ring-primary shadow-2xl scale-110"
+                                data.avatar === option.id && "ring-4 ring-primary shadow-2xl scale-110"
                             )}
                         >
-                            <span className="text-5xl">{option.icon}</span>
+                            <option.icon className="w-16 h-16 text-primary" />
                         </Card>
                     ))}
                 </div>
@@ -911,6 +933,59 @@ const EngagementBoostStep = ({ data, setData, totalSteps }: { data: Partial<User
             </div>
         </OnboardingStepWrapper>
     )
+};
+
+
+const SummaryStep = ({ data, totalSteps }: { data: Partial<UserProfile>, totalSteps: number }) => {
+    const getAvatarIcon = () => {
+        if (!data.avatar) return User;
+        const selectedAvatar = avatarOptions.find(opt => opt.id === data.avatar);
+        return selectedAvatar ? selectedAvatar.icon : User;
+    };
+    const AvatarIcon = getAvatarIcon();
+
+    const getThemeName = () => {
+        if (data.theme === 'custom') return 'Your Custom Theme';
+        const selectedTheme = themeOptions.find(opt => opt.id === data.theme);
+        return selectedTheme ? selectedTheme.name : 'Default';
+    }
+
+    return (
+         <OnboardingStepWrapper title="Your Profile Summary" step={9} totalSteps={totalSteps}>
+            <Card className="max-w-2xl mx-auto shadow-lg">
+                <CardContent className="p-6 md:p-8 space-y-6">
+                    <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+                        <div className="bg-primary/10 p-4 rounded-full">
+                            <AvatarIcon className="w-16 h-16 text-primary"/>
+                        </div>
+                        <div>
+                            <h3 className="text-3xl font-bold font-headline">{data.displayName}</h3>
+                            <p className="text-muted-foreground">{data.email}</p>
+                            <p className="text-muted-foreground">{data.mobile}</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                        <div className="flex items-center gap-2"><Cake className="w-4 h-4 text-primary"/> <strong>Age:</strong> {data.age || 'N/A'}</div>
+                        <div className="flex items-center gap-2"><User className="w-4 h-4 text-primary"/> <strong>Gender:</strong> <span className="capitalize">{data.gender?.replace('_', ' ') || 'N/A'}</span></div>
+                        <div className="flex items-center gap-2"><School className="w-4 h-4 text-primary"/> <strong>Grade:</strong> {data.grade || 'N/A'}</div>
+                        <div className="flex items-center gap-2"><Book className="w-4 h-4 text-primary"/> <strong>Board:</strong> {data.board || 'N/A'}</div>
+                        <div className="flex items-center gap-2 col-span-1 md:col-span-2"><BookCopy className="w-4 h-4 text-primary"/> <strong>Subjects:</strong> 
+                            <div className="flex flex-wrap gap-1">
+                                {(data.subjects && data.subjects.length > 0) ? data.subjects.map(s => <Badge key={s} variant="secondary">{s}</Badge>) : 'N/A'}
+                            </div>
+                        </div>
+                         <div className="flex items-start gap-2 col-span-1 md:col-span-2"><Target className="w-4 h-4 text-primary mt-1"/> <strong>Goals:</strong> 
+                            <div className="flex flex-wrap gap-1">
+                                {(data.goals && data.goals.length > 0) ? data.goals.map(g => <Badge key={g} variant="secondary">{g}</Badge>) : 'N/A'}
+                            </div>
+                        </div>
+                         <div className="flex items-center gap-2 col-span-1 md:col-span-2"><Palette className="w-4 h-4 text-primary"/> <strong>Theme:</strong> {getThemeName()}</div>
+
+                    </div>
+                </CardContent>
+            </Card>
+        </OnboardingStepWrapper>
+    );
 };
 
 // Placeholder for future steps
@@ -957,7 +1032,7 @@ export function OnboardingForm() {
     }
   }, []);
 
-  const totalSteps = 9;
+  const totalSteps = 10;
   const progress = ((step - 1) / (totalSteps -1)) * 100;
 
   const nextStep = () => setStep((prev) => (prev < totalSteps ? prev + 1 : prev));
@@ -1022,6 +1097,7 @@ export function OnboardingForm() {
         case 6: return <LearningStyleStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 7: return <ThemeCustomizationStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 8: return <EngagementBoostStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 9: return <SummaryStep data={userData} totalSteps={totalSteps} />;
         case totalSteps: return (
             <div className="flex h-full items-center justify-center">
                  <OnboardingStepWrapper title="One Last Check!" step={totalSteps} totalSteps={totalSteps}>
