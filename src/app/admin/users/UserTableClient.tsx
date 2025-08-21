@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import type { UserProfile } from "@/types";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, LoaderCircle } from 'lucide-react';
+import { MoreHorizontal, Trash2, LoaderCircle, RefreshCw } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -45,7 +45,14 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const router = useRouter();
+
+  // When initialUsers prop changes (due to a refresh), update the state
+  React.useEffect(() => {
+    setUsers(initialUsers);
+  }, [initialUsers]);
 
   const filteredUsers = useMemo(() => {
     if (!searchTerm) return users;
@@ -54,6 +61,16 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
       user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [users, searchTerm]);
+
+  const handleRefresh = () => {
+    startTransition(() => {
+      router.refresh();
+      toast({
+        title: "User list refreshed!",
+        description: "The latest user data has been fetched.",
+      })
+    });
+  };
 
   const handleDeleteClick = (user: UserProfile) => {
     setUserToDelete(user);
@@ -92,12 +109,18 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
              <p className="text-muted-foreground">Search, view, and manage all users on the platform.</p>
         </div>
       
-      <Input
-        placeholder="Search by name or email..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Search by name or email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending}>
+            <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
+            <span className="sr-only">Refresh</span>
+        </Button>
+      </div>
 
       <div className="border rounded-lg">
         <ScrollArea className="h-[calc(100vh-20rem)]">
