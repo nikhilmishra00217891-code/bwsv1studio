@@ -6,7 +6,7 @@ import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles } from "lucide-react";
+import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent } from "../ui/card";
@@ -17,6 +17,8 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
     return (
@@ -42,12 +44,13 @@ const genderOptions = [
 ]
 
 const subjectOptions = [
-    { value: 'Physics', label: 'Physics', icon: '⚛️' },
-    { value: 'Chemistry', label: 'Chemistry', icon: '🧪' },
-    { value: 'Maths', label: 'Maths', icon: '∑' },
-    { value: 'Biology', label: 'Biology', icon: '🧬' },
-    { value: 'English', label: 'English', icon: '✍️' },
-    { value: 'History', label: 'History', icon: '📜' },
+    { value: 'Physics', label: 'Physics', icon: Atom, highSchoolOnly: true },
+    { value: 'Chemistry', label: 'Chemistry', icon: FlaskConical, highSchoolOnly: true },
+    { value: 'Maths', label: 'Maths', icon: Sigma, highSchoolOnly: true },
+    { value: 'Biology', label: 'Biology', icon: Milestone, highSchoolOnly: true },
+    { value: 'English', label: 'English', icon: Languages, highSchoolOnly: false },
+    { value: 'Social Science', label: 'Social Science', icon: Earth, highSchoolOnly: false },
+    { value: 'Computer Science', label: 'Computer Science', icon: Computer, highSchoolOnly: false },
 ]
 
 const goalOptions = [
@@ -136,7 +139,11 @@ const BasicDetailsStep = ({ data, setData }: { data: Partial<UserProfile>, setDa
 }
 
 const AcademicInfoStep = ({ data, setData }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void }) => {
+    const [customGrade, setCustomGrade] = useState(false);
     const [customBoard, setCustomBoard] = useState(false);
+    
+    const showHighSchoolSubjects = ['11th', '12th', 'Competitive Exams'].includes(data.grade || '');
+
     const toggleSubject = (subject: string) => {
         const currentSubjects = data.subjects || [];
         const newSubjects = currentSubjects.includes(subject)
@@ -145,47 +152,82 @@ const AcademicInfoStep = ({ data, setData }: { data: Partial<UserProfile>, setDa
         setData({ subjects: newSubjects });
     }
 
+    const gradeOptions = ['6th', '7th', '8th', '9th', '10th', '11th', '12th', 'Competitive Exams'];
+    const boardOptions = ['CBSE', 'ICSE', 'State Board'];
+
     return (
         <OnboardingStepWrapper title="Your Academic World" step={3}>
             <div className="max-w-xl mx-auto space-y-10">
-                 <div className="relative flex items-center">
-                    <School className="absolute left-4 w-5 h-5 text-muted-foreground" />
-                    <Input 
-                        type="text"
-                        placeholder="Which class/grade are you in?"
-                        className="pl-12 h-14 text-lg"
-                        value={data.grade || ''}
-                        onChange={(e) => setData({ grade: e.target.value })}
-                    />
+                 <div className="space-y-2">
+                    <Label>Which class/grade are you in?</Label>
+                     {customGrade ? (
+                         <Input 
+                            type="text"
+                            placeholder="Please specify your grade"
+                            className="h-12 text-base"
+                            value={data.grade || ''}
+                            onChange={(e) => setData({ grade: e.target.value })}
+                            autoFocus
+                        />
+                    ) : (
+                        <Select
+                            value={data.grade}
+                            onValueChange={(value) => {
+                                if (value === 'other') {
+                                    setCustomGrade(true);
+                                    setData({ grade: '' });
+                                } else {
+                                    setData({ grade: value });
+                                }
+                            }}
+                        >
+                            <SelectTrigger className="h-12 text-base">
+                                <SelectValue placeholder="Select your grade" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {gradeOptions.map(grade => <SelectItem key={grade} value={grade}>{grade}</SelectItem>)}
+                                <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
                 </div>
-                 <div className="relative flex items-center">
-                    <BookCopy className="absolute left-4 w-5 h-5 text-muted-foreground" />
-                    {customBoard ? (
+                 <div className="space-y-2">
+                    <Label>Your board (e.g., CBSE, ICSE)</Label>
+                     {customBoard ? (
                          <Input 
                             type="text"
                             placeholder="Please specify your board"
-                            className="pl-12 h-14 text-lg"
+                            className="h-12 text-base"
                             value={data.board || ''}
                             onChange={(e) => setData({ board: e.target.value })}
                             autoFocus
                         />
                     ) : (
-                         <Input 
-                            type="text"
-                            placeholder="Your board (e.g., CBSE, ICSE)"
-                            className="pl-12 h-14 text-lg"
-                             value={data.board || ''}
-                            onChange={(e) => setData({ board: e.target.value })}
-                        />
+                         <Select
+                            value={data.board}
+                            onValueChange={(value) => {
+                                if (value === 'other') {
+                                    setCustomBoard(true);
+                                    setData({ board: '' });
+                                } else {
+                                    setData({ board: value });
+                                }
+                            }}
+                        >
+                            <SelectTrigger className="h-12 text-base">
+                                <SelectValue placeholder="Select your board" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {boardOptions.map(board => <SelectItem key={board} value={board}>{board}</SelectItem>)}
+                                <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
                     )}
-                     <Button variant="ghost" className="absolute right-2" onClick={() => setCustomBoard(prev => !prev)}>
-                         <Pencil className="w-4 h-4"/>
-                     </Button>
                 </div>
                  <div>
                      <p className="text-muted-foreground text-center mb-4">Choose your core subjects</p>
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {subjectOptions.map(option => (
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {subjectOptions.filter(subject => !subject.highSchoolOnly || showHighSchoolSubjects).map(option => (
                             <Card 
                                 key={option.value}
                                 className={cn(
@@ -194,8 +236,8 @@ const AcademicInfoStep = ({ data, setData }: { data: Partial<UserProfile>, setDa
                                 )}
                                 onClick={() => toggleSubject(option.value)}
                             >
-                                <span className="text-4xl mb-2">{option.icon}</span>
-                                <span className="font-semibold">{option.label}</span>
+                                <option.icon className="w-8 h-8 text-primary mb-2" />
+                                <span className="font-semibold text-sm">{option.label}</span>
                                 {(data.subjects || []).includes(option.value) && (
                                     <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
                                         <Check className="w-4 h-4" />
