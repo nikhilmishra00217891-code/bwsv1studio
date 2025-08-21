@@ -8,11 +8,11 @@ import { Textarea } from '../ui/textarea';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { saveTextContent } from '@/lib/data/content';
 
 interface EditableTextProps {
   contentId: string;
   defaultValue: string;
-  onSave: (newText: string) => void;
   multiline?: boolean;
   as?: 'span' | 'badge' | 'input';
   className?: string;
@@ -21,7 +21,6 @@ interface EditableTextProps {
 export function EditableText({ 
   contentId, 
   defaultValue, 
-  onSave,
   multiline = false, 
   as = 'span',
   className 
@@ -37,13 +36,13 @@ export function EditableText({
     setText(defaultValue);
   }, [defaultValue]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (text === defaultValue) {
         setIsEditing(false);
         return;
     };
     try {
-      onSave(text);
+      await saveTextContent(contentId, text);
       toast({
         title: "Content saved!",
         description: "Your changes are now live.",
@@ -140,6 +139,3 @@ export function EditableText({
 
   return <span className={className}>{text}</span>;
 }
-
-
-    

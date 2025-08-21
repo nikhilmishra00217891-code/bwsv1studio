@@ -223,33 +223,3 @@ export const isFaculty = async (userId: string): Promise<boolean> => {
     return false;
   }
 }
-
-export const getTextContent = async (contentId: string): Promise<string | null> => {
-    try {
-        const docRef = doc(db, "siteContent", "text");
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return docSnap.data()[contentId] || null;
-        }
-        return null;
-    } catch (error) {
-        console.error("Error fetching text content:", error);
-        return null;
-    }
-}
-
-export const saveTextContent = async (contentId: string, newText: string) => {
-    try {
-        const docRef = doc(db, "siteContent", "text");
-        await updateDoc(docRef, {
-            [contentId]: newText
-        });
-    } catch (error: any) {
-        if (error.code === 'not-found') {
-            await setDoc(doc(db, "siteContent", "text"), { [contentId]: newText });
-        } else {
-            console.error("Error saving text content:", error);
-            throw error;
-        }
-    }
-}

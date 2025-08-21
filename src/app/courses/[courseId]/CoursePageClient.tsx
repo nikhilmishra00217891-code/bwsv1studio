@@ -5,7 +5,8 @@ import type { Course } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, updateCourse, isFaculty as checkIsFaculty, saveTextContent, getTextContent } from "@/lib/data";
+import { deleteCourse, updateCourse, isFaculty as checkIsFaculty } from "@/lib/data";
+import { saveTextContent, getTextContent } from "@/lib/data/content";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -155,6 +156,7 @@ const CourseEditDialog = ({
 
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
   const [course, setCourse] = useState(initialCourse);
+  const [textContent, setTextContent] = useState<Record<string, string>>({});
   const { user, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
   const { isEditMode, setIsEditMode } = useEditMode();
@@ -163,6 +165,11 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
 
   useEffect(() => {
     setCourse(initialCourse);
+    const fetchContent = async () => {
+        const content = await getTextContent();
+        setTextContent(content);
+    }
+    fetchContent();
   }, [initialCourse]);
 
   useEffect(() => {
@@ -179,10 +186,20 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     }
   }, [user, authLoading]);
   
-  const handleSave = async (field: keyof Course, value: any) => {
+  const handleSaveText = async (field: keyof Course | string, value: any) => {
+    const contentId = `course_${field}_${course.id}`;
+    await saveTextContent(contentId, value);
+    setTextContent(prev => ({...prev, [contentId]: value}));
+    // Also update the course state if it's a direct course field
+    if (['title', 'category', 'mentorName', 'description'].includes(field as string)) {
+        handleSaveCourse({[field]: value});
+    }
+  }
+
+  const handleSaveCourse = async (data: Partial<Course>) => {
     try {
-        await updateCourse(course.id, { [field]: value });
-        setCourse(prev => ({...prev, [field]: value}));
+        await updateCourse(course.id, data);
+        setCourse(prev => ({...prev, ...data}));
         toast({
             title: "Course Updated",
             description: `Your changes have been saved.`
@@ -198,20 +215,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   }
 
   const handleActiveToggle = async (isActive: boolean) => {
-    try {
-      await updateCourse(course.id, { isActive });
-      setCourse({ ...course, isActive });
-      toast({
-        title: "Course Updated",
-        description: `Course is now ${isActive ? "active" : "inactive"}.`,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: "Could not change the course status.",
-      });
-    }
+    handleSaveCourse({isActive});
   };
 
   const handleDelete = async () => {
@@ -291,9 +295,9 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         />
         <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
             <div className="md:col-span-2">
-                 <EditableText as="badge" contentId={`course_category_${course.id}`} defaultValue={course.category} onSave={(val) => handleSave('category', val)} />
+                 <EditableText as="badge" contentId={`course_category_${course.id}`} defaultValue={textContent[`course_category_${course.id}`] || course.category} />
                 <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">
-                   <EditableText contentId={`course_title_${course.id}`} defaultValue={course.title} onSave={(val) => handleSave('title', val)} />
+                   <EditableText contentId={`course_title_${course.id}`} defaultValue={textContent[`course_title_${course.id}`] || course.title} />
                 </h1>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
@@ -310,11 +314,11 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           <div className="bg-card p-6 rounded-lg flex flex-col sm:flex-row items-center gap-6">
               <Avatar className="w-20 h-20 border-4 border-primary">
                   <AvatarImage src="https://placehold.co/100x100.png" />
-                  <AvatarFallback>{course.mentorName.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{(textContent[`course_mentor_${course.id}`] || course.mentorName).charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-grow text-center sm:text-left">
                   <h3 className="text-xl font-bold font-headline">
-                    <EditableText contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} onSave={(val) => handleSave('mentorName', val)} /> & Team
+                    <EditableText contentId={`course_mentor_${course.id}`} defaultValue={textContent[`course_mentor_${course.id}`] || course.mentorName} /> & Team
                   </h3>
                   <p className="text-muted-foreground">Your Mentors</p>
               </div>
@@ -329,9 +333,9 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
               <DialogHeader className="items-center text-center">
                    <Avatar className="w-24 h-24 border-4 border-primary">
                       <AvatarImage src="https://placehold.co/100x100.png" />
-                      <AvatarFallback>{course.mentorName.charAt(0)}</AvatarFallback>
+                      <AvatarFallback>{(textContent[`course_mentor_${course.id}`] || course.mentorName).charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <DialogTitle className="text-2xl font-headline">{course.mentorName} & Team</DialogTitle>
+                  <DialogTitle className="text-2xl font-headline">{textContent[`course_mentor_${course.id}`] || course.mentorName} & Team</DialogTitle>
                   <DialogDescription>Your guides, friends, and mentors on this journey.</DialogDescription>
               </DialogHeader>
               <div className="py-4 text-center text-muted-foreground">
@@ -353,7 +357,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           <Input 
             id="youtubeLink"
             defaultValue={course.youtubeLink} 
-            onBlur={(e) => handleSave('youtubeLink', e.target.value)}
+            onBlur={(e) => handleSaveCourse({youtubeLink: e.target.value})}
             placeholder="https://www.youtube.com/watch?v=..."
           />
         </div>
@@ -389,7 +393,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           <div className="md:col-span-2 space-y-6">
                <h3 className="text-2xl font-bold font-headline">About This Course</h3>
                 <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    <EditableText multiline contentId={`course_description_${course.id}`} defaultValue={course.description} onSave={(val) => handleSave('description', val)} />
+                    <EditableText multiline contentId={`course_description_${course.id}`} defaultValue={textContent[`course_description_${course.id}`] || course.description} />
                 </div>
                <div className="flex flex-wrap gap-2">
                   <Badge>Exam Prep 🔥</Badge>
@@ -463,5 +467,3 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     </div>
   );
 }
-
-    

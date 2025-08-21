@@ -3,13 +3,16 @@ import Image from "next/image";
 import { BrainCircuit, HeartHandshake } from "lucide-react";
 import type { Metadata } from "next";
 import { EditableText } from "@/components/common/EditableText";
+import { getTextContent } from "@/lib/data/content";
 
 export const metadata: Metadata = {
     title: "About Us - BiharWaleSirji",
     description: "We’re not just a platform, we’re Parivaar.",
 }
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const textContent = await getTextContent();
+
   return (
     <div className="relative bg-card/50 overflow-hidden">
         <Image 
@@ -25,7 +28,7 @@ export default function AboutPage() {
           <h1 className="text-4xl md:text-6xl font-bold font-headline text-primary tracking-tight">
             <EditableText
               contentId="aboutPageTitle"
-              defaultValue="We’re not just a platform, we’re Parivaar."
+              defaultValue={textContent.aboutPageTitle || "We’re not just a platform, we’re Parivaar."}
               className="w-full text-center"
             />
           </h1>
@@ -34,11 +37,11 @@ export default function AboutPage() {
         <div className="max-w-3xl mx-auto bg-background/80 backdrop-blur-sm p-8 md:p-12 rounded-lg mt-12 shadow-lg">
           <EditableText
             contentId="aboutPageMainText"
-            defaultValue="In the heartlands of Bihar, where dreams are forged in the fires of aspiration, education isn't just a path—it's a legacy. We, at BiharWaleSirji, were born from this very soil. We saw students, bright-eyed and brilliant, navigating the labyrinth of competitive exams with courage but often without a guide who truly understood their language, their culture, their spirit.
+            defaultValue={textContent.aboutPageMainText || `In the heartlands of Bihar, where dreams are forged in the fires of aspiration, education isn't just a path—it's a legacy. We, at BiharWaleSirji, were born from this very soil. We saw students, bright-eyed and brilliant, navigating the labyrinth of competitive exams with courage but often without a guide who truly understood their language, their culture, their spirit.
 
 We are not just another ed-tech platform. We are the elder brother you never had, the 'Sirji' from your own neighborhood who knows how to make complex calculus feel like a friendly chat. Our slogan, 'Parivaar. Pratishtha. Parivartan.' (Family. Honor. Change.) is the heartbeat of our mission. We are building a family of learners, upholding the honor of your hard work, and bringing a revolution in how education is perceived and delivered.
 
-Welcome home. Welcome to BiharWaleSirji."
+Welcome home. Welcome to BiharWaleSirji.`}
             multiline
             className="w-full text-lg text-foreground/80 leading-relaxed space-y-6 block whitespace-pre-wrap text-left"
           />
@@ -49,14 +52,14 @@ Welcome home. Welcome to BiharWaleSirji."
             <h2 className="text-3xl md:text-4xl font-bold font-headline">
               <EditableText
                 contentId="aboutPageBhaiyaBotTitle"
-                defaultValue="Meet the BhaiyaBot"
+                defaultValue={textContent.aboutPageBhaiyaBotTitle || "Meet the BhaiyaBot"}
                 className="w-full text-center"
               />
             </h2>
             <p className="text-lg text-muted-foreground mt-2">
               <EditableText
                 contentId="aboutPageBhaiyaBotSubtitle"
-                defaultValue="Your AI Doubt Buddy, available 24x7."
+                defaultValue={textContent.aboutPageBhaiyaBotSubtitle || "Your AI Doubt Buddy, available 24x7."}
                 className="w-full text-center"
               />
             </p>
@@ -67,13 +70,13 @@ Welcome home. Welcome to BiharWaleSirji."
               <h3 className="text-2xl font-bold font-headline mb-2">
                 <EditableText
                     contentId="aboutFeatureAITitle"
-                    defaultValue="Powered by AI"
+                    defaultValue={textContent.aboutFeatureAITitle || "Powered by AI"}
                     className="w-full text-center"
                 />
               </h3>
               <EditableText
                 contentId="aboutFeatureAIDescription"
-                defaultValue="Leveraging the latest in artificial intelligence to provide instant, accurate, and step-by-step solutions to your toughest questions."
+                defaultValue={textContent.aboutFeatureAIDescription || "Leveraging the latest in artificial intelligence to provide instant, accurate, and step-by-step solutions to your toughest questions."}
                 multiline
                 className="w-full text-foreground/80 block"
               />
@@ -83,13 +86,13 @@ Welcome home. Welcome to BiharWaleSirji."
               <h3 className="text-2xl font-bold font-headline mb-2">
                 <EditableText
                     contentId="aboutFeatureEmpathyTitle"
-                    defaultValue="Trained to Think Like Your Elder Brother"
+                    defaultValue={textContent.aboutFeatureEmpathyTitle || "Trained to Think Like Your Elder Brother"}
                     className="w-full text-center"
                 />
               </h3>
               <EditableText
                 contentId="aboutFeatureEmpathyDescription"
-                defaultValue="Our AI isn't just smart; it's empathetic. We've trained it on our unique teaching philosophy to be encouraging, patient, and always ready to help you understand, not just memorize."
+                defaultValue={textContent.aboutFeatureEmpathyDescription || "Our AI isn't just smart; it's empathetic. We've trained it on our unique teaching philosophy to be encouraging, patient, and always ready to help you understand, not just memorize."}
                 multiline
                 className="w-full text-foreground/80 block"
               />

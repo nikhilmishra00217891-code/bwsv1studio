@@ -7,17 +7,20 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { createContext, useContext, useEffect, useState, type ReactNode, Dispatch, SetStateAction } from "react";
 import type { UserProfile } from "@/types";
+import { getTextContent } from "@/lib/data/content";
 
 interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
+  textContent: Record<string, string>;
   loading: boolean;
   setUserProfile: Dispatch<SetStateAction<UserProfile | null>>;
 }
 
 const AuthContext = createContext<AuthContextType>({ 
     user: null, 
-    userProfile: null, 
+    userProfile: null,
+    textContent: {}, 
     loading: true,
     setUserProfile: () => {}
 });
@@ -25,9 +28,16 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [textContent, setTextContent] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchContent = async () => {
+        const content = await getTextContent();
+        setTextContent(content);
+    };
+    fetchContent();
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
@@ -49,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, setUserProfile }}>
+    <AuthContext.Provider value={{ user, userProfile, textContent, loading, setUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

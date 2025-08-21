@@ -1,5 +1,6 @@
 
 import { getFeaturedCourses } from "@/lib/data";
+import { getTextContent } from "@/lib/data/content";
 import type { Course } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ const CourseCard = ({ course }: { course: Course }) => {
 
 export default async function FeaturedCourses() {
   const courses = await getFeaturedCourses();
+  const textContent = await getTextContent();
 
   return (
     <section className="py-20 md:py-28 bg-background">
@@ -53,13 +55,13 @@ export default async function FeaturedCourses() {
           <h2 className="text-3xl md:text-4xl font-bold font-headline">
             <EditableText
               contentId="featuredCoursesTitle"
-              defaultValue="Featured Courses"
+              defaultValue={textContent.featuredCoursesTitle || "Featured Courses"}
             />
           </h2>
           <p className="text-lg text-muted-foreground mt-2">
             <EditableText
               contentId="featuredCoursesSubtitle"
-              defaultValue="Start your journey with our most popular courses."
+              defaultValue={textContent.featuredCoursesSubtitle || "Start your journey with our most popular courses."}
             />
           </p>
         </div>

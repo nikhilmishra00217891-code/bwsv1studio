@@ -1,5 +1,6 @@
 
 import { getTestimonials } from "@/lib/data";
+import { getTextContent } from "@/lib/data/content";
 import {
   Carousel,
   CarouselContent,
@@ -14,6 +15,7 @@ import { EditableText } from "../common/EditableText";
 
 export default async function Testimonials() {
   const testimonials = await getTestimonials();
+  const textContent = await getTextContent();
 
   return (
     <section className="py-20 md:py-28 bg-card/50">
@@ -22,13 +24,13 @@ export default async function Testimonials() {
           <h2 className="text-3xl md:text-4xl font-bold font-headline">
              <EditableText
               contentId="testimonialsTitle"
-              defaultValue="What Our Students Say"
+              defaultValue={textContent.testimonialsTitle || "What Our Students Say"}
             />
           </h2>
           <p className="text-lg text-muted-foreground mt-2">
             <EditableText
               contentId="testimonialsSubtitle"
-              defaultValue="Real stories from our growing Parivaar."
+              defaultValue={textContent.testimonialsSubtitle || "Real stories from our growing Parivaar."}
             />
           </p>
         </div>
