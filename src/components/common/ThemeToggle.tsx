@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun, Heart, Gamepad2 } from "lucide-react"
+import { Moon, Sun, Heart, Gamepad2, Palette } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useAuth } from "../auth/AuthProvider"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -14,6 +15,8 @@ import {
 
 export function ThemeToggle() {
   const { setTheme } = useTheme()
+  const { userProfile } = useAuth();
+  const hasCustomTheme = userProfile?.theme === 'custom';
 
   return (
     <DropdownMenu>
@@ -39,6 +42,12 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme("retrogamer")}>
           Retro Gamer
         </DropdownMenuItem>
+        {hasCustomTheme && (
+            <DropdownMenuItem onClick={() => setTheme("light")}>
+                <Palette className="mr-2 h-4 w-4" />
+                <span>Custom</span>
+            </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
