@@ -716,10 +716,6 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
             const root = document.documentElement;
             root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
             root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
-            
-            // This was the source of the infinite loop.
-            // We should only update the final data when the user proceeds.
-            // For now, the visual update is enough.
         }
     }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
 
@@ -734,8 +730,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                 }
             })
         }
-     // eslint-disable-next-line react-hooks/exhaustive-deps
-     }, [isCustomizing]);
+     }, [isCustomizing, data.theme, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness, setData]);
     
     const handlePresetSelect = (themeId: string) => {
         setIsCustomizing(false);
