@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -465,12 +466,32 @@ const LearningJourneyStep = ({ data, setData, totalSteps }: { data: Partial<User
 };
 
 const InterestsStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
+    const [customInterest, setCustomInterest] = useState(false);
+
     const toggleInterest = (interest: string) => {
+        if (interest === 'Other') {
+            setCustomInterest(!customInterest);
+            return;
+        }
         const currentInterests = data.interests || [];
         const newInterests = currentInterests.includes(interest)
             ? currentInterests.filter(i => i !== interest)
             : [...currentInterests, interest];
         setData({ interests: newInterests });
+    };
+
+    const handleCustomInterestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const otherInterestValue = e.target.value;
+        const baseInterests = data.interests?.filter(i => interestOptions.map(o => o.title).includes(i)) || [];
+        if (otherInterestValue) {
+            setData({ interests: [...baseInterests, otherInterestValue] });
+        } else {
+            setData({ interests: baseInterests });
+        }
+    };
+
+    const getCustomInterestValue = () => {
+        return data.interests?.find(i => !interestOptions.map(o => o.title).includes(i)) || '';
     };
 
     return (
@@ -494,20 +515,64 @@ const InterestsStep = ({ data, setData, totalSteps }: { data: Partial<UserProfil
                             <span className="font-semibold">{option.title}</span>
                         </Card>
                     ))}
-                    {/* Add a "Fill yourself" option here if needed */}
+                    <Card
+                        onClick={() => toggleInterest('Other')}
+                        className={cn(
+                            "p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 transform-gpu",
+                            "hover:shadow-lg hover:border-primary/50",
+                            customInterest ? "animate-pop-in ring-2 ring-primary shadow-xl" : "hover:-translate-y-1"
+                        )}
+                    >
+                        <Pencil className="w-10 h-10 mb-2 text-primary" />
+                        <span className="font-semibold">Other</span>
+                    </Card>
                 </div>
+                 {customInterest && (
+                    <div className="mt-6">
+                        <Input
+                            type="text"
+                            placeholder="What's your interest?"
+                            className="h-12 text-base"
+                            value={getCustomInterestValue()}
+                            onChange={handleCustomInterestChange}
+                            autoFocus
+                        />
+                    </div>
+                )}
             </div>
         </OnboardingStepWrapper>
     );
 };
 
 const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
+    const [customLearningStyle, setCustomLearningStyle] = useState(false);
+
     const toggleLearningStyle = (style: string) => {
+        if (style === 'Other') {
+            setCustomLearningStyle(!customLearningStyle);
+            return;
+        }
+
         const currentStyles = data.learningStyle || [];
         const newStyles = currentStyles.includes(style)
             ? currentStyles.filter(s => s !== style)
             : [...currentStyles, style];
-        setData({ learningStyle: newStyles as any });
+        setData({ learningStyle: newStyles as any[] });
+    };
+
+    const handleCustomLearningStyleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const otherStyleValue = e.target.value;
+        const baseStyles = data.learningStyle?.filter(s => learningStyleOptions.map(o => o.id).includes(s)) || [];
+
+        if (otherStyleValue) {
+            setData({ learningStyle: [...baseStyles, otherStyleValue] as any[] });
+        } else {
+            setData({ learningStyle: baseStyles as any[] });
+        }
+    };
+
+    const getCustomLearningStyleValue = () => {
+        return data.learningStyle?.find(s => !learningStyleOptions.map(o => o.id).includes(s)) || '';
     };
 
     return (
@@ -537,6 +602,39 @@ const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserPr
                         )}
                     </Card>
                 ))}
+                 <Card
+                    onClick={() => toggleLearningStyle('Other')}
+                    className={cn(
+                        "p-6 flex items-center gap-6 cursor-pointer transition-all duration-200",
+                        "hover:shadow-lg hover:border-primary/50",
+                        customLearningStyle && "ring-2 ring-primary"
+                    )}
+                >
+                    <div className="bg-primary/10 p-4 rounded-xl">
+                        <Pencil className="w-10 h-10 text-primary" />
+                    </div>
+                    <div className="flex-grow">
+                        <h4 className="font-bold text-lg">Other</h4>
+                        <p className="text-muted-foreground text-sm mt-1">Tell us your unique way of learning.</p>
+                    </div>
+                    {customLearningStyle && (
+                        <div className="ml-auto text-primary">
+                            <Check className="w-8 h-8"/>
+                        </div>
+                    )}
+                </Card>
+                 {customLearningStyle && (
+                    <div className="mt-4">
+                        <Input
+                            type="text"
+                            placeholder="How do you learn best?"
+                            className="h-12 text-base"
+                            value={getCustomLearningStyleValue()}
+                            onChange={handleCustomLearningStyleChange}
+                            autoFocus
+                        />
+                    </div>
+                )}
              </div>
         </OnboardingStepWrapper>
     )
@@ -662,3 +760,4 @@ export function OnboardingForm() {
     </div>
   );
 }
+
