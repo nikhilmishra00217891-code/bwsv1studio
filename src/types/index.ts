@@ -41,6 +41,7 @@ export interface UserProfile {
     uid: string;
     email: string | null;
     displayName: string | null;
+    photoURL?: string;
     role: 'student' | 'faculty';
     onboardingComplete?: boolean;
     // Onboarding data
@@ -69,3 +70,5 @@ export interface Announcement {
   updatedAt?: Timestamp;
   reactions: string[];
 }
+
+    

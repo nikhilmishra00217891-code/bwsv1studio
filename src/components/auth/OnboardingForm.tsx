@@ -6,8 +6,13 @@ import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, MoveRight } from "lucide-react";
+import { LoaderCircle, MoveRight, User, Cake, VenetianMask, School, BookCopy, Target, Pencil, Check } from "lucide-react";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Card, CardContent } from "../ui/card";
+import { cn } from "@/lib/utils";
+import { Progress } from "../ui/progress";
+import type { UserProfile } from "@/types";
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
     return (
@@ -19,9 +24,210 @@ const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
                 "The best way to predict the future is to create it."
             </p>
             <Button size="lg" className="mt-10 animate-fade-in animation-delay-1000" onClick={onNext}>
-                Let's Begin <MoveRight className="ml-2" />
+                Let’s Begin <MoveRight className="ml-2" />
             </Button>
         </div>
+    )
+}
+
+const genderOptions = [
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+    { value: 'other', label: 'Other' },
+    { value: 'prefer_not_to_say', label: 'Prefer not to say' },
+]
+
+const subjectOptions = [
+    { value: 'Physics', label: 'Physics', icon: '⚛️' },
+    { value: 'Chemistry', label: 'Chemistry', icon: '🧪' },
+    { value: 'Maths', label: 'Maths', icon: '∑' },
+    { value: 'Biology', label: 'Biology', icon: '🧬' },
+    { value: 'English', label: 'English', icon: '✍️' },
+    { value: 'History', label: 'History', icon: '📜' },
+]
+
+const goalOptions = [
+    'Crack competitive exams',
+    'Score high in boards',
+    'Understand concepts better',
+    'Daily practice & discipline',
+]
+
+const OnboardingStepWrapper = ({ title, children, step }: { title: string, children: React.ReactNode, step: number }) => (
+    <div className="animate-slide-in-from-right">
+        <p className="text-sm font-semibold text-primary tracking-widest uppercase text-center">{`Step ${step - 1} / 10`}</p>
+        <h2 className="text-3xl md:text-4xl font-bold font-headline text-center mt-2 mb-12">{title}</h2>
+        {children}
+    </div>
+)
+
+const BasicDetailsStep = ({ data, setData }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void }) => {
+    return (
+        <OnboardingStepWrapper title="Tell Us a Little About Yourself" step={2}>
+            <div className="max-w-lg mx-auto space-y-8">
+                <div className="relative flex items-center">
+                    <User className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                        type="text" 
+                        placeholder="What should we call you?"
+                        className="pl-12 h-14 text-lg"
+                        value={data.displayName || ''}
+                        onChange={(e) => setData({ displayName: e.target.value })}
+                    />
+                </div>
+                <div className="relative flex items-center">
+                    <Cake className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                        type="number"
+                        placeholder="Your age (optional)"
+                        className="pl-12 h-14 text-lg"
+                        value={data.age || ''}
+                        onChange={(e) => setData({ age: parseInt(e.target.value) || undefined })}
+                    />
+                </div>
+                <div>
+                     <p className="text-muted-foreground text-center mb-4">Your gender (optional)</p>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {genderOptions.map(option => (
+                            <Card 
+                                key={option.value}
+                                className={cn(
+                                    "p-4 flex items-center justify-center text-center cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg",
+                                    data.gender === option.value && "ring-2 ring-primary shadow-lg scale-105"
+                                )}
+                                onClick={() => setData({ gender: option.value as any })}
+                            >
+                                {option.label}
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </OnboardingStepWrapper>
+    )
+}
+
+const AcademicInfoStep = ({ data, setData }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void }) => {
+    const [customBoard, setCustomBoard] = useState(false);
+    const toggleSubject = (subject: string) => {
+        const currentSubjects = data.subjects || [];
+        const newSubjects = currentSubjects.includes(subject)
+            ? currentSubjects.filter(s => s !== subject)
+            : [...currentSubjects, subject];
+        setData({ subjects: newSubjects });
+    }
+
+    return (
+        <OnboardingStepWrapper title="Your Academic World" step={3}>
+            <div className="max-w-xl mx-auto space-y-10">
+                 <div className="relative flex items-center">
+                    <School className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                        type="text"
+                        placeholder="Which class/grade are you in?"
+                        className="pl-12 h-14 text-lg"
+                        value={data.grade || ''}
+                        onChange={(e) => setData({ grade: e.target.value })}
+                    />
+                </div>
+                 <div className="relative flex items-center">
+                    <BookCopy className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                    {customBoard ? (
+                         <Input 
+                            type="text"
+                            placeholder="Please specify your board"
+                            className="pl-12 h-14 text-lg"
+                            value={data.board || ''}
+                            onChange={(e) => setData({ board: e.target.value })}
+                            autoFocus
+                        />
+                    ) : (
+                         <Input 
+                            type="text"
+                            placeholder="Your board (e.g., CBSE, ICSE)"
+                            className="pl-12 h-14 text-lg"
+                             value={data.board || ''}
+                            onChange={(e) => setData({ board: e.target.value })}
+                        />
+                    )}
+                     <Button variant="ghost" className="absolute right-2" onClick={() => setCustomBoard(prev => !prev)}>
+                         <Pencil className="w-4 h-4"/>
+                     </Button>
+                </div>
+                 <div>
+                     <p className="text-muted-foreground text-center mb-4">Choose your core subjects</p>
+                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {subjectOptions.map(option => (
+                            <Card 
+                                key={option.value}
+                                className={cn(
+                                    "p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg relative",
+                                     (data.subjects || []).includes(option.value) && "ring-2 ring-primary shadow-lg scale-105"
+                                )}
+                                onClick={() => toggleSubject(option.value)}
+                            >
+                                <span className="text-4xl mb-2">{option.icon}</span>
+                                <span className="font-semibold">{option.label}</span>
+                                {(data.subjects || []).includes(option.value) && (
+                                    <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
+                                        <Check className="w-4 h-4" />
+                                    </div>
+                                )}
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </OnboardingStepWrapper>
+    )
+}
+
+const LearningGoalsStep = ({ data, setData }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void }) => {
+    const [otherGoal, setOtherGoal] = useState("");
+    
+    const toggleGoal = (goal: string) => {
+        const currentGoals = data.goals || [];
+        const newGoals = currentGoals.includes(goal)
+            ? currentGoals.filter(g => g !== goal)
+            : [...currentGoals, goal];
+        setData({ goals: newGoals });
+    }
+
+    return (
+        <OnboardingStepWrapper title="What are your learning goals?" step={4}>
+            <div className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+                {goalOptions.map(goal => (
+                    <div key={goal} className="[perspective:1000px]" onClick={() => toggleGoal(goal)}>
+                         <Card className={cn(
+                             "h-40 p-4 flex items-center justify-center text-center cursor-pointer transition-transform duration-500 [transform-style:preserve-3d]",
+                             (data.goals || []).includes(goal) && "[transform:rotateY(180deg)]"
+                         )}>
+                             <div className="[backface-visibility:hidden] absolute inset-0 flex items-center justify-center p-4">
+                                <p className="text-xl font-headline">{goal}</p>
+                             </div>
+                             <div className="[backface-visibility:hidden] [transform:rotateY(180deg)] absolute inset-0 flex flex-col items-center justify-center p-4 bg-primary text-primary-foreground rounded-lg">
+                                 <Check className="w-16 h-16" />
+                                <p className="font-semibold">Selected!</p>
+                             </div>
+                         </Card>
+                    </div>
+                ))}
+            </div>
+             <div className="max-w-2xl mx-auto mt-8">
+                 <p className="text-muted-foreground text-center mb-4">Something else?</p>
+                 <div className="relative flex items-center">
+                    <Target className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                        type="text"
+                        placeholder="Describe your other goal"
+                        className="pl-12 h-14 text-lg"
+                        value={otherGoal}
+                        onChange={(e) => setOtherGoal(e.target.value)}
+                        onBlur={() => setData({ goals: [...(data.goals || []).filter(g => !g.startsWith("Other:")), `Other: ${otherGoal}`] })}
+                    />
+                </div>
+            </div>
+        </OnboardingStepWrapper>
     )
 }
 
@@ -43,21 +249,26 @@ const PlaceholderStep = ({ step, onNext, onPrev }: { step: number; onNext: () =>
 export function OnboardingForm() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [userData, setUserData] = useState<Partial<UserProfile>>({});
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const totalSteps = 10;
+  const progress = ((step - 1) / (totalSteps -1)) * 100;
 
   const nextStep = () => setStep((prev) => (prev < totalSteps ? prev + 1 : prev));
   const prevStep = () => setStep((prev) => (prev > 1 ? prev - 1 : prev));
+  
+  const updateLocalUserData = (newData: Partial<UserProfile>) => {
+      setUserData(prev => ({...prev, ...newData}));
+  }
 
   const handleFinish = async () => {
     if (!user) return;
     setIsLoading(true);
     try {
-        // Here we'll save all the collected data
-        await updateUserProfile(user.uid, { onboardingComplete: true });
+        await updateUserProfile(user.uid, { ...userData, onboardingComplete: true });
         toast({
             title: "Awesome! You’re all set.",
             description: "Let’s start your journey 🚀",
@@ -83,24 +294,46 @@ export function OnboardingForm() {
     )
   }
 
-  return (
-    <div className="flex flex-col min-h-screen items-center justify-center bg-card/50 p-6">
-        <div className="w-full max-w-4xl">
-            {step === 1 && <WelcomeStep onNext={nextStep} />}
-            {step > 1 && step < totalSteps && <PlaceholderStep step={step} onNext={nextStep} onPrev={prevStep} />}
-            {step === totalSteps && (
-                <div>
-                     <h2 className="text-2xl font-bold">Step {totalSteps} - Finish</h2>
-                     <p>This is a placeholder for the final step.</p>
-                    <div className="flex justify-between mt-8">
-                        <Button variant="outline" onClick={prevStep}>Back</Button>
-                        <Button onClick={handleFinish} disabled={isLoading}>
-                             {isLoading ? <LoaderCircle className="animate-spin" /> : "Go to Dashboard"}
-                        </Button>
-                    </div>
+  const renderStep = () => {
+    switch(step) {
+        case 1: return <WelcomeStep onNext={nextStep} />;
+        case 2: return <BasicDetailsStep data={userData} setData={updateLocalUserData} />;
+        case 3: return <AcademicInfoStep data={userData} setData={updateLocalUserData} />;
+        case 4: return <LearningGoalsStep data={userData} setData={updateLocalUserData} />;
+        case totalSteps: return (
+             <div>
+                 <h2 className="text-2xl font-bold">Step {totalSteps} - Finish</h2>
+                 <p>This is a placeholder for the final step.</p>
+                <div className="flex justify-between mt-8">
+                    <Button variant="outline" onClick={prevStep}>Back</Button>
+                    <Button onClick={handleFinish} disabled={isLoading}>
+                         {isLoading ? <LoaderCircle className="animate-spin" /> : "Go to Dashboard"}
+                    </Button>
                 </div>
-            )}
+            </div>
+        )
+        default: return <PlaceholderStep step={step} onNext={nextStep} onPrev={prevStep} />
+    }
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen items-center justify-center bg-card/50 p-6 transition-all duration-500">
+        <div className="w-full max-w-4xl">
+            {renderStep()}
         </div>
+        {step > 1 && step < totalSteps && (
+            <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t p-4">
+                <div className="container mx-auto max-w-4xl flex items-center justify-between">
+                     <Button variant="outline" onClick={prevStep} disabled={step <= 1}>Back</Button>
+                     <div className="w-1/2">
+                         <Progress value={progress} />
+                     </div>
+                     <Button onClick={nextStep} disabled={step >= totalSteps}>Next</Button>
+                </div>
+            </div>
+        )}
     </div>
   );
 }
+
+    
