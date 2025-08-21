@@ -19,8 +19,6 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTheme } from 'next-themes';
-
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
     return (
@@ -116,14 +114,6 @@ const avatarOptions = [
     { id: 'eagle', icon: '🦅' },
     { id: 'dragon', icon: '🐲' },
 ];
-
-const themeOptions = [
-    { id: 'light', name: 'Default Light', class: 'light' },
-    { id: 'dark', name: 'Default Dark', class: 'dark' },
-    { id: 'proudshe', name: 'Proudshe', class: 'proudshe' },
-    { id: 'retrogamer', name: 'Retro Gamer', class: 'retrogamer' },
-]
-
 
 const OnboardingStepWrapper = ({ title, children, step, totalSteps }: { title: string, children: React.ReactNode, step: number, totalSteps: number }) => (
     <div className="animate-slide-in-from-right w-full max-w-4xl mx-auto px-4 py-8">
@@ -667,145 +657,9 @@ const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserPr
     )
 };
 
-const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
-    const { setTheme } = useTheme();
-    
-    // State for the custom theme creator
-    const [isCustomizing, setIsCustomizing] = useState(false);
-    const [primaryHue, setPrimaryHue] = useState(34);
-    const [primarySaturation, setPrimarySaturation] = useState(96);
-    const [primaryLightness, setPrimaryLightness] = useState(49);
-    const [accentHue, setAccentHue] = useState(47);
-    const [accentSaturation, setAccentSaturation] = useState(96);
-    const [accentLightness, setAccentLightness] = useState(50);
-
-    const removeCustomThemeStyles = () => {
-        const root = document.documentElement;
-        root.style.removeProperty('--primary');
-        root.style.removeProperty('--ring');
-        root.style.removeProperty('--accent');
-    }
-
-    // Effect to apply custom styles in real-time
-    useEffect(() => {
-        const root = document.documentElement;
-        if (isCustomizing) {
-            root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
-            root.style.setProperty('--ring', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
-            root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
-        }
-        // Cleanup function to remove styles when component unmounts or isCustomizing becomes false
-        return () => {
-             if (isCustomizing) {
-                removeCustomThemeStyles();
-             }
-        };
-    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
-
-    const handleThemeSelect = (themeClass: string) => {
-        setIsCustomizing(false);
-        removeCustomThemeStyles(); // Clear any custom styles
-        setTheme(themeClass); // Apply preset theme
-        setData({ theme: themeClass });
-    }
-
-    const handleCustomizationStart = () => {
-        // Set a base theme to ensure all variables are defined before overriding
-        setTheme('light');
-        setIsCustomizing(true);
-        setData({ theme: 'custom' });
-    }
-
-    const handleTryYourLuck = () => {
-        if(!isCustomizing) handleCustomizationStart();
-
-        const p_h = Math.floor(Math.random() * 360);
-        const p_s = Math.floor(Math.random() * 40) + 60; // 60-100% saturation
-        const p_l = Math.floor(Math.random() * 20) + 40; // 40-60% lightness
-
-        // Analogous accent color
-        const a_h = (p_h + 30) % 360;
-        const a_s = p_s;
-        const a_l = p_l;
-
-        setPrimaryHue(p_h);
-        setPrimarySaturation(p_s);
-        setPrimaryLightness(p_l);
-        setAccentHue(a_h);
-        setAccentSaturation(a_s);
-        setAccentLightness(a_l);
-    }
-
-    return (
-        <OnboardingStepWrapper title="Customize Your Vibe" step={7} totalSteps={totalSteps}>
-            <div className="max-w-3xl mx-auto space-y-12">
-                <div>
-                    <h3 className="text-xl font-bold text-center mb-6">Choose a Preset</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {themeOptions.map(option => (
-                            <div key={option.id} className="text-center">
-                                <Button 
-                                    variant="outline"
-                                    onClick={() => handleThemeSelect(option.id)}
-                                    className={cn(
-                                        "w-full h-24 border-4 transition-all",
-                                        data.theme === option.id && !isCustomizing ? "border-primary scale-105" : "border-muted",
-                                        option.class // Apply theme class for preview
-                                    )}
-                                >
-                                    <div className="w-1/2 h-full bg-primary"></div>
-                                    <div className="w-1/2 h-full bg-accent"></div>
-                                </Button>
-                                <p className="text-sm font-medium mt-2">{option.name}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div>
-                    <h3 className="text-xl font-bold text-center mb-2">Or, Create Your Own</h3>
-                    <p className="text-muted-foreground text-center mb-6">Adjust the sliders to see the magic happen in real-time!</p>
-                    
-                    {!isCustomizing ? (
-                         <div className="text-center">
-                            <Button size="lg" variant="outline" onClick={handleCustomizationStart}>
-                                <Palette className="mr-2" /> Make My Own Theme
-                            </Button>
-                        </div>
-                    ) : (
-                        <Card className={cn("p-6 space-y-6", isCustomizing && "ring-2 ring-primary")}>
-                            <div>
-                                <h4 className="font-semibold mb-2">Primary Color</h4>
-                                <div className="space-y-3">
-                                    <Label>Hue ({primaryHue})</Label><Slider value={[primaryHue]} onValueChange={([v]) => setPrimaryHue(v)} max={360} />
-                                    <Label>Saturation ({primarySaturation}%)</Label><Slider value={[primarySaturation]} onValueChange={([v]) => setPrimarySaturation(v)} max={100} />
-                                    <Label>Lightness ({primaryLightness}%)</Label><Slider value={[primaryLightness]} onValueChange={([v]) => setPrimaryLightness(v)} max={100} />
-                                </div>
-                            </div>
-                             <div className="border-t pt-6">
-                                <h4 className="font-semibold mb-2">Accent Color</h4>
-                                <div className="space-y-3">
-                                    <Label>Hue ({accentHue})</Label><Slider value={[accentHue]} onValueChange={([v]) => setAccentHue(v)} max={360} />
-                                    <Label>Saturation ({accentSaturation}%)</Label><Slider value={[accentSaturation]} onValueChange={([v]) => setAccentSaturation(v)} max={100} />
-                                    <Label>Lightness ({accentLightness}%)</Label><Slider value={[accentLightness]} onValueChange={([v]) => setAccentLightness(v)} max={100} />
-                                </div>
-                            </div>
-                             <div className="border-t pt-6 text-center">
-                                <Button onClick={handleTryYourLuck}>
-                                    <Dices className="mr-2" /> Try Your Luck
-                                </Button>
-                            </div>
-                        </Card>
-                    )}
-                </div>
-            </div>
-        </OnboardingStepWrapper>
-    );
-};
-
 const EngagementBoostStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
     return (
-        <OnboardingStepWrapper title="Pick a Motivational Avatar" step={8} totalSteps={totalSteps}>
+        <OnboardingStepWrapper title="Pick a Motivational Avatar" step={7} totalSteps={totalSteps}>
             <div className="max-w-xl mx-auto">
                 <p className="text-muted-foreground text-center mb-8">
                     This avatar will represent you in challenges, streaks, and leaderboards!
@@ -857,7 +711,7 @@ export function OnboardingForm() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const totalSteps = 10;
+  const totalSteps = 9;
   const progress = ((step - 1) / (totalSteps -1)) * 100;
 
   const nextStep = () => setStep((prev) => (prev < totalSteps ? prev + 1 : prev));
@@ -871,20 +725,7 @@ export function OnboardingForm() {
     if (!user) return;
     setIsLoading(true);
     try {
-        // Before saving, if theme was custom, save the HSL values
-        if (userData.theme === 'custom') {
-            const root = document.documentElement.style;
-            const finalUserData = {
-                ...userData,
-                customTheme: {
-                    primary: root.getPropertyValue('--primary'),
-                    accent: root.getPropertyValue('--accent'),
-                }
-            };
-            await updateUserProfile(user.uid, { ...finalUserData, onboardingComplete: true });
-        } else {
-             await updateUserProfile(user.uid, { ...userData, onboardingComplete: true });
-        }
+        await updateUserProfile(user.uid, { ...userData, onboardingComplete: true });
 
         toast({
             title: "Awesome! You’re all set.",
@@ -919,9 +760,8 @@ export function OnboardingForm() {
         case 4: return <LearningJourneyStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 5: return <InterestsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 6: return <LearningStyleStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
-        case 7: return <ThemeCustomizationStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
-        case 8: return <EngagementBoostStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
-        case 9: return <PlaceholderStep step={step} onNext={nextStep} onPrev={prevStep} totalSteps={totalSteps} />
+        case 7: return <EngagementBoostStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 8: return <PlaceholderStep step={step} onNext={nextStep} onPrev={prevStep} totalSteps={totalSteps} />
         case totalSteps: return (
             <div className="flex h-full items-center justify-center">
                  <div>
