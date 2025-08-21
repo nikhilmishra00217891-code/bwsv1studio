@@ -188,6 +188,7 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
                 photoURL,
                 role,
                 createdAt,
+                onboardingComplete: false,
                 enrolledCourses: [],
                 progress: {},
             });
@@ -195,6 +196,11 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
             console.error("Error creating user document:", error);
         }
     }
+};
+
+export const updateUserProfile = async (userId: string, data: Partial<UserProfile>) => {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, data);
 };
 
 

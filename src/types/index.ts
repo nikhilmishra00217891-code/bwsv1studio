@@ -42,6 +42,19 @@ export interface UserProfile {
     email: string | null;
     displayName: string | null;
     role: 'student' | 'faculty';
+    onboardingComplete?: boolean;
+    // Onboarding data
+    age?: number;
+    gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
+    grade?: string;
+    board?: string;
+    subjects?: string[];
+    goals?: string[];
+    interests?: string[];
+    learningStyle?: ('video' | 'reading' | 'practice' | 'discussion')[];
+    theme?: string;
+    avatar?: string;
+    // Original fields
     enrolledCourses?: string[];
     preferredSubjects?: string[];
 }

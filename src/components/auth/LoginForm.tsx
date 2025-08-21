@@ -126,8 +126,8 @@ export function LoginForm() {
 
         await updateProfile(userCredential.user, { displayName: username });
         await createUserProfile(userCredential.user, 'student');
-        toast({ title: "Account created!", description: "You've been successfully signed up." });
-        router.push("/dashboard");
+        toast({ title: "Account created!", description: "Welcome to the Parivaar!" });
+        router.push("/onboarding");
 
       } else {
         await signInWithEmailAndPassword(auth, email, password);
