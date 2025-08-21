@@ -1,4 +1,5 @@
 
+
 import { OnboardingForm } from "@/components/auth/OnboardingForm";
 import type { Metadata } from "next";
 
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 }
 
 export default function OnboardingPage() {
-    return <OnboardingForm />;
+    return (
+      <div className="h-screen w-screen">
+        <OnboardingForm />
+      </div>
+    );
 }

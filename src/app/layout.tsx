@@ -2,16 +2,12 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/common/Header";
-import Footer from "@/components/common/Footer";
 import { Toaster } from "@/components/ui/toaster";
-import AiMentorWidget from "@/components/common/AiMentorWidget";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/common/ThemeProvider";
 import { EditModeProvider } from "@/components/common/EditModeProvider";
-import { Button } from "@/components/ui/button";
-import { Phone } from "lucide-react";
-import Link from "next/link";
+import MainLayout from "./MainLayout";
+
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -41,24 +37,9 @@ export default function RootLayout({
         >
           <AuthProvider>
             <EditModeProvider>
-              <div className="flex min-h-screen flex-col">
-                <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </div>
-              <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
-                 <Button
-                    asChild
-                    className="h-16 w-16 rounded-full shadow-lg"
-                    size="icon"
-                    aria-label="Contact Us"
-                  >
-                    <Link href="/contact">
-                      <Phone className="h-8 w-8" />
-                    </Link>
-                </Button>
-                <AiMentorWidget />
-              </div>
+              <MainLayout>
+                {children}
+              </MainLayout>
               <Toaster />
             </EditModeProvider>
           </AuthProvider>
