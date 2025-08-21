@@ -3,7 +3,7 @@
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat } from "@/ai/flows";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, deleteDoc } from "firebase/firestore";
 import type { UserProfile } from "@/types";
 
 interface Message {
@@ -131,5 +131,19 @@ export async function submitFeedback(userId: string, feedback: string): Promise<
   } catch (error) {
     console.error("Error submitting feedback:", error);
     return { success: false, message: "An unexpected error occurred while submitting your feedback." };
+  }
+}
+
+export async function deleteUser(userId: string): Promise<{success: boolean, message: string}> {
+  try {
+    // This is a "soft delete". It removes the user from the application's database,
+    // but the user's authentication record will still exist in Firebase Auth.
+    // For a "hard delete", a Cloud Function with the Admin SDK would be required.
+    const userDocRef = doc(db, 'users', userId);
+    await deleteDoc(userDocRef);
+    return { success: true, message: "User profile successfully deleted from Firestore."};
+  } catch (error: any) {
+    console.error("Error deleting user profile:", error);
+    return { success: false, message: error.message || "An unexpected error occurred."};
   }
 }

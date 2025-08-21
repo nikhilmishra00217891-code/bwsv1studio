@@ -15,10 +15,37 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { MoreHorizontal, Trash2, LoaderCircle } from 'lucide-react';
+import { 
+    DropdownMenu, 
+    DropdownMenuContent, 
+    DropdownMenuItem, 
+    DropdownMenuTrigger, 
+    DropdownMenuSeparator 
+} from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { deleteUser } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] }) {
-  const [users] = useState(initialUsers);
+  const [users, setUsers] = useState(initialUsers);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const { toast } = useToast();
 
   const filteredUsers = useMemo(() => {
     if (!searchTerm) return users;
@@ -27,6 +54,36 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
       user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [users, searchTerm]);
+
+  const handleDeleteClick = (user: UserProfile) => {
+    setUserToDelete(user);
+    setShowDeleteAlert(true);
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(userToDelete.uid);
+    const { success, message } = await deleteUser(userToDelete.uid);
+    
+    if (success) {
+        setUsers(prev => prev.filter(u => u.uid !== userToDelete.uid));
+        toast({
+            title: "User Deleted",
+            description: `${userToDelete.displayName} has been removed.`,
+        });
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Deletion Failed",
+            description: message,
+        });
+    }
+    
+    setIsDeleting(null);
+    setShowDeleteAlert(false);
+    setUserToDelete(null);
+  }
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -52,7 +109,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                 <TableHead>Grade</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead>Onboarding</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -77,9 +134,24 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                         <Badge variant="destructive">Pending</Badge>
                     }
                   </TableCell>
-                   <TableCell>
-                    {/* Placeholder for future actions */}
-                    <span className="text-muted-foreground text-xs">...</span>
+                   <TableCell className="text-right">
+                    {isDeleting === user.uid ? (
+                        <LoaderCircle className="w-5 h-5 animate-spin ml-auto"/>
+                    ) : (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="w-5 h-5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => handleDeleteClick(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete User
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -87,6 +159,27 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
           </Table>
         </ScrollArea>
       </div>
+
+       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to delete this user?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will permanently delete the user profile for <span className="font-bold text-foreground">{userToDelete?.displayName}</span> ({userToDelete?.email}). This action is irreversible.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleConfirmDelete}
+                        className={cn(buttonVariants({variant: "destructive"}))}
+                        disabled={!!isDeleting}
+                    >
+                        {isDeleting ? <LoaderCircle className="animate-spin" /> : "Confirm Delete"}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
