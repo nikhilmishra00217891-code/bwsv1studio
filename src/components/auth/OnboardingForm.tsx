@@ -742,32 +742,11 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
     const [accentSaturation, setAccentSaturation] = useState(80);
     const [accentLightness, setAccentLightness] = useState(97);
     
-    const primaryColorRef = useRef(data.customTheme?.primary);
-    const accentColorRef = useRef(data.customTheme?.accent);
-    const themeRef = useRef(data.theme);
-
     useEffect(() => {
         if (isCustomizing) {
             const root = document.documentElement;
             root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
             root.style.setProperty('--card', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
-            
-            const newThemeData = {
-                theme: 'custom',
-                customTheme: {
-                    primary: { h: primaryHue, s: primarySaturation, l: primaryLightness },
-                    accent: { h: accentHue, s: accentSaturation, l: accentLightness },
-                }
-            };
-            if (JSON.stringify(newThemeData.customTheme.primary) !== JSON.stringify(primaryColorRef.current) ||
-                JSON.stringify(newThemeData.customTheme.accent) !== JSON.stringify(accentColorRef.current) ||
-                newThemeData.theme !== themeRef.current
-            ) {
-                 setData(newThemeData);
-                 primaryColorRef.current = newThemeData.customTheme.primary;
-                 accentColorRef.current = newThemeData.customTheme.accent;
-                 themeRef.current = newThemeData.theme;
-            }
         }
     }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
     
@@ -809,6 +788,10 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
         setAccentHue(a_h);
         setAccentSaturation(a_s);
         setAccentLightness(a_l);
+         setData({ theme: 'custom', customTheme: {
+            primary: { h: p_h, s: p_s, l: p_l },
+            accent: { h: a_h, s: a_s, l: a_l },
+        }});
     }
 
     return (
@@ -869,15 +852,15 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                     <h4 className="font-semibold text-center" style={{ color: `hsl(${primaryHue}, ${primarySaturation}%, ${primaryLightness}%)` }}>Primary Color</h4>
                                     <div className="space-y-2">
                                         <Label>Hue ({primaryHue})</Label>
-                                        <Slider value={[primaryHue]} onValueChange={([val]) => setPrimaryHue(val)} max={360} step={1} />
+                                        <Slider value={[primaryHue]} onValueChange={([val]) => { setPrimaryHue(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, primary: { h: val, s: primarySaturation, l: primaryLightness } } as any}) }} max={360} step={1} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Saturation ({primarySaturation}%)</Label>
-                                        <Slider value={[primarySaturation]} onValueChange={([val]) => setPrimarySaturation(val)} max={100} step={1} />
+                                        <Slider value={[primarySaturation]} onValueChange={([val]) => { setPrimarySaturation(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, primary: { h: primaryHue, s: val, l: primaryLightness } } as any}) }} max={100} step={1} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Lightness ({primaryLightness}%)</Label>
-                                        <Slider value={[primaryLightness]} onValueChange={([val]) => setPrimaryLightness(val)} max={100} step={1} />
+                                        <Slider value={[primaryLightness]} onValueChange={([val]) => { setPrimaryLightness(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, primary: { h: primaryHue, s: primarySaturation, l: val } } as any}) }} max={100} step={1} />
                                     </div>
                                 </div>
                                 {/* Accent Color */}
@@ -885,15 +868,15 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                      <h4 className="font-semibold text-center">Page Background</h4>
                                     <div className="space-y-2">
                                         <Label>Hue ({accentHue})</Label>
-                                        <Slider value={[accentHue]} onValueChange={([val]) => setAccentHue(val)} max={360} step={1} />
+                                        <Slider value={[accentHue]} onValueChange={([val]) => { setAccentHue(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, accent: { h: val, s: accentSaturation, l: accentLightness } } as any}) }} max={360} step={1} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Saturation ({accentSaturation}%)</Label>
-                                        <Slider value={[accentSaturation]} onValueChange={([val]) => setAccentSaturation(val)} max={100} step={1} />
+                                        <Slider value={[accentSaturation]} onValueChange={([val]) => { setAccentSaturation(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, accent: { h: accentHue, s: val, l: accentLightness } } as any}) }} max={100} step={1} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Lightness ({accentLightness}%)</Label>
-                                        <Slider value={[accentLightness]} onValueChange={([val]) => setAccentLightness(val)} max={100} step={1} />
+                                        <Slider value={[accentLightness]} onValueChange={([val]) => { setAccentLightness(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, accent: { h: accentHue, s: accentSaturation, l: val } } as any}) }} max={100} step={1} />
                                     </div>
                                 </div>
                             </div>
