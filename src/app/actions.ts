@@ -3,7 +3,7 @@
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat } from "@/ai/flows";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import type { UserProfile } from "@/types";
 
 interface Message {
@@ -134,16 +134,34 @@ export async function submitFeedback(userId: string, feedback: string): Promise<
   }
 }
 
-export async function deleteUser(userId: string): Promise<{success: boolean, message: string}> {
+export async function suspendUser(userId: string, reason: string): Promise<{success: boolean, message: string}> {
   try {
-    // This is a "soft delete". It removes the user from the application's database,
-    // but the user's authentication record will still exist in Firebase Auth.
-    // For a "hard delete", a Cloud Function with the Admin SDK would be required.
     const userDocRef = doc(db, 'users', userId);
-    await deleteDoc(userDocRef);
-    return { success: true, message: "User profile successfully deleted from Firestore."};
+    const suspensionData = {
+        isSuspended: true,
+        reason: reason,
+        suspendedAt: serverTimestamp(),
+    };
+    await updateDoc(userDocRef, { suspension: suspensionData });
+    return { success: true, message: "User successfully suspended." };
   } catch (error: any) {
-    console.error("Error deleting user profile:", error);
-    return { success: false, message: error.message || "An unexpected error occurred."};
+    console.error("Error suspending user:", error);
+    return { success: false, message: error.message || "An unexpected error occurred." };
+  }
+}
+
+export async function unsuspendUser(userId: string): Promise<{success: boolean, message: string}> {
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    const suspensionData = {
+        isSuspended: false,
+        reason: "",
+        suspendedAt: null,
+    };
+    await updateDoc(userDocRef, { suspension: suspensionData });
+    return { success: true, message: "User successfully unsuspended." };
+  } catch (error: any) {
+    console.error("Error unsuspending user:", error);
+    return { success: false, message: error.message || "An unexpected error occurred." };
   }
 }

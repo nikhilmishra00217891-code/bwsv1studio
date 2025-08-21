@@ -76,7 +76,12 @@ export interface UserProfile {
     }
     // Onboarding data - Step 8
     avatar?: string;
-    // Original fields
+    // App data
+    suspension?: {
+        isSuspended: boolean;
+        reason: string;
+        suspendedAt: string | null;
+    };
     enrolledCourses?: string[];
     progress?: { [courseId: string]: number };
 }

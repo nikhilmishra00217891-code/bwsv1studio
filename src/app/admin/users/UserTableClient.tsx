@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Trash2, LoaderCircle, RefreshCw } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -25,26 +25,170 @@ import {
     DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { deleteUser } from '@/app/actions';
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
+import { suspendUser, unsuspendUser } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
+const suspensionReasons = [
+    "Violation of Terms of Service",
+    "Spamming or disruptive behavior",
+    "Hacking or security exploit attempt",
+    "Payment or subscription issue",
+];
+
+const SuspensionDialog = ({ 
+    user,
+    isOpen, 
+    onOpenChange,
+    onUserUpdate
+}: { 
+    user: UserProfile | null, 
+    isOpen: boolean, 
+    onOpenChange: (open: boolean) => void,
+    onUserUpdate: (updatedUser: UserProfile) => void
+}) => {
+    const [reason, setReason] = useState("");
+    const [customReason, setCustomReason] = useState("");
+    const [isProcessing, setIsProcessing] = useState(false);
+    const { toast } = useToast();
+
+    React.useEffect(() => {
+        if (!isOpen) {
+            setReason("");
+            setCustomReason("");
+        }
+    }, [isOpen]);
+
+    if (!user) return null;
+    const isSuspended = user.suspension?.isSuspended;
+
+    const handleSuspend = async () => {
+        const finalReason = reason === 'other' ? customReason : reason;
+        if (!finalReason) {
+            toast({ variant: "destructive", title: "Reason Required", description: "Please select or provide a reason for suspension." });
+            return;
+        }
+        setIsProcessing(true);
+        const { success, message } = await suspendUser(user.uid, finalReason);
+        if (success) {
+            toast({ title: "User Suspended", description: `${user.displayName} has been suspended.` });
+            const updatedUser = { ...user, suspension: { isSuspended: true, reason: finalReason, suspendedAt: new Date().toISOString() } };
+            onUserUpdate(updatedUser);
+            onOpenChange(false);
+        } else {
+            toast({ variant: "destructive", title: "Suspension Failed", description: message });
+        }
+        setIsProcessing(false);
+    }
+
+    const handleUnsuspend = async () => {
+        setIsProcessing(true);
+        const { success, message } = await unsuspendUser(user.uid);
+        if (success) {
+            toast({ title: "User Unsuspended", description: `${user.displayName}'s access has been restored.` });
+             const updatedUser = { ...user, suspension: { isSuspended: false, reason: "", suspendedAt: null } };
+            onUserUpdate(updatedUser);
+            onOpenChange(false);
+        } else {
+            toast({ variant: "destructive", title: "Failed to Unsuspend", description: message });
+        }
+        setIsProcessing(false);
+    }
+
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{isSuspended ? "Unsuspend User" : "Suspend User"}</DialogTitle>
+                    <DialogDescription>
+                        {isSuspended
+                            ? `This will lift the suspension for ${user.displayName} and restore their access to the app.`
+                            : `This will suspend ${user.displayName} and block them from accessing the app.`
+                        }
+                    </DialogDescription>
+                </DialogHeader>
+                
+                {isSuspended ? (
+                    <div className='py-4'>
+                        <p className="font-semibold">Current Reason for Suspension:</p>
+                        <blockquote className="mt-2 border-l-2 pl-6 italic text-muted-foreground">
+                            {user.suspension?.reason}
+                        </blockquote>
+                    </div>
+                ) : (
+                    <div className="py-4 space-y-4">
+                        <Label>Reason for Suspension</Label>
+                        <RadioGroup value={reason} onValueChange={setReason}>
+                            {suspensionReasons.map(r => (
+                                <div key={r} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={r} id={r.replace(/\s/g, '')} />
+                                    <Label htmlFor={r.replace(/\s/g, '')}>{r}</Label>
+                                </div>
+                            ))}
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="other" id="other" />
+                                <Label htmlFor="other">Other (please specify)</Label>
+                            </div>
+                        </RadioGroup>
+                        {reason === 'other' && (
+                             <Textarea 
+                                placeholder="Specify custom reason..."
+                                value={customReason}
+                                onChange={(e) => setCustomReason(e.target.value)}
+                                className="mt-2"
+                             />
+                        )}
+                    </div>
+                )}
+                
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline" disabled={isProcessing}>Cancel</Button>
+                    </DialogClose>
+                     {isSuspended ? (
+                        <Button 
+                            variant="default"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={handleUnsuspend} 
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? <LoaderCircle className="animate-spin" /> : "Confirm Unsuspend"}
+                        </Button>
+                    ) : (
+                        <Button 
+                            variant="destructive"
+                            onClick={handleSuspend} 
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? <LoaderCircle className="animate-spin" /> : "Confirm Suspend"}
+                        </Button>
+                    )}
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
 export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
@@ -72,37 +216,17 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
     });
   };
 
-  const handleDeleteClick = (user: UserProfile) => {
-    setUserToDelete(user);
-    setShowDeleteAlert(true);
+  const handleManageSuspensionClick = (user: UserProfile) => {
+    setSelectedUser(user);
+    setShowSuspensionDialog(true);
   }
 
-  const handleConfirmDelete = async () => {
-    if (!userToDelete) return;
-
-    setIsDeleting(userToDelete.uid);
-    const { success, message } = await deleteUser(userToDelete.uid);
-    
-    if (success) {
-        setUsers(prev => prev.filter(u => u.uid !== userToDelete.uid));
-        toast({
-            title: "User Deleted",
-            description: `${userToDelete.displayName} has been removed.`,
-        });
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Deletion Failed",
-            description: message,
-        });
-    }
-    
-    setIsDeleting(null);
-    setShowDeleteAlert(false);
-    setUserToDelete(null);
+  const handleUserUpdate = (updatedUser: UserProfile) => {
+    setUsers(prevUsers => prevUsers.map(u => u.uid === updatedUser.uid ? updatedUser : u));
   }
 
   return (
+    <>
     <div className="p-4 md:p-8 space-y-6">
         <div>
              <h1 className="text-3xl md:text-4xl font-bold font-headline">User Management</h1>
@@ -129,7 +253,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Grade</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead>Onboarding</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -137,7 +261,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => (
-                <TableRow key={user.uid}>
+                <TableRow key={user.uid} className={cn(user.suspension?.isSuspended && "bg-destructive/5 hover:bg-destructive/10")}>
                   <TableCell>
                     <div className="font-medium">{user.displayName || 'N/A'}</div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
@@ -147,7 +271,12 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                       {user.role}
                     </Badge>
                   </TableCell>
-                  <TableCell>{user.grade || 'N/A'}</TableCell>
+                  <TableCell>
+                     {user.suspension?.isSuspended ? 
+                        <Badge variant="destructive">Suspended</Badge> :
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Active</Badge>
+                     }
+                  </TableCell>
                    <TableCell>
                     {user.createdAt ? format(new Date(user.createdAt), 'PP') : 'N/A'}
                   </TableCell>
@@ -158,7 +287,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                     }
                   </TableCell>
                    <TableCell className="text-right">
-                    {isDeleting === user.uid ? (
+                    {isProcessing === user.uid ? (
                         <LoaderCircle className="w-5 h-5 animate-spin ml-auto"/>
                     ) : (
                         <DropdownMenu>
@@ -168,10 +297,17 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => handleDeleteClick(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete User
-                                </DropdownMenuItem>
+                                {user.suspension?.isSuspended ? (
+                                    <DropdownMenuItem onSelect={() => handleManageSuspensionClick(user)} className="text-green-600 focus:text-green-600 focus:bg-green-50">
+                                        <UserCheck className="mr-2 h-4 w-4" />
+                                        Unsuspend User
+                                    </DropdownMenuItem>
+                                ) : (
+                                    <DropdownMenuItem onSelect={() => handleManageSuspensionClick(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                        <Ban className="mr-2 h-4 w-4" />
+                                        Suspend User
+                                    </DropdownMenuItem>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     )}
@@ -182,27 +318,13 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
           </Table>
         </ScrollArea>
       </div>
-
-       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to delete this user?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will remove the user profile for <span className="font-bold text-foreground">{userToDelete?.displayName}</span> ({userToDelete?.email}). This action is a "soft delete" and can be reversed by developers if needed.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                        onClick={handleConfirmDelete}
-                        className={cn(buttonVariants({variant: "destructive"}))}
-                        disabled={!!isDeleting}
-                    >
-                        {isDeleting ? <LoaderCircle className="animate-spin" /> : "Confirm Delete"}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
     </div>
+    <SuspensionDialog 
+        user={selectedUser}
+        isOpen={showSuspensionDialog}
+        onOpenChange={setShowSuspensionDialog}
+        onUserUpdate={handleUserUpdate}
+    />
+    </>
   );
 }
