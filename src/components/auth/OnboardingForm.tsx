@@ -6,7 +6,7 @@ import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth } from "lucide-react";
+import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent } from "../ui/card";
@@ -49,8 +49,10 @@ const subjectOptions = [
     { value: 'Maths', label: 'Maths', icon: Sigma, highSchoolOnly: true },
     { value: 'Biology', label: 'Biology', icon: Milestone, highSchoolOnly: true },
     { value: 'English', label: 'English', icon: Languages, highSchoolOnly: false },
-    { value: 'Social Science', label: 'Social Science', icon: Earth, highSchoolOnly: false },
+    { value: 'Social Science', label: 'Social Science', icon: History, highSchoolOnly: false },
     { value: 'Computer Science', label: 'Computer Science', icon: Computer, highSchoolOnly: false },
+    { value: 'Accountancy', label: 'Accountancy', icon: Scale, highSchoolOnly: true },
+    { value: 'Business Studies', label: 'Business Studies', icon: Briefcase, highSchoolOnly: true },
 ]
 
 const goalOptions = [
@@ -513,3 +515,5 @@ export function OnboardingForm() {
     </div>
   );
 }
+
+    
