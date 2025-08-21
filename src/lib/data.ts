@@ -200,15 +200,7 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
 
 export const updateUserProfile = async (userId: string, data: Partial<UserProfile>) => {
     const userRef = doc(db, "users", userId);
-    const updateData = { ...data };
-
-    // If an avatar is being set, we update the photoURL field to match.
-    // This allows us to use the standard photoURL field for our custom avatars.
-    if (data.avatar) {
-        updateData.photoURL = data.avatar;
-    }
-    
-    await updateDoc(userRef, updateData);
+    await updateDoc(userRef, data);
 };
 
 
@@ -223,3 +215,15 @@ export const isFaculty = async (userId: string): Promise<boolean> => {
     return false;
   }
 }
+
+export const getAllUsers = async (): Promise<UserProfile[]> => {
+    const usersCol = collection(db, "users");
+    const q = query(usersCol, orderBy("displayName"));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(
+        (doc) => ({ ...doc.data() } as UserProfile)
+    );
+};
