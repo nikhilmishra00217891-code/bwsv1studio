@@ -46,6 +46,7 @@ export interface UserProfile {
     role: 'student' | 'faculty';
     onboardingComplete?: boolean;
     // Onboarding data - Step 2
+    mobile?: string;
     age?: number;
     gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
     // Onboarding data - Step 3

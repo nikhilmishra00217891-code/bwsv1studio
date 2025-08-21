@@ -7,7 +7,7 @@ import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare, Palette, Smile, Dices } from "lucide-react";
+import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare, Palette, Smile, Dices, Mail, Phone } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent } from "../ui/card";
@@ -123,7 +123,7 @@ const themeOptions = [
         colors: {
             bg: 'hsl(35 80% 97%)',
             primary: 'hsl(34 96% 49%)',
-            accent: 'hsl(47 96% 50%)',
+            accent: 'hsl(35, 87%, 92%)',
         }
     },
     {
@@ -132,7 +132,7 @@ const themeOptions = [
         colors: {
             bg: 'hsl(20 15% 10%)',
             primary: 'hsl(34 96% 49%)',
-            accent: 'hsl(47 96% 50%)',
+            accent: 'hsl(20, 15%, 15%)',
         }
     },
     {
@@ -141,7 +141,7 @@ const themeOptions = [
         colors: {
             bg: 'hsl(340 100% 98%)',
             primary: 'hsl(337 90% 60%)',
-            accent: 'hsl(337 95% 65%)',
+            accent: 'hsl(340, 100%, 95%)',
         }
     },
     {
@@ -150,7 +150,7 @@ const themeOptions = [
         colors: {
             bg: 'hsl(236 65% 10%)',
             primary: 'hsl(260 90% 70%)',
-            accent: 'hsl(45 85% 55%)',
+            accent: 'hsl(236, 65%, 15%)',
         }
     }
 ];
@@ -164,7 +164,7 @@ const OnboardingStepWrapper = ({ title, children, step, totalSteps }: { title: s
     </div>
 )
 
-const BasicDetailsStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
+const BasicDetailsStep = ({ data, setData, totalSteps, email }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number, email: string | null }) => {
     return (
         <OnboardingStepWrapper title="Tell Us a Little About Yourself" step={2} totalSteps={totalSteps}>
             <div className="max-w-lg mx-auto space-y-8">
@@ -176,8 +176,38 @@ const BasicDetailsStep = ({ data, setData, totalSteps }: { data: Partial<UserPro
                         className="pl-12 h-14 text-lg"
                         value={data.displayName || ''}
                         onChange={(e) => setData({ displayName: e.target.value })}
+                        required
                     />
                 </div>
+
+                <div className="relative flex items-center">
+                    <Mail className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                        type="email" 
+                        placeholder="Your email"
+                        className="pl-12 h-14 text-lg bg-muted/50"
+                        value={email || ''}
+                        readOnly
+                        disabled
+                    />
+                </div>
+
+                <div className="relative flex items-center">
+                    <Phone className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                        type="tel" 
+                        placeholder="Your mobile number"
+                        className="pl-12 h-14 text-lg"
+                        value={data.mobile || ''}
+                        onChange={(e) => setData({ mobile: e.target.value })}
+                        required
+                    />
+                </div>
+                 <p className="text-xs text-muted-foreground text-center -mt-4">
+                    We will need it for your account recovery when needed!
+                </p>
+
+
                 <div className="relative flex items-center">
                     <Cake className="absolute left-4 w-5 h-5 text-muted-foreground" />
                     <Input 
@@ -708,12 +738,9 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
     const [primaryLightness, setPrimaryLightness] = useState(49);
     
     const [accentHue, setAccentHue] = useState(35);
-    const [accentSaturation, setAccentSaturation] = useState(87);
-    const [accentLightness, setAccentLightness] = useState(92);
+    const [accentSaturation, setAccentSaturation] = useState(80);
+    const [accentLightness, setAccentLightness] = useState(97);
     
-    const localDataRef = useRef(data);
-    localDataRef.current = data;
-
     useEffect(() => {
         if (isCustomizing) {
             const root = document.documentElement;
@@ -737,7 +764,10 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
         setIsCustomizing(true);
         // We set a 'custom' theme class to disable the preset theme css variables
         setTheme('light'); // set to a neutral base
-        setData({ ...localDataRef.current, theme: 'custom' });
+        setData({ theme: 'custom', customTheme: {
+            primary: { h: primaryHue, s: primarySaturation, l: primaryLightness },
+            accent: { h: accentHue, s: accentSaturation, l: accentLightness },
+        }});
     }
 
     const tryYourLuck = () => {
@@ -748,8 +778,8 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
         const p_l = Math.floor(Math.random() * 20) + 40; // 40-60
         
         const a_h = (p_h + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 60) + 30)) % 360;
-        const a_s = Math.floor(Math.random() * 30) + 70;
-        const a_l = Math.floor(Math.random() * 20) + 45;
+        const a_s = Math.floor(Math.random() * 20) + 70;
+        const a_l = Math.floor(Math.random() * 10) + 88;
 
         setPrimaryHue(p_h);
         setPrimarySaturation(p_s);
@@ -830,7 +860,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                 </div>
                                 {/* Accent Color */}
                                 <div className="space-y-4">
-                                     <h4 className="font-semibold text-center">Background Color</h4>
+                                     <h4 className="font-semibold text-center">Page Background</h4>
                                     <div className="space-y-2">
                                         <Label>Hue ({accentHue})</Label>
                                         <Slider value={[accentHue]} onValueChange={([val]) => setAccentHue(val)} max={360} step={1} />
@@ -911,7 +941,7 @@ export function OnboardingForm() {
   
   useEffect(() => {
     if (user && !userData.displayName) {
-        setUserData(prev => ({...prev, displayName: user.displayName || ''}))
+        setUserData(prev => ({...prev, displayName: user.displayName || '', email: user.email || ''}))
     }
     if (!userData.theme) {
         setUserData(prev => ({...prev, theme: theme || 'light' }));
@@ -985,7 +1015,7 @@ export function OnboardingForm() {
   const renderStep = () => {
     switch(step) {
         case 1: return <div className="flex h-full items-center justify-center"><WelcomeStep onNext={nextStep} /></div>;
-        case 2: return <BasicDetailsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 2: return <BasicDetailsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} email={user?.email ?? null} />;
         case 3: return <AcademicInfoStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 4: return <LearningJourneyStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 5: return <InterestsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
