@@ -134,17 +134,24 @@ export default function ProfilePage() {
     setIsSaving(true);
     try {
         await updateUserProfile(user.uid, profileData);
+        
+        // Apply theme globally after saving
+        if (profileData.theme === 'custom') {
+            setTheme('light'); // Set base to light before applying custom vars
+        } else if (profileData.theme) {
+            setTheme(profileData.theme);
+        }
+        
+        // This is crucial: update the user profile in the auth context
+        // This will trigger the CustomThemeProvider to apply the new styles
+        setUserProfile(profileData as UserProfile); 
+        
         setInitialProfileData(profileData); // Update initial state to reflect saved changes
-        setUserProfile(profileData as UserProfile); // Update context
+
         toast({
             title: "Profile Updated!",
             description: "Your changes have been saved successfully.",
         });
-        
-        // Apply theme globally after saving
-        if (profileData.theme && profileData.theme !== 'custom') {
-            setTheme(profileData.theme);
-        }
 
     } catch(error) {
         console.error("Error updating profile: ", error);
@@ -277,7 +284,7 @@ export default function ProfilePage() {
                     <Label htmlFor="mobile">Mobile Number</Label>
                      <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
                         <Phone className="w-4 h-4"/>
-                        <span>{profileData.mobile?.countryCode} {profileData.mobile?.number || "Not provided"}</span>
+                        <span>{userProfile.mobile?.countryCode} {userProfile.mobile?.number || "Not provided"}</span>
                      </div>
                 </div>
                 <div>
@@ -404,13 +411,14 @@ export default function ProfilePage() {
                     value={profileData.theme}
                     onValueChange={(value) => {
                         if (value === 'custom') {
+                            setTheme('light');
                             const defaultCustom = {
                                 primary: { h: 34, s: 96, l: 49 },
                                 background: { h: 35, s: 80, l: 97 },
                             };
                             setProfileData(p => ({...p, theme: 'custom', customTheme: p.customTheme || defaultCustom }));
                         } else {
-                            setProfileData(p => ({...p, theme: value }));
+                            setProfileData(p => ({...p, theme: value, customTheme: undefined }));
                             setTheme(value);
                             const root = document.documentElement;
                             root.style.removeProperty('--primary');
@@ -481,4 +489,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
