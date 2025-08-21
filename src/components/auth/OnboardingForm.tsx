@@ -684,6 +684,11 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
         setIsCustomizing(false);
         setTheme(theme);
         setData({ theme: theme });
+         // Reset custom styles when a preset is chosen
+        const root = document.documentElement;
+        root.style.removeProperty('--primary');
+        root.style.removeProperty('--accent');
+        root.style.removeProperty('--ring');
     }
 
     const handleCustomizationStart = () => {
