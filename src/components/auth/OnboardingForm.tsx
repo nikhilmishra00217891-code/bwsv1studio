@@ -1013,7 +1013,7 @@ export function OnboardingForm() {
   const [userData, setUserData] = useState<Partial<UserProfile>>({
       mobile: { countryCode: '+91', number: '' }
   });
-  const { user } = useAuth();
+  const { user, setUserProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
@@ -1080,7 +1080,11 @@ export function OnboardingForm() {
     if (!user) return;
     setIsLoading(true);
     try {
-        await updateUserProfile(user.uid, { ...userData, onboardingComplete: true });
+        const finalProfile = { ...userData, onboardingComplete: true };
+        await updateUserProfile(user.uid, finalProfile);
+        
+        // This is the crucial fix: update the user profile in the auth context
+        setUserProfile(finalProfile as UserProfile);
 
         toast({
             title: "Awesome! You’re all set.",
