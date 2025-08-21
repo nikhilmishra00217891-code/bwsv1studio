@@ -87,6 +87,21 @@ const studyTimeOptions = [
 ];
 
 
+const CustomThemePreview = ({ theme }: { theme: UserProfile['customTheme'] }) => {
+    if (!theme) return null;
+
+    const styles = `
+        :root {
+            --primary: ${theme.primary.h} ${theme.primary.s}% ${theme.primary.l}%;
+            --background: ${theme.background.h} ${theme.background.s}% ${theme.background.l}%;
+            --card: ${theme.background.h} ${theme.background.s}% ${theme.background.l - 5}%;
+        }
+    `;
+
+    return <style>{styles}</style>;
+};
+
+
 export default function ProfilePage() {
   const { user, userProfile, loading, setUserProfile } = useAuth();
   const router = useRouter();
@@ -190,284 +205,288 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="bg-card/50 min-h-[calc(100vh-4rem)] py-12 md:py-16">
-      <div className="container mx-auto px-6 max-w-4xl space-y-8">
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-                <h1 className="text-3xl md:text-4xl font-bold font-headline">My Profile</h1>
-                <p className="text-muted-foreground">Manage your account details and preferences.</p>
-            </div>
-            <div className="flex items-center gap-2">
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                         <Button variant="outline" disabled={!hasChanges || isSaving}><Undo className="w-4 h-4 mr-2"/>Reset</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This will discard all unsaved changes you've made to your profile.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleResetChanges}>Discard Changes</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                <Button onClick={handleSaveChanges} disabled={!hasChanges || isSaving}>
-                    {isSaving ? <LoaderCircle className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                    Save Changes
-                </Button>
-            </div>
-        </div>
+    <>
+      {theme === 'custom' && profileData.theme === 'custom' && <CustomThemePreview theme={profileData.customTheme} />}
+      <div className="bg-card/50 min-h-[calc(100vh-4rem)] py-12 md:py-16">
+        <div className="container mx-auto px-6 max-w-4xl space-y-8">
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                  <h1 className="text-3xl md:text-4xl font-bold font-headline">My Profile</h1>
+                  <p className="text-muted-foreground">Manage your account details and preferences.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                   <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                           <Button variant="outline" disabled={!hasChanges || isSaving}><Undo className="w-4 h-4 mr-2"/>Reset</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  This will discard all unsaved changes you've made to your profile.
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleResetChanges}>Discard Changes</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+                  <Button onClick={handleSaveChanges} disabled={!hasChanges || isSaving}>
+                      {isSaving ? <LoaderCircle className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                      Save Changes
+                  </Button>
+              </div>
+          </div>
 
-        {/* --- Personal Details Card --- */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>Personal Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-6">
-                 <Avatar className="w-28 h-28 border-4 border-primary bg-primary/10">
-                    <AvatarFallback className="text-4xl flex items-center justify-center">
-                        {renderAvatarContent()}
-                    </AvatarFallback>
-                </Avatar>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {avatarOptions.map(opt => (
-                        <button key={opt.id} onClick={() => setProfileData(p => ({...p, avatar: opt.id}))} className={cn(
-                            "w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all",
-                            profileData.avatar === opt.id ? "border-primary bg-primary/10" : "border-transparent hover:bg-muted"
-                        )}>
-                            <opt.icon className="w-6 h-6 text-primary/80"/>
-                        </button>
-                    ))}
-                </div>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-6">
-                <div>
-                    <Label htmlFor="displayName">Display Name</Label>
-                    <Input id="displayName" value={profileData.displayName || ''} onChange={e => setProfileData(p => ({...p, displayName: e.target.value}))} />
-                </div>
-                <div>
-                    <Label htmlFor="age">Age</Label>
-                    <Input id="age" type="number" value={profileData.age || ''} onChange={e => setProfileData(p => ({...p, age: parseInt(e.target.value) || undefined}))} />
-                </div>
-                <div>
-                     <Label htmlFor="email">Email</Label>
-                     <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
-                        <Mail className="w-4 h-4"/>
-                        <span>{user.email}</span>
-                     </div>
-                </div>
-                 <div>
-                    <Label htmlFor="mobile">Mobile Number</Label>
-                     <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
-                        <Phone className="w-4 h-4"/>
-                        <span>{userProfile.mobile?.countryCode} {userProfile.mobile?.number || "Not provided"}</span>
-                     </div>
-                </div>
-                <div>
-                    <Label htmlFor="gender">Gender</Label>
-                     <Select value={profileData.gender} onValueChange={v => setProfileData(p => ({...p, gender: v as any}))}>
-                        <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
-                        <SelectContent>
-                            {genderOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* --- Academic Info Card --- */}
-        <Card className="shadow-lg">
-            <CardHeader><CardTitle>Academic Information</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-                <div className="grid sm:grid-cols-2 gap-6">
-                    <div>
-                        <Label>Grade/Class</Label>
-                        <Select value={profileData.grade} onValueChange={v => setProfileData(p => ({...p, grade: v}))}>
-                            <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
-                            <SelectContent>
-                                {gradeOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div>
-                        <Label>Board</Label>
-                        <Select value={profileData.board} onValueChange={v => setProfileData(p => ({...p, board: v}))}>
-                            <SelectTrigger><SelectValue placeholder="Select board" /></SelectTrigger>
-                            <SelectContent>
-                                {boardOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                 <MultiSelectCard 
-                    title="Core Subjects"
-                    options={subjectOptions.map(s => s.value)}
-                    selected={profileData.subjects}
-                    onToggle={(subject) => {
-                        const current = profileData.subjects || [];
-                        const newSubjects = current.includes(subject)
-                            ? current.filter(s => s !== subject)
-                            : [...current, subject];
-                        setProfileData(p => ({ ...p, subjects: newSubjects }));
-                    }}
-                />
-            </CardContent>
-        </Card>
-        
-        {/* --- Learning Preferences Card --- */}
-        <Card className="shadow-lg">
-            <CardHeader><CardTitle>Learning Preferences</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-                 <MultiSelectCard 
-                    title="Your Goals"
-                    options={goalOptions}
-                    selected={profileData.goals}
-                    onToggle={(goal) => {
-                        const current = profileData.goals || [];
-                        const newGoals = current.includes(goal)
-                            ? current.filter(g => g !== goal)
-                            : [...current, goal];
-                        setProfileData(p => ({ ...p, goals: newGoals }));
-                    }}
-                />
-                 <MultiSelectCard 
-                    title="Learning Style"
-                    options={learningStyleOptions}
-                    selected={profileData.learningStyle as string[]}
-                    onToggle={(style) => {
-                        const current = profileData.learningStyle || [];
-                        const newStyles = current.includes(style)
-                            ? current.filter(s => s !== style)
-                            : [...current, style];
-                        setProfileData(p => ({ ...p, learningStyle: newStyles as any[] }));
-                    }}
-                />
-                 <div>
-                    <Label className="font-semibold">Daily Study Duration</Label>
-                    <div className="flex items-center gap-4 mt-2">
-                        <Slider
-                            value={[profileData.preferredStudyDuration || 1.5]}
-                            onValueChange={(value) => setProfileData(p => ({ ...p, preferredStudyDuration: value[0] }))}
-                            max={8} min={0.5} step={0.5}
-                        />
-                        <span className="font-bold text-primary text-sm w-20 text-center">{profileData.preferredStudyDuration || 1.5} hrs</span>
-                    </div>
-                 </div>
-                 <div>
-                    <Label className="font-semibold">Most Productive Time</Label>
-                    <RadioGroup 
-                        value={profileData.preferredStudyTime}
-                        onValueChange={(value) => setProfileData(p => ({...p, preferredStudyTime: value as any }))}
-                        className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2"
-                    >
-                        {studyTimeOptions.map(option => (
-                            <Label key={option.id} htmlFor={`profile-${option.id}`} className="cursor-pointer">
-                                <div className={cn("p-2 border rounded-md text-center text-sm transition-all",
-                                    profileData.preferredStudyTime === option.id && "bg-primary/10 text-primary border-primary font-semibold"
-                                )}>
-                                    <RadioGroupItem value={option.id} id={`profile-${option.id}`} className="sr-only"/>
-                                    {option.title}
-                                </div>
-                            </Label>
-                        ))}
-                    </RadioGroup>
-                </div>
-            </CardContent>
-        </Card>
-
-        {/* --- Appearance Card --- */}
-        <Card className="shadow-lg">
+          {/* --- Personal Details Card --- */}
+          <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle>Appearance</CardTitle>
-                <CardDescription>Choose a preset theme or create your own vibe.</CardDescription>
+              <CardTitle>Personal Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <RadioGroup 
-                    value={profileData.theme}
-                    onValueChange={(value) => {
-                        setTheme(value); // Instantly preview theme
-                        if (value === 'custom') {
-                            const defaultCustom = {
-                                primary: { h: 34, s: 96, l: 49 },
-                                background: { h: 35, s: 80, l: 97 },
-                            };
-                            setProfileData(p => ({...p, theme: 'custom', customTheme: p.customTheme || defaultCustom }));
-                        } else {
-                            setProfileData(p => ({...p, theme: value, customTheme: undefined }));
-                        }
-                    }}
-                    className="grid grid-cols-2 sm:grid-cols-4 gap-4"
-                >
-                    <Label htmlFor="theme-light" className="cursor-pointer"><RadioGroupItem value="light" id="theme-light" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'light' && 'border-primary ring-2 ring-primary')}>Light</div></Label>
-                    <Label htmlFor="theme-dark" className="cursor-pointer"><RadioGroupItem value="dark" id="theme-dark" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'dark' && 'border-primary ring-2 ring-primary')}>Dark</div></Label>
-                    <Label htmlFor="theme-proudshe" className="cursor-pointer"><RadioGroupItem value="proudshe" id="theme-proudshe" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'proudshe' && 'border-primary ring-2 ring-primary')}>Proudshe</div></Label>
-                    <Label htmlFor="theme-retrogamer" className="cursor-pointer"><RadioGroupItem value="retrogamer" id="theme-retrogamer" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'retrogamer' && 'border-primary ring-2 ring-primary')}>Retro Gamer</div></Label>
-                    <Label htmlFor="theme-custom" className="cursor-pointer"><RadioGroupItem value="custom" id="theme-custom" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center flex items-center justify-center gap-2", profileData.theme === 'custom' && 'border-primary ring-2 ring-primary')}><Palette className="w-4 h-4"/> Custom</div></Label>
-                </RadioGroup>
-
-                {profileData.theme === 'custom' && (
-                    <Card className="p-4 bg-muted/50">
-                        <div className="flex justify-end mb-4">
-                            <Button variant="ghost" size="sm" onClick={() => {
-                                const p_h = Math.floor(Math.random() * 360);
-                                const p_s = Math.floor(Math.random() * 30) + 70;
-                                const p_l = Math.floor(Math.random() * 20) + 40;
-                                const b_h = (p_h + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 60) + 30)) % 360;
-                                const b_s = Math.floor(Math.random() * 20) + 70;
-                                const b_l = Math.floor(Math.random() * 10) + 88;
-                                setProfileData(p => ({...p, customTheme: { primary: {h: p_h, s: p_s, l: p_l}, background: {h: b_h, s: b_s, l: b_l}}}));
-                            }}><Dices className="w-4 h-4 mr-2"/> Try Your Luck</Button>
-                        </div>
-                        <div className="grid md:grid-cols-2 gap-8">
-                             <div>
-                                <h4 className="font-semibold text-center mb-2" style={{color: `hsl(${profileData.customTheme?.primary.h}, ${profileData.customTheme?.primary.s}%, ${profileData.customTheme?.primary.l}%)`}}>Primary Color</h4>
-                                <div className="space-y-2">
-                                    <Label>Hue ({profileData.customTheme?.primary.h})</Label>
-                                    <Slider value={[profileData.customTheme?.primary.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, h: val}} }))} max={360} step={1} />
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label>Saturation ({profileData.customTheme?.primary.s}%)</Label>
-                                    <Slider value={[profileData.customTheme?.primary.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, s: val}} }))} max={100} step={1} />
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label>Lightness ({profileData.customTheme?.primary.l}%)</Label>
-                                    <Slider value={[profileData.customTheme?.primary.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, l: val}} }))} max={100} step={1} />
-                                </div>
-                            </div>
-                             <div>
-                                <h4 className="font-semibold text-center mb-2" style={{
-                                    backgroundColor: `hsl(${profileData.customTheme?.background.h}, ${profileData.customTheme?.background.s}%, ${profileData.customTheme?.background.l}%)`,
-                                    padding: '0.25rem',
-                                    borderRadius: '0.25rem'
-                                }}>Background Color</h4>
-                                 <div className="space-y-2">
-                                    <Label>Hue ({profileData.customTheme?.background.h})</Label>
-                                    <Slider value={[profileData.customTheme?.background.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, h: val}} }))} max={360} step={1} />
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label>Saturation ({profileData.customTheme?.background.s}%)</Label>
-                                    <Slider value={[profileData.customTheme?.background.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, s: val}} }))} max={100} step={1} />
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label>Lightness ({profileData.customTheme?.background.l}%)</Label>
-                                    <Slider value={[profileData.customTheme?.background.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, l: val}} }))} max={100} step={1} />
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-                )}
-
+              <div className="flex items-center gap-6">
+                   <Avatar className="w-28 h-28 border-4 border-primary bg-primary/10">
+                      <AvatarFallback className="text-4xl flex items-center justify-center">
+                          {renderAvatarContent()}
+                      </AvatarFallback>
+                  </Avatar>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {avatarOptions.map(opt => (
+                          <button key={opt.id} onClick={() => setProfileData(p => ({...p, avatar: opt.id}))} className={cn(
+                              "w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all",
+                              profileData.avatar === opt.id ? "border-primary bg-primary/10" : "border-transparent hover:bg-muted"
+                          )}>
+                              <opt.icon className="w-6 h-6 text-primary/80"/>
+                          </button>
+                      ))}
+                  </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-6">
+                  <div>
+                      <Label htmlFor="displayName">Display Name</Label>
+                      <Input id="displayName" value={profileData.displayName || ''} onChange={e => setProfileData(p => ({...p, displayName: e.target.value}))} />
+                  </div>
+                  <div>
+                      <Label htmlFor="age">Age</Label>
+                      <Input id="age" type="number" value={profileData.age || ''} onChange={e => setProfileData(p => ({...p, age: parseInt(e.target.value) || undefined}))} />
+                  </div>
+                  <div>
+                       <Label htmlFor="email">Email</Label>
+                       <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
+                          <Mail className="w-4 h-4"/>
+                          <span>{user.email}</span>
+                       </div>
+                  </div>
+                   <div>
+                      <Label htmlFor="mobile">Mobile Number</Label>
+                       <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
+                          <Phone className="w-4 h-4"/>
+                          <span>{userProfile.mobile?.countryCode} {userProfile.mobile?.number || "Not provided"}</span>
+                       </div>
+                  </div>
+                  <div>
+                      <Label htmlFor="gender">Gender</Label>
+                       <Select value={profileData.gender} onValueChange={v => setProfileData(p => ({...p, gender: v as any}))}>
+                          <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                          <SelectContent>
+                              {genderOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                          </SelectContent>
+                      </Select>
+                  </div>
+              </div>
             </CardContent>
-        </Card>
+          </Card>
 
+          {/* --- Academic Info Card --- */}
+          <Card className="shadow-lg">
+              <CardHeader><CardTitle>Academic Information</CardTitle></CardHeader>
+              <CardContent className="space-y-6">
+                  <div className="grid sm:grid-cols-2 gap-6">
+                      <div>
+                          <Label>Grade/Class</Label>
+                          <Select value={profileData.grade} onValueChange={v => setProfileData(p => ({...p, grade: v}))}>
+                              <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
+                              <SelectContent>
+                                  {gradeOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                       <div>
+                          <Label>Board</Label>
+                          <Select value={profileData.board} onValueChange={v => setProfileData(p => ({...p, board: v}))}>
+                              <SelectTrigger><SelectValue placeholder="Select board" /></SelectTrigger>
+                              <SelectContent>
+                                  {boardOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                  </div>
+                   <MultiSelectCard 
+                      title="Core Subjects"
+                      options={subjectOptions.map(s => s.value)}
+                      selected={profileData.subjects}
+                      onToggle={(subject) => {
+                          const current = profileData.subjects || [];
+                          const newSubjects = current.includes(subject)
+                              ? current.filter(s => s !== subject)
+                              : [...current, subject];
+                          setProfileData(p => ({ ...p, subjects: newSubjects }));
+                      }}
+                  />
+              </CardContent>
+          </Card>
+          
+          {/* --- Learning Preferences Card --- */}
+          <Card className="shadow-lg">
+              <CardHeader><CardTitle>Learning Preferences</CardTitle></CardHeader>
+              <CardContent className="space-y-6">
+                   <MultiSelectCard 
+                      title="Your Goals"
+                      options={goalOptions}
+                      selected={profileData.goals}
+                      onToggle={(goal) => {
+                          const current = profileData.goals || [];
+                          const newGoals = current.includes(goal)
+                              ? current.filter(g => g !== goal)
+                              : [...current, goal];
+                          setProfileData(p => ({ ...p, goals: newGoals }));
+                      }}
+                  />
+                   <MultiSelectCard 
+                      title="Learning Style"
+                      options={learningStyleOptions}
+                      selected={profileData.learningStyle as string[]}
+                      onToggle={(style) => {
+                          const current = profileData.learningStyle || [];
+                          const newStyles = current.includes(style)
+                              ? current.filter(s => s !== style)
+                              : [...current, style];
+                          setProfileData(p => ({ ...p, learningStyle: newStyles as any[] }));
+                      }}
+                  />
+                   <div>
+                      <Label className="font-semibold">Daily Study Duration</Label>
+                      <div className="flex items-center gap-4 mt-2">
+                          <Slider
+                              value={[profileData.preferredStudyDuration || 1.5]}
+                              onValueChange={(value) => setProfileData(p => ({ ...p, preferredStudyDuration: value[0] }))}
+                              max={8} min={0.5} step={0.5}
+                          />
+                          <span className="font-bold text-primary text-sm w-20 text-center">{profileData.preferredStudyDuration || 1.5} hrs</span>
+                      </div>
+                   </div>
+                   <div>
+                      <Label className="font-semibold">Most Productive Time</Label>
+                      <RadioGroup 
+                          value={profileData.preferredStudyTime}
+                          onValueChange={(value) => setProfileData(p => ({...p, preferredStudyTime: value as any }))}
+                          className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2"
+                      >
+                          {studyTimeOptions.map(option => (
+                              <Label key={option.id} htmlFor={`profile-${option.id}`} className="cursor-pointer">
+                                  <div className={cn("p-2 border rounded-md text-center text-sm transition-all",
+                                      profileData.preferredStudyTime === option.id && "bg-primary/10 text-primary border-primary font-semibold"
+                                  )}>
+                                      <RadioGroupItem value={option.id} id={`profile-${option.id}`} className="sr-only"/>
+                                      {option.title}
+                                  </div>
+                              </Label>
+                          ))}
+                      </RadioGroup>
+                  </div>
+              </CardContent>
+          </Card>
+
+          {/* --- Appearance Card --- */}
+          <Card className="shadow-lg">
+              <CardHeader>
+                  <CardTitle>Appearance</CardTitle>
+                  <CardDescription>Choose a preset theme or create your own vibe.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                  <RadioGroup 
+                      value={profileData.theme}
+                      onValueChange={(value) => {
+                          setTheme(value); // Instantly preview theme
+                          if (value === 'custom') {
+                              const defaultCustom = {
+                                  primary: { h: 34, s: 96, l: 49 },
+                                  background: { h: 35, s: 80, l: 97 },
+                              };
+                              setProfileData(p => ({...p, theme: 'custom', customTheme: p.customTheme || defaultCustom }));
+                          } else {
+                              setProfileData(p => ({...p, theme: value, customTheme: p.customTheme })); // Keep customTheme data
+                          }
+                      }}
+                      className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+                  >
+                      <Label htmlFor="theme-light" className="cursor-pointer"><RadioGroupItem value="light" id="theme-light" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'light' && 'border-primary ring-2 ring-primary')}>Light</div></Label>
+                      <Label htmlFor="theme-dark" className="cursor-pointer"><RadioGroupItem value="dark" id="theme-dark" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'dark' && 'border-primary ring-2 ring-primary')}>Dark</div></Label>
+                      <Label htmlFor="theme-proudshe" className="cursor-pointer"><RadioGroupItem value="proudshe" id="theme-proudshe" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'proudshe' && 'border-primary ring-2 ring-primary')}>Proudshe</div></Label>
+                      <Label htmlFor="theme-retrogamer" className="cursor-pointer"><RadioGroupItem value="retrogamer" id="theme-retrogamer" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'retrogamer' && 'border-primary ring-2 ring-primary')}>Retro Gamer</div></Label>
+                      <Label htmlFor="theme-custom" className="cursor-pointer"><RadioGroupItem value="custom" id="theme-custom" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center flex items-center justify-center gap-2", profileData.theme === 'custom' && 'border-primary ring-2 ring-primary')}><Palette className="w-4 h-4"/> Custom</div></Label>
+                  </RadioGroup>
+
+                  {profileData.theme === 'custom' && (
+                      <Card className="p-4 bg-muted/50">
+                          <div className="flex justify-end mb-4">
+                              <Button variant="ghost" size="sm" onClick={() => {
+                                  const p_h = Math.floor(Math.random() * 360);
+                                  const p_s = Math.floor(Math.random() * 30) + 70;
+                                  const p_l = Math.floor(Math.random() * 20) + 40;
+                                  const b_h = (p_h + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 60) + 30)) % 360;
+                                  const b_s = Math.floor(Math.random() * 20) + 70;
+                                  const b_l = Math.floor(Math.random() * 10) + 88;
+                                  setProfileData(p => ({...p, customTheme: { primary: {h: p_h, s: p_s, l: p_l}, background: {h: b_h, s: b_s, l: b_l}}}));
+                              }}><Dices className="w-4 h-4 mr-2"/> Try Your Luck</Button>
+                          </div>
+                          <div className="grid md:grid-cols-2 gap-8">
+                               <div>
+                                  <h4 className="font-semibold text-center mb-2" style={{color: `hsl(${profileData.customTheme?.primary.h}, ${profileData.customTheme?.primary.s}%, ${profileData.customTheme?.primary.l}%)`}}>Primary Color</h4>
+                                  <div className="space-y-2">
+                                      <Label>Hue ({profileData.customTheme?.primary.h})</Label>
+                                      <Slider value={[profileData.customTheme?.primary.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, h: val}} }))} max={360} step={1} />
+                                  </div>
+                                   <div className="space-y-2">
+                                      <Label>Saturation ({profileData.customTheme?.primary.s}%)</Label>
+                                      <Slider value={[profileData.customTheme?.primary.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, s: val}} }))} max={100} step={1} />
+                                  </div>
+                                   <div className="space-y-2">
+                                      <Label>Lightness ({profileData.customTheme?.primary.l}%)</Label>
+                                      <Slider value={[profileData.customTheme?.primary.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, l: val}} }))} max={100} step={1} />
+                                  </div>
+                              </div>
+                               <div>
+                                  <h4 className="font-semibold text-center mb-2" style={{
+                                      backgroundColor: `hsl(${profileData.customTheme?.background.h}, ${profileData.customTheme?.background.s}%, ${profileData.customTheme?.background.l}%)`,
+                                      color: `hsl(${profileData.customTheme?.primary.h}, ${profileData.customTheme?.primary.s}%, ${profileData.customTheme?.primary.l}%)`,
+                                      padding: '0.25rem',
+                                      borderRadius: '0.25rem'
+                                  }}>Background Color</h4>
+                                   <div className="space-y-2">
+                                      <Label>Hue ({profileData.customTheme?.background.h})</Label>
+                                      <Slider value={[profileData.customTheme?.background.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, h: val}} }))} max={360} step={1} />
+                                  </div>
+                                   <div className="space-y-2">
+                                      <Label>Saturation ({profileData.customTheme?.background.s}%)</Label>
+                                      <Slider value={[profileData.customTheme?.background.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, s: val}} }))} max={100} step={1} />
+                                  </div>
+                                   <div className="space-y-2">
+                                      <Label>Lightness ({profileData.customTheme?.background.l}%)</Label>
+                                      <Slider value={[profileData.customTheme?.background.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, l: val}} }))} max={100} step={1} />
+                                  </div>
+                              </div>
+                          </div>
+                      </Card>
+                  )}
+
+              </CardContent>
+          </Card>
+
+        </div>
       </div>
-    </div>
+    </>
   );
 }
