@@ -6,7 +6,7 @@ import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase } from "lucide-react";
+import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent } from "../ui/card";
@@ -47,11 +47,11 @@ const subjectOptions = [
     { value: 'Physics', label: 'Physics', icon: Atom, highSchoolOnly: true },
     { value: 'Chemistry', label: 'Chemistry', icon: FlaskConical, highSchoolOnly: true },
     { value: 'Maths', label: 'Maths', icon: Sigma, highSchoolOnly: true },
-    { value: 'Biology', label: 'Biology', icon: Milestone, highSchoolOnly: true },
+    { value: 'Biology', label: 'Biology', icon: Leaf, highSchoolOnly: true },
     { value: 'English', label: 'English', icon: Languages, highSchoolOnly: false },
-    { value: 'Social Science', label: 'Social Science', icon: History, highSchoolOnly: false },
+    { value: 'Social Science', label: 'Social Science', icon: Globe, highSchoolOnly: false },
     { value: 'Computer Science', label: 'Computer Science', icon: Computer, highSchoolOnly: false },
-    { value: 'Accountancy', label: 'Accountancy', icon: Scale, highSchoolOnly: true },
+    { value: 'Accountancy', label: 'Accountancy', icon: Calculator, highSchoolOnly: true },
     { value: 'Business Studies', label: 'Business Studies', icon: Briefcase, highSchoolOnly: true },
 ]
 
@@ -143,15 +143,36 @@ const BasicDetailsStep = ({ data, setData }: { data: Partial<UserProfile>, setDa
 const AcademicInfoStep = ({ data, setData }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void }) => {
     const [customGrade, setCustomGrade] = useState(false);
     const [customBoard, setCustomBoard] = useState(false);
+    const [customSubject, setCustomSubject] = useState(false);
     
     const showHighSchoolSubjects = ['11th', '12th', 'Competitive Exams'].includes(data.grade || '');
 
     const toggleSubject = (subject: string) => {
+        if (subject === 'Other') {
+            setCustomSubject(!customSubject);
+            return;
+        }
         const currentSubjects = data.subjects || [];
         const newSubjects = currentSubjects.includes(subject)
             ? currentSubjects.filter(s => s !== subject)
             : [...currentSubjects, subject];
         setData({ subjects: newSubjects });
+    }
+
+    const handleCustomSubjectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const otherSubjectValue = e.target.value;
+        const currentSubjects = data.subjects?.filter(s => !subjectOptions.map(o => o.value).includes(s) && s !== 'Other') || [];
+        const baseSubjects = data.subjects?.filter(s => subjectOptions.map(o => o.value).includes(s)) || [];
+        
+        if (otherSubjectValue) {
+            setData({ subjects: [...baseSubjects, otherSubjectValue] });
+        } else {
+             setData({ subjects: baseSubjects });
+        }
+    }
+
+    const getCustomSubjectValue = () => {
+        return data.subjects?.find(s => !subjectOptions.map(o => o.value).includes(s) && s !== 'Other') || '';
     }
 
     const gradeOptions = ['6th', '7th', '8th', '9th', '10th', '11th', '12th', 'Competitive Exams'];
@@ -247,7 +268,34 @@ const AcademicInfoStep = ({ data, setData }: { data: Partial<UserProfile>, setDa
                                 )}
                             </Card>
                         ))}
+                         <Card
+                            className={cn(
+                                "p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg relative",
+                                customSubject && "ring-2 ring-primary shadow-lg scale-105"
+                            )}
+                            onClick={() => toggleSubject('Other')}
+                        >
+                            <Pencil className="w-8 h-8 text-primary mb-2" />
+                            <span className="font-semibold text-sm">Other</span>
+                            {customSubject && (
+                                <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
+                                    <Check className="w-4 h-4" />
+                                </div>
+                            )}
+                        </Card>
                     </div>
+                    {customSubject && (
+                        <div className="mt-4">
+                            <Input
+                                type="text"
+                                placeholder="Please specify your subject"
+                                className="h-12 text-base"
+                                value={getCustomSubjectValue()}
+                                onChange={handleCustomSubjectChange}
+                                autoFocus
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </OnboardingStepWrapper>
@@ -515,5 +563,3 @@ export function OnboardingForm() {
     </div>
   );
 }
-
-    
