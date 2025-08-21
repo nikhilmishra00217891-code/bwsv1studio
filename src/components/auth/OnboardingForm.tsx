@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTheme } from "next-themes";
 import { Badge } from "../ui/badge";
+import { PhoneNumberInput } from "../common/PhoneNumberInput";
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
     return (
@@ -124,7 +125,7 @@ const themeOptions = [
         colors: {
             bg: 'hsl(35 80% 97%)',
             primary: 'hsl(34 96% 49%)',
-            accent: 'hsl(35, 87%, 92%)',
+            card: 'hsl(35, 87%, 92%)',
         }
     },
     {
@@ -133,7 +134,7 @@ const themeOptions = [
         colors: {
             bg: 'hsl(20 15% 10%)',
             primary: 'hsl(34 96% 49%)',
-            accent: 'hsl(20, 15%, 15%)',
+            card: 'hsl(20, 15%, 15%)',
         }
     },
     {
@@ -142,7 +143,7 @@ const themeOptions = [
         colors: {
             bg: 'hsl(340 100% 98%)',
             primary: 'hsl(337 90% 60%)',
-            accent: 'hsl(340, 100%, 95%)',
+            card: 'hsl(340, 100%, 95%)',
         }
     },
     {
@@ -151,7 +152,7 @@ const themeOptions = [
         colors: {
             bg: 'hsl(236 65% 10%)',
             primary: 'hsl(260 90% 70%)',
-            accent: 'hsl(236, 65%, 15%)',
+            card: 'hsl(236, 65%, 15%)',
         }
     }
 ];
@@ -193,20 +194,18 @@ const BasicDetailsStep = ({ data, setData, totalSteps, email }: { data: Partial<
                     />
                 </div>
 
-                <div className="relative flex items-center">
-                    <Phone className="absolute left-4 w-5 h-5 text-muted-foreground" />
-                    <Input 
-                        type="tel" 
-                        placeholder="Your mobile number"
-                        className="pl-12 h-14 text-lg"
-                        value={data.mobile || ''}
-                        onChange={(e) => setData({ mobile: e.target.value })}
+                <div>
+                    <PhoneNumberInput 
+                        value={data.mobile || { countryCode: '+91', number: '' }}
+                        onChange={(value) => setData({ mobile: value })}
+                        className="h-14"
+                        inputClassName="h-14 text-lg"
                         required
                     />
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                        We will need it for your account recovery when needed!
+                    </p>
                 </div>
-                 <p className="text-xs text-muted-foreground text-center -mt-4">
-                    We will need it for your account recovery when needed!
-                </p>
 
 
                 <div className="relative flex items-center">
@@ -733,29 +732,34 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
     const { setTheme } = useTheme();
     const [isCustomizing, setIsCustomizing] = useState(false);
     
-    // HSL state for custom theme
-    const [primaryHue, setPrimaryHue] = useState(34);
-    const [primarySaturation, setPrimarySaturation] = useState(96);
-    const [primaryLightness, setPrimaryLightness] = useState(49);
+    const initialPrimary = data?.customTheme?.primary || { h: 34, s: 96, l: 49 };
+    const initialBackground = data?.customTheme?.background || { h: 35, s: 80, l: 97 };
+
+    const [primaryHue, setPrimaryHue] = useState(initialPrimary.h);
+    const [primarySaturation, setPrimarySaturation] = useState(initialPrimary.s);
+    const [primaryLightness, setPrimaryLightness] = useState(initialPrimary.l);
     
-    const [accentHue, setAccentHue] = useState(35);
-    const [accentSaturation, setAccentSaturation] = useState(80);
-    const [accentLightness, setAccentLightness] = useState(97);
+    const [backgroundHue, setBackgroundHue] = useState(initialBackground.h);
+    const [backgroundSaturation, setBackgroundSaturation] = useState(initialBackground.s);
+    const [backgroundLightness, setBackgroundLightness] = useState(initialBackground.l);
     
+    const updateParentData = (themeUpdate: Partial<UserProfile>) => {
+        setData({ ...data, ...themeUpdate });
+    }
+
     useEffect(() => {
         if (isCustomizing) {
             const root = document.documentElement;
             root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
-            root.style.setProperty('--card', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
+            root.style.setProperty('--card', `${backgroundHue} ${backgroundSaturation}% ${backgroundLightness}%`);
         }
-    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
+    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, backgroundHue, backgroundSaturation, backgroundLightness]);
     
     const handlePresetSelect = (themeId: string) => {
         setIsCustomizing(false);
         setTheme(themeId);
-        setData({ theme: themeId, customTheme: undefined });
+        updateParentData({ theme: themeId, customTheme: undefined });
         
-        // Remove inline styles when a preset is chosen
         const root = document.documentElement;
         root.style.removeProperty('--primary');
         root.style.removeProperty('--card');
@@ -763,11 +767,10 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
     
     const handleStartCustomizing = () => {
         setIsCustomizing(true);
-        // We set a 'custom' theme class to disable the preset theme css variables
-        setTheme('light'); // set to a neutral base
-        setData({ theme: 'custom', customTheme: {
+        setTheme('light'); 
+        updateParentData({ theme: 'custom', customTheme: {
             primary: { h: primaryHue, s: primarySaturation, l: primaryLightness },
-            accent: { h: accentHue, s: accentSaturation, l: accentLightness },
+            background: { h: backgroundHue, s: backgroundSaturation, l: backgroundLightness },
         }});
     }
 
@@ -778,21 +781,37 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
         const p_s = Math.floor(Math.random() * 30) + 70; // 70-100
         const p_l = Math.floor(Math.random() * 20) + 40; // 40-60
         
-        const a_h = (p_h + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 60) + 30)) % 360;
-        const a_s = Math.floor(Math.random() * 20) + 70;
-        const a_l = Math.floor(Math.random() * 10) + 88;
+        const b_h = (p_h + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 60) + 30)) % 360;
+        const b_s = Math.floor(Math.random() * 20) + 70;
+        const b_l = Math.floor(Math.random() * 10) + 88;
 
         setPrimaryHue(p_h);
         setPrimarySaturation(p_s);
         setPrimaryLightness(p_l);
-        setAccentHue(a_h);
-        setAccentSaturation(a_s);
-        setAccentLightness(a_l);
-         setData({ theme: 'custom', customTheme: {
+        setBackgroundHue(b_h);
+        setBackgroundSaturation(b_s);
+        setBackgroundLightness(b_l);
+        updateParentData({ theme: 'custom', customTheme: {
             primary: { h: p_h, s: p_s, l: p_l },
-            accent: { h: a_h, s: a_s, l: a_l },
+            background: { h: b_h, s: b_s, l: b_l },
         }});
     }
+    
+    const createUpdateHandler = (field: 'primary' | 'background', property: 'h' | 's' | 'l', setter: React.Dispatch<React.SetStateAction<number>>) => (value: number) => {
+        setter(value);
+        const newTheme = {
+            ...data.customTheme,
+            [field]: { ...data.customTheme?.[field], [property]: value }
+        };
+         updateParentData({ theme: 'custom', customTheme: newTheme as any });
+    };
+
+    const handlePrimaryHueChange = createUpdateHandler('primary', 'h', setPrimaryHue);
+    const handlePrimarySaturationChange = createUpdateHandler('primary', 's', setPrimarySaturation);
+    const handlePrimaryLightnessChange = createUpdateHandler('primary', 'l', setPrimaryLightness);
+    const handleBackgroundHueChange = createUpdateHandler('background', 'h', setBackgroundHue);
+    const handleBackgroundSaturationChange = createUpdateHandler('background', 's', setBackgroundSaturation);
+    const handleBackgroundLightnessChange = createUpdateHandler('background', 'l', setBackgroundLightness);
 
     return (
         <OnboardingStepWrapper title="Choose Your Vibe" step={7} totalSteps={totalSteps}>
@@ -821,7 +840,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                 >
                                     <div className="flex items-center gap-2">
                                         <div className="w-1/2 h-8 rounded" style={{backgroundColor: option.colors.primary}}></div>
-                                        <div className="w-1/2 h-8 rounded" style={{backgroundColor: option.colors.accent}}></div>
+                                        <div className="w-1/2 h-8 rounded" style={{backgroundColor: option.colors.card}}></div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -852,31 +871,31 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                     <h4 className="font-semibold text-center" style={{ color: `hsl(${primaryHue}, ${primarySaturation}%, ${primaryLightness}%)` }}>Primary Color</h4>
                                     <div className="space-y-2">
                                         <Label>Hue ({primaryHue})</Label>
-                                        <Slider value={[primaryHue]} onValueChange={([val]) => { setPrimaryHue(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, primary: { h: val, s: primarySaturation, l: primaryLightness } } as any}) }} max={360} step={1} />
+                                        <Slider value={[primaryHue]} onValueChange={([val]) => handlePrimaryHueChange(val)} max={360} step={1} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Saturation ({primarySaturation}%)</Label>
-                                        <Slider value={[primarySaturation]} onValueChange={([val]) => { setPrimarySaturation(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, primary: { h: primaryHue, s: val, l: primaryLightness } } as any}) }} max={100} step={1} />
+                                        <Slider value={[primarySaturation]} onValueChange={([val]) => handlePrimarySaturationChange(val)} max={100} step={1} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Lightness ({primaryLightness}%)</Label>
-                                        <Slider value={[primaryLightness]} onValueChange={([val]) => { setPrimaryLightness(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, primary: { h: primaryHue, s: primarySaturation, l: val } } as any}) }} max={100} step={1} />
+                                        <Slider value={[primaryLightness]} onValueChange={([val]) => handlePrimaryLightnessChange(val)} max={100} step={1} />
                                     </div>
                                 </div>
                                 {/* Accent Color */}
                                 <div className="space-y-4">
                                      <h4 className="font-semibold text-center">Page Background</h4>
                                     <div className="space-y-2">
-                                        <Label>Hue ({accentHue})</Label>
-                                        <Slider value={[accentHue]} onValueChange={([val]) => { setAccentHue(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, accent: { h: val, s: accentSaturation, l: accentLightness } } as any}) }} max={360} step={1} />
+                                        <Label>Hue ({backgroundHue})</Label>
+                                        <Slider value={[backgroundHue]} onValueChange={([val]) => handleBackgroundHueChange(val)} max={360} step={1} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Saturation ({accentSaturation}%)</Label>
-                                        <Slider value={[accentSaturation]} onValueChange={([val]) => { setAccentSaturation(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, accent: { h: accentHue, s: val, l: accentLightness } } as any}) }} max={100} step={1} />
+                                        <Label>Saturation ({backgroundSaturation}%)</Label>
+                                        <Slider value={[backgroundSaturation]} onValueChange={([val]) => handleBackgroundSaturationChange(val)} max={100} step={1} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Lightness ({accentLightness}%)</Label>
-                                        <Slider value={[accentLightness]} onValueChange={([val]) => { setAccentLightness(val); setData({ theme: 'custom', customTheme: { ...data.customTheme, accent: { h: accentHue, s: accentSaturation, l: val } } as any}) }} max={100} step={1} />
+                                        <Label>Lightness ({backgroundLightness}%)</Label>
+                                        <Slider value={[backgroundLightness]} onValueChange={([val]) => handleBackgroundLightnessChange(val)} max={100} step={1} />
                                     </div>
                                 </div>
                             </div>
@@ -944,7 +963,7 @@ const SummaryStep = ({ data, totalSteps }: { data: Partial<UserProfile>, totalSt
                         <div>
                             <h3 className="text-3xl font-bold font-headline">{data.displayName}</h3>
                             <p className="text-muted-foreground">{data.email}</p>
-                            <p className="text-muted-foreground">{data.mobile}</p>
+                            <p className="text-muted-foreground">{data.mobile ? `${data.mobile.countryCode} ${data.mobile.number}`: 'No mobile set'}</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
@@ -991,7 +1010,9 @@ const PlaceholderStep = ({ step, onNext, onPrev, totalSteps }: { step: number; o
 export function OnboardingForm() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [userData, setUserData] = useState<Partial<UserProfile>>({});
+  const [userData, setUserData] = useState<Partial<UserProfile>>({
+      mobile: { countryCode: '+91', number: '' }
+  });
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -1028,7 +1049,8 @@ export function OnboardingForm() {
   const isStepValid = () => {
     switch (step) {
       case 2: // Basic Details
-        return !!userData.displayName && !!userData.mobile;
+        const country = countries.find(c => c.code === (userData.mobile?.countryCode || '+91')) || countries[0];
+        return !!userData.displayName && !!userData.mobile?.number && userData.mobile.number.length === country.digits;
       case 3: // Academic Info
         return !!userData.grade && !!userData.board && !!userData.subjects && userData.subjects.length > 0;
       case 4: // Learning Journey
@@ -1068,13 +1090,11 @@ export function OnboardingForm() {
         if (userData.theme && userData.theme !== 'custom') {
             setTheme(userData.theme);
         } else if (userData.theme === 'custom' && userData.customTheme) {
-             // The styles are already applied, but we set the theme to a base
-             // so next-themes doesn't override our custom styles.
              setTheme('light'); 
              const root = document.documentElement;
-             const { primary, accent } = userData.customTheme;
+             const { primary, background } = userData.customTheme;
              root.style.setProperty('--primary', `${primary.h} ${primary.s}% ${primary.l}%`);
-             root.style.setProperty('--card', `${accent.h} ${accent.s}% ${accent.l}%`);
+             root.style.setProperty('--card', `${background.h} ${background.s}% ${background.l}%`);
         }
 
         router.push('/dashboard');
@@ -1153,3 +1173,10 @@ export function OnboardingForm() {
     </div>
   );
 }
+
+const countries = [
+    { code: '+91', name: 'India', flag: '🇮🇳', digits: 10 },
+    { code: '+1', name: 'USA', flag: '🇺🇸', digits: 10 },
+    { code: '+44', name: 'UK', flag: '🇬🇧', digits: 10 },
+    { code: '+61', name: 'Australia', flag: '🇦🇺', digits: 9 },
+];

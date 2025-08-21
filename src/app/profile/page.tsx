@@ -29,6 +29,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useTheme } from "next-themes";
+import { PhoneNumberInput } from "@/components/common/PhoneNumberInput";
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -100,8 +101,12 @@ export default function ProfilePage() {
       router.replace("/login");
     }
     if (userProfile) {
-      setProfileData(userProfile);
-      setInitialProfileData(userProfile);
+      const initialData = {
+          ...userProfile,
+          mobile: userProfile.mobile || { countryCode: '+91', number: '' }
+      };
+      setProfileData(initialData);
+      setInitialProfileData(initialData);
     }
   }, [user, userProfile, loading, router]);
   
@@ -269,11 +274,11 @@ export default function ProfilePage() {
                      </div>
                 </div>
                  <div>
-                     <Label htmlFor="mobile">Mobile Number</Label>
-                     <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
-                        <Phone className="w-4 h-4"/>
-                        <span>{userProfile?.mobile || 'Not set'}</span>
-                     </div>
+                    <Label htmlFor="mobile">Mobile Number</Label>
+                     <PhoneNumberInput 
+                        value={profileData.mobile || { countryCode: '+91', number: '' }}
+                        onChange={(value) => setProfileData(p => ({...p, mobile: value }))}
+                    />
                 </div>
                 <div>
                     <Label htmlFor="gender">Gender</Label>

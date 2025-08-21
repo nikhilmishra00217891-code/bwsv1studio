@@ -1,5 +1,4 @@
 
-
 import { Timestamp } from "firebase/firestore";
 
 export interface Lesson {
@@ -38,6 +37,11 @@ export interface EnrolledCourse {
   category: string;
 }
 
+export interface MobileNumber {
+  countryCode: string;
+  number: string;
+}
+
 export interface UserProfile {
     uid: string;
     email: string | null;
@@ -46,7 +50,7 @@ export interface UserProfile {
     role: 'student' | 'faculty';
     onboardingComplete?: boolean;
     // Onboarding data - Step 2
-    mobile?: string;
+    mobile?: MobileNumber;
     age?: number;
     gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
     // Onboarding data - Step 3
