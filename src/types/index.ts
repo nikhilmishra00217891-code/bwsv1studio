@@ -44,13 +44,20 @@ export interface UserProfile {
     photoURL?: string;
     role: 'student' | 'faculty';
     onboardingComplete?: boolean;
-    // Onboarding data
+    // Onboarding data - Step 2
     age?: number;
     gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
+    // Onboarding data - Step 3
     grade?: string;
     board?: string;
     subjects?: string[];
+    // Onboarding data - Step 4
     goals?: string[];
+    challenges?: string[];
+    preferredStudyDuration?: number;
+    preferredStudyTime?: 'morning' | 'afternoon' | 'evening' | 'night' | 'other';
+    motivationStyles?: string[];
+    // Onboarding data - Future steps
     interests?: string[];
     learningStyle?: ('video' | 'reading' | 'practice' | 'discussion')[];
     theme?: string;
@@ -70,5 +77,3 @@ export interface Announcement {
   updatedAt?: Timestamp;
   reactions: string[];
 }
-
-    

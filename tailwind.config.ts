@@ -107,6 +107,16 @@ export default {
                 transform: 'translateX(0)',
                 opacity: '1',
             },
+        },
+        'pop-in': {
+            '0%': {
+                transform: 'scale(0.9) translateY(10px)',
+                opacity: '0',
+            },
+            '100%': {
+                transform: 'scale(1) translateY(0)',
+                opacity: '1',
+            }
         }
       },
       animation: {
@@ -115,10 +125,9 @@ export default {
         'fade-in': 'fade-in 0.5s ease-out',
         'drop-in': 'drop-in 0.5s ease-out forwards',
         'slide-in-from-right': 'slide-in-from-right 0.5s ease-out forwards',
+        'pop-in': 'pop-in 0.3s ease-out forwards',
       },
     },
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
-
-    
