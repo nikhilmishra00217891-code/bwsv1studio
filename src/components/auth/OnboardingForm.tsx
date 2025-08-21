@@ -227,7 +227,7 @@ const AcademicInfoStep = ({ data, setData, totalSteps }: { data: Partial<UserPro
                             type="text"
                             placeholder="Please specify your grade"
                             className="h-12 text-base"
-                            value={data.grade || ''}
+                            value={gradeOptions.includes(data.grade || '') ? '' : data.grade}
                             onChange={(e) => setData({ grade: e.target.value })}
                             autoFocus
                         />
@@ -260,7 +260,7 @@ const AcademicInfoStep = ({ data, setData, totalSteps }: { data: Partial<UserPro
                             type="text"
                             placeholder="Please specify your board"
                             className="h-12 text-base"
-                            value={data.board || ''}
+                             value={boardOptions.includes(data.board || '') ? '' : data.board}
                             onChange={(e) => setData({ board: e.target.value })}
                             autoFocus
                         />
@@ -510,7 +510,8 @@ const InterestsStep = ({ data, setData, totalSteps }: { data: Partial<UserProfil
     };
 
     const getCustomInterestValue = () => {
-        return data.interests?.find(i => !interestOptions.map(o => o.title).includes(i)) || '';
+        const value = data.interests?.find(i => !interestOptions.map(o => o.title).includes(i as any));
+        return typeof value === 'string' ? value : '';
     };
 
     return (
@@ -581,17 +582,23 @@ const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserPr
 
     const handleCustomLearningStyleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const otherStyleValue = e.target.value;
-        const baseStyles = data.learningStyle?.filter(s => learningStyleOptions.map(o => o.id).includes(s)) || [];
+        const baseStyles = data.learningStyle?.filter(s => learningStyleOptions.map(o => o.id).includes(s as any) || (s !== 'Other' && !learningStyleOptions.map(o => o.id).includes(s as any))) || [];
+        const customValueIndex = baseStyles.findIndex(s => !learningStyleOptions.map(o => o.id).includes(s as any) && s !== 'Other');
 
         if (otherStyleValue) {
-            setData({ learningStyle: [...baseStyles, otherStyleValue] as any[] });
+            if (customValueIndex > -1) {
+                baseStyles[customValueIndex] = otherStyleValue;
+            } else {
+                baseStyles.push(otherStyleValue);
+            }
+             setData({ learningStyle: baseStyles as any[] });
         } else {
-            setData({ learningStyle: baseStyles as any[] });
+             setData({ learningStyle: baseStyles.filter(s => learningStyleOptions.map(o => o.id).includes(s as any)) as any[] });
         }
     };
 
     const getCustomLearningStyleValue = () => {
-        const value = data.learningStyle?.find(s => !learningStyleOptions.map(o => o.id).includes(s as any));
+        const value = data.learningStyle?.find(s => !learningStyleOptions.map(o => o.id).includes(s as any) && s !== 'Other');
         return typeof value === 'string' ? value : '';
     };
 
@@ -671,34 +678,31 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
     const [isCustomizing, setIsCustomizing] = useState(false);
 
     useEffect(() => {
+        const root = document.documentElement;
         if (isCustomizing) {
-            const root = document.documentElement;
             root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
-            root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
-            // Also update ring color for consistency
             root.style.setProperty('--ring', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
+            root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
         }
+        // Cleanup function to remove styles when component unmounts or isCustomizing becomes false
+        return () => {
+            root.style.removeProperty('--primary');
+            root.style.removeProperty('--ring');
+            root.style.removeProperty('--accent');
+        };
     }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
     
     const handleThemeSelect = (theme: string) => {
         setIsCustomizing(false);
         setTheme(theme);
         setData({ theme: theme });
-         // Reset custom styles when a preset is chosen
-        const root = document.documentElement;
-        root.style.removeProperty('--primary');
-        root.style.removeProperty('--accent');
-        root.style.removeProperty('--ring');
     }
 
     const handleCustomizationStart = () => {
+        // Set a base theme to ensure all variables are defined before overriding
+        setTheme('light'); 
         setIsCustomizing(true);
         setData({ theme: 'custom' });
-        // Set a default custom theme based on current primary/accent
-        const root = document.documentElement;
-        root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
-        root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
-        root.style.setProperty('--ring', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
     }
 
     return (
@@ -865,6 +869,7 @@ export function OnboardingForm() {
         case 6: return <LearningStyleStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 7: return <ThemeCustomizationStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 8: return <EngagementBoostStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 9: return <PlaceholderStep step={step} onNext={nextStep} onPrev={prevStep} totalSteps={totalSteps} />
         case totalSteps: return (
             <div className="flex h-full items-center justify-center">
                  <div>
