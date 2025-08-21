@@ -110,22 +110,6 @@ export default function ProfilePage() {
     }
   }, [user, userProfile, loading, router]);
   
-   useEffect(() => {
-    if (theme === 'custom' && profileData?.theme === 'custom' && profileData.customTheme) {
-        const root = document.documentElement;
-        root.style.setProperty('--primary', `${profileData.customTheme.primary.h} ${profileData.customTheme.primary.s}% ${profileData.customTheme.primary.l}%`);
-        root.style.setProperty('--card', `${profileData.customTheme.background.h} ${profileData.customTheme.background.s}% ${profileData.customTheme.background.l}%`);
-    }
-
-    // Cleanup function to remove styles when component unmounts or theme changes
-    return () => {
-        if(profileData?.theme === 'custom') {
-            const root = document.documentElement;
-            root.style.removeProperty('--primary');
-            root.style.removeProperty('--card');
-        }
-    };
-}, [profileData?.customTheme, profileData?.theme, theme]);
 
   const hasChanges = JSON.stringify(profileData) !== JSON.stringify(initialProfileData);
 
@@ -136,7 +120,6 @@ export default function ProfilePage() {
         await updateUserProfile(user.uid, profileData);
         
         // This is crucial: update the user profile in the auth context
-        // This will trigger the CustomThemeProvider to apply the new styles
         setUserProfile(profileData as UserProfile); 
         
         // Apply theme globally after saving

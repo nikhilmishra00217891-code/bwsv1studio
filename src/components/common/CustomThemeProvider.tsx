@@ -12,23 +12,18 @@ export default function CustomThemeProvider({ children }: { children: React.Reac
     useEffect(() => {
         if (loading) return; // Don't do anything until auth is resolved
 
-        const root = document.documentElement;
-
-        if (userProfile?.theme === 'custom' && userProfile.customTheme) {
-            // This ensures that when the user profile loads with a custom theme,
-            // the app's theme is set to 'custom' to match.
-            if (theme !== 'custom') {
-                setTheme('custom');
-            }
-        } else if (userProfile?.theme && userProfile.theme !== 'custom') {
-             if (theme !== userProfile.theme) {
-                setTheme(userProfile.theme);
-            }
+        // On initial load, set the theme from the user's profile if it exists
+        if (userProfile?.theme && theme !== userProfile.theme) {
+            setTheme(userProfile.theme);
         }
+        
     }, [userProfile, loading, setTheme, theme]);
     
     useEffect(() => {
         const root = document.documentElement;
+
+        // This effect *only* manages the CSS variables for the custom theme.
+        // It applies them when the theme is 'custom' and removes them otherwise.
         if (theme === 'custom' && userProfile?.theme === 'custom' && userProfile.customTheme) {
             const { primary, background } = userProfile.customTheme;
             root.style.setProperty('--primary', `${primary.h} ${primary.s}% ${primary.l}%`);
