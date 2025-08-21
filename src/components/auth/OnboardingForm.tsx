@@ -711,17 +711,14 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
     const [accentSaturation, setAccentSaturation] = useState(96);
     const [accentLightness, setAccentLightness] = useState(50);
     
+    const localDataRef = useRef(data);
+    localDataRef.current = data;
+
     useEffect(() => {
         if (isCustomizing) {
             const root = document.documentElement;
             root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
             root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
-        }
-    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
-
-     useEffect(() => {
-        // This effect runs when the user stops customizing to save the final custom values.
-        if (!isCustomizing && data.theme === 'custom') {
              setData({
                 theme: 'custom',
                 customTheme: {
@@ -730,7 +727,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                 }
             })
         }
-     }, [isCustomizing, data.theme, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness, setData]);
+    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
     
     const handlePresetSelect = (themeId: string) => {
         setIsCustomizing(false);
@@ -747,7 +744,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
         setIsCustomizing(true);
         // We set a 'custom' theme class to disable the preset theme css variables
         setTheme('light'); // set to a neutral base
-        setData({ theme: 'custom' });
+        setData({ ...localDataRef.current, theme: 'custom' });
     }
 
     const tryYourLuck = () => {
@@ -840,7 +837,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                 </div>
                                 {/* Accent Color */}
                                 <div className="space-y-4">
-                                     <h4 className="font-semibold text-center" style={{color: `hsl(${accentHue} ${accentSaturation}% ${accentLightness}%)`}}>Accent Color</h4>
+                                     <h4 className="font-semibold text-center">Accent Color</h4>
                                     <div className="space-y-2">
                                         <Label>Hue ({accentHue})</Label>
                                         <Slider value={[accentHue]} onValueChange={([val]) => setAccentHue(val)} max={360} step={1} />
@@ -920,10 +917,13 @@ export function OnboardingForm() {
   const { theme, setTheme } = useTheme();
   
   useEffect(() => {
+    if (user && !userData.displayName) {
+        setUserData(prev => ({...prev, displayName: user.displayName || ''}))
+    }
     if (!userData.theme) {
         setUserData(prev => ({...prev, theme: theme || 'light' }));
     }
-  }, [theme, userData.theme]);
+  }, [user, theme, userData.theme, userData.displayName]);
 
   // When component unmounts, reset any custom styles
   useEffect(() => {
