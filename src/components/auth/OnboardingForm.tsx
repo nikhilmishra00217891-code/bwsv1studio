@@ -13,6 +13,7 @@ import { Card, CardContent } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { Progress } from "../ui/progress";
 import type { UserProfile } from "@/types";
+import { ScrollArea } from "../ui/scroll-area";
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
     return (
@@ -54,7 +55,7 @@ const goalOptions = [
 ]
 
 const OnboardingStepWrapper = ({ title, children, step }: { title: string, children: React.ReactNode, step: number }) => (
-    <div className="animate-slide-in-from-right">
+    <div className="animate-slide-in-from-right w-full max-w-4xl mx-auto px-4 py-8">
         <p className="text-sm font-semibold text-primary tracking-widest uppercase text-center">{`Step ${step - 1} / 10`}</p>
         <h2 className="text-3xl md:text-4xl font-bold font-headline text-center mt-2 mb-12">{title}</h2>
         {children}
@@ -234,12 +235,14 @@ const LearningGoalsStep = ({ data, setData }: { data: Partial<UserProfile>, setD
 // Placeholder for future steps
 const PlaceholderStep = ({ step, onNext, onPrev }: { step: number; onNext: () => void; onPrev: () => void; }) => {
     return (
-        <div>
-            <h2 className="text-2xl font-bold">Step {step}</h2>
-            <p>This is a placeholder for step {step}.</p>
-            <div className="flex justify-between mt-8">
-                <Button variant="outline" onClick={onPrev}>Back</Button>
-                <Button onClick={onNext}>Next</Button>
+        <div className="flex h-full items-center justify-center">
+            <div>
+                <h2 className="text-2xl font-bold">Step {step}</h2>
+                <p>This is a placeholder for step {step}.</p>
+                <div className="flex justify-between mt-8">
+                    <Button variant="outline" onClick={onPrev}>Back</Button>
+                    <Button onClick={onNext}>Next</Button>
+                </div>
             </div>
         </div>
     )
@@ -296,19 +299,21 @@ export function OnboardingForm() {
 
   const renderStep = () => {
     switch(step) {
-        case 1: return <WelcomeStep onNext={nextStep} />;
+        case 1: return <div className="flex h-full items-center justify-center"><WelcomeStep onNext={nextStep} /></div>;
         case 2: return <BasicDetailsStep data={userData} setData={updateLocalUserData} />;
         case 3: return <AcademicInfoStep data={userData} setData={updateLocalUserData} />;
         case 4: return <LearningGoalsStep data={userData} setData={updateLocalUserData} />;
         case totalSteps: return (
-             <div>
-                 <h2 className="text-2xl font-bold">Step {totalSteps} - Finish</h2>
-                 <p>This is a placeholder for the final step.</p>
-                <div className="flex justify-between mt-8">
-                    <Button variant="outline" onClick={prevStep}>Back</Button>
-                    <Button onClick={handleFinish} disabled={isLoading}>
-                         {isLoading ? <LoaderCircle className="animate-spin" /> : "Go to Dashboard"}
-                    </Button>
+            <div className="flex h-full items-center justify-center">
+                 <div>
+                    <h2 className="text-2xl font-bold">Step {totalSteps} - Finish</h2>
+                    <p>This is a placeholder for the final step.</p>
+                    <div className="flex justify-between mt-8">
+                        <Button variant="outline" onClick={prevStep}>Back</Button>
+                        <Button onClick={handleFinish} disabled={isLoading}>
+                            {isLoading ? <LoaderCircle className="animate-spin" /> : "Go to Dashboard"}
+                        </Button>
+                    </div>
                 </div>
             </div>
         )
@@ -317,23 +322,30 @@ export function OnboardingForm() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center bg-card/50 p-6 transition-all duration-500">
-        <div className="w-full max-w-4xl">
-            {renderStep()}
-        </div>
-        {step > 1 && step < totalSteps && (
-            <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t p-4">
+    <div className="flex h-screen flex-col bg-card/50 transition-all duration-500">
+        <ScrollArea className="flex-grow">
+            <div className="flex min-h-[calc(100vh-80px)] items-center justify-center p-6">
+                 {renderStep()}
+            </div>
+        </ScrollArea>
+
+        {step > 1 && (
+            <div className="flex-shrink-0 bg-background/80 backdrop-blur-sm border-t p-4">
                 <div className="container mx-auto max-w-4xl flex items-center justify-between">
                      <Button variant="outline" onClick={prevStep} disabled={step <= 1}>Back</Button>
                      <div className="w-1/2">
                          <Progress value={progress} />
                      </div>
-                     <Button onClick={nextStep} disabled={step >= totalSteps}>Next</Button>
+                      {step < totalSteps ? (
+                        <Button onClick={nextStep}>Next</Button>
+                      ) : (
+                         <Button onClick={handleFinish} disabled={isLoading}>
+                             {isLoading ? <LoaderCircle className="animate-spin" /> : "Finish"}
+                        </Button>
+                      )}
                 </div>
             </div>
         )}
     </div>
   );
 }
-
-    
