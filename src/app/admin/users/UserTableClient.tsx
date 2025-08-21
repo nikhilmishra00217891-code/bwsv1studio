@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useTransition } from 'react';
+import React, { useState, useMemo, useTransition } from 'react';
 import type { UserProfile } from "@/types";
 import { Input } from "@/components/ui/input";
 import {
