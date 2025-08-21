@@ -186,6 +186,7 @@ const SuspensionDialog = ({
 export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState<'all' | 'active' | 'suspended'>('all');
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -193,18 +194,26 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
   const { toast } = useToast();
   const router = useRouter();
 
-  // When initialUsers prop changes (due to a refresh), update the state
   React.useEffect(() => {
     setUsers(initialUsers);
   }, [initialUsers]);
 
   const filteredUsers = useMemo(() => {
-    if (!searchTerm) return users;
-    return users.filter(user =>
+    let searchableUsers = users;
+
+    if (filter === 'active') {
+      searchableUsers = users.filter(user => !user.suspension?.isSuspended);
+    } else if (filter === 'suspended') {
+      searchableUsers = users.filter(user => user.suspension?.isSuspended);
+    }
+    
+    if (!searchTerm) return searchableUsers;
+
+    return searchableUsers.filter(user =>
       user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [users, searchTerm]);
+  }, [users, searchTerm, filter]);
 
   const handleRefresh = () => {
     startTransition(() => {
@@ -233,21 +242,28 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
              <p className="text-muted-foreground">Search, view, and manage all users on the platform.</p>
         </div>
       
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row gap-4">
         <Input
           placeholder="Search by name or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
         />
-        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending}>
-            <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
-            <span className="sr-only">Refresh</span>
-        </Button>
+        <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
+                <Button variant={filter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('all')}>All</Button>
+                <Button variant={filter === 'active' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('active')}>Active</Button>
+                <Button variant={filter === 'suspended' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('suspended')}>Suspended</Button>
+            </div>
+            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending}>
+                <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
+                <span className="sr-only">Refresh</span>
+            </Button>
+        </div>
       </div>
 
       <div className="border rounded-lg">
-        <ScrollArea className="h-[calc(100vh-20rem)]">
+        <ScrollArea className="h-[calc(100vh-22rem)]">
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
@@ -260,7 +276,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
+              {filteredUsers.length > 0 ? filteredUsers.map((user) => (
                 <TableRow key={user.uid} className={cn(user.suspension?.isSuspended && "bg-destructive/5 hover:bg-destructive/10")}>
                   <TableCell>
                     <div className="font-medium">{user.displayName || 'N/A'}</div>
@@ -313,7 +329,13 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    No users match your current filter.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </ScrollArea>
