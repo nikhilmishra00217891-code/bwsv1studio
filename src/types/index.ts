@@ -62,6 +62,8 @@ export interface UserProfile {
     interests?: string[];
     // Onboarding data - Step 6
     learningStyle?: ('video' | 'reading' | 'practice' | 'discussion' | string)[];
+    // Onboarding data - Step 7
+    theme?: string;
     // Onboarding data - Step 8
     avatar?: string;
     // Original fields

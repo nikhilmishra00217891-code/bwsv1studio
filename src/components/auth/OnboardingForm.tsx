@@ -19,6 +19,7 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTheme } from "next-themes";
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
     return (
@@ -114,6 +115,46 @@ const avatarOptions = [
     { id: 'eagle', icon: '🦅' },
     { id: 'dragon', icon: '🐲' },
 ];
+
+const themeOptions = [
+    {
+        id: 'light',
+        name: 'Default Light',
+        colors: {
+            bg: 'hsl(35 80% 97%)',
+            primary: 'hsl(34 96% 49%)',
+            accent: 'hsl(47 96% 50%)',
+        }
+    },
+    {
+        id: 'dark',
+        name: 'Default Dark',
+        colors: {
+            bg: 'hsl(20 15% 10%)',
+            primary: 'hsl(34 96% 49%)',
+            accent: 'hsl(47 96% 50%)',
+        }
+    },
+    {
+        id: 'proudshe',
+        name: 'Proudshe',
+        colors: {
+            bg: 'hsl(340 100% 98%)',
+            primary: 'hsl(337 90% 60%)',
+            accent: 'hsl(337 95% 65%)',
+        }
+    },
+    {
+        id: 'retrogamer',
+        name: 'Retro Gamer',
+        colors: {
+            bg: 'hsl(236 65% 10%)',
+            primary: 'hsl(260 90% 70%)',
+            accent: 'hsl(45 85% 55%)',
+        }
+    }
+];
+
 
 const OnboardingStepWrapper = ({ title, children, step, totalSteps }: { title: string, children: React.ReactNode, step: number, totalSteps: number }) => (
     <div className="animate-slide-in-from-right w-full max-w-4xl mx-auto px-4 py-8">
@@ -657,6 +698,52 @@ const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserPr
     )
 };
 
+const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
+    const { theme, setTheme } = useTheme();
+
+    const handleThemeSelect = (themeId: string) => {
+        setTheme(themeId);
+        setData({ theme: themeId });
+    }
+
+    return (
+        <OnboardingStepWrapper title="Choose Your Vibe" step={7} totalSteps={totalSteps}>
+             <div className="max-w-4xl mx-auto">
+                <p className="text-muted-foreground text-center mb-8">
+                    Pick a theme that makes you feel motivated. You can always change this later!
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {themeOptions.map(option => (
+                        <Card 
+                            key={option.id}
+                            onClick={() => handleThemeSelect(option.id)}
+                            className={cn(
+                                "cursor-pointer transition-all duration-200",
+                                data.theme === option.id ? "ring-4 ring-primary ring-offset-4 ring-offset-background" : "hover:ring-2 hover:ring-primary/50"
+                            )}
+                        >
+                            <CardContent className="p-0">
+                                <div className="p-4">
+                                    <h3 className="font-headline text-lg font-bold">{option.name}</h3>
+                                </div>
+                                <div 
+                                    className="h-40 rounded-b-lg p-4 flex flex-col justify-end"
+                                    style={{ backgroundColor: option.colors.bg }}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1/2 h-10 rounded" style={{backgroundColor: option.colors.primary}}></div>
+                                        <div className="w-1/2 h-10 rounded" style={{backgroundColor: option.colors.accent}}></div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        </OnboardingStepWrapper>
+    )
+};
+
 const EngagementBoostStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
     return (
         <OnboardingStepWrapper title="Pick a Motivational Avatar" step={7} totalSteps={totalSteps}>
@@ -710,8 +797,24 @@ export function OnboardingForm() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+  const [initialTheme, setInitialTheme] = useState<string | undefined>(undefined);
 
-  const totalSteps = 9;
+  // Store the initial theme when the component mounts
+  useEffect(() => {
+    if (theme) {
+        setInitialTheme(theme);
+    }
+  }, []); // Empty dependency array ensures this runs only once on mount
+  
+  // Set default theme for the form
+  useEffect(() => {
+    if (!userData.theme) {
+        setUserData(prev => ({...prev, theme: theme || 'light' }));
+    }
+  }, [theme, userData.theme]);
+
+  const totalSteps = 8;
   const progress = ((step - 1) / (totalSteps -1)) * 100;
 
   const nextStep = () => setStep((prev) => (prev < totalSteps ? prev + 1 : prev));
@@ -726,6 +829,9 @@ export function OnboardingForm() {
     setIsLoading(true);
     try {
         await updateUserProfile(user.uid, { ...userData, onboardingComplete: true });
+
+        // The user's chosen theme is already applied via useTheme, so we don't need to set it again here
+        // But we save it to their profile for future sessions.
 
         toast({
             title: "Awesome! You’re all set.",
@@ -760,20 +866,17 @@ export function OnboardingForm() {
         case 4: return <LearningJourneyStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 5: return <InterestsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 6: return <LearningStyleStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
-        case 7: return <EngagementBoostStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
-        case 8: return <PlaceholderStep step={step} onNext={nextStep} onPrev={prevStep} totalSteps={totalSteps} />
+        case 7: return <ThemeCustomizationStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case totalSteps: return (
             <div className="flex h-full items-center justify-center">
-                 <div>
-                    <h2 className="text-2xl font-bold">Step {totalSteps} - Finish</h2>
-                    <p>This is a placeholder for the final step.</p>
-                    <div className="flex justify-between mt-8">
-                        <Button variant="outline" onClick={prevStep}>Back</Button>
-                        <Button onClick={handleFinish} disabled={isLoading}>
-                            {isLoading ? <LoaderCircle className="animate-spin" /> : "Go to Dashboard"}
+                 <OnboardingStepWrapper title="One Last Check!" step={totalSteps} totalSteps={totalSteps}>
+                     <div className="text-center">
+                        <p className="text-muted-foreground mb-8">You're all set! Press Finish to head to your personalized dashboard.</p>
+                        <Button size="lg" onClick={handleFinish} disabled={isLoading}>
+                            {isLoading ? <LoaderCircle className="animate-spin" /> : "Finish & Go to Dashboard"}
                         </Button>
-                    </div>
-                </div>
+                     </div>
+                 </OnboardingStepWrapper>
             </div>
         )
         default: return <PlaceholderStep step={step} onNext={nextStep} onPrev={prevStep} totalSteps={totalSteps} />
