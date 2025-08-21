@@ -17,6 +17,7 @@ import { isFaculty as checkIsFaculty } from "@/lib/data";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useEditMode } from "./EditModeProvider";
+import { ScrollArea } from "../ui/scroll-area";
 
 const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void }) => {
   const pathname = usePathname();
@@ -161,9 +162,9 @@ export default function Header() {
                 <span className="sr-only">Open navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right">
+            <SheetContent side="right" className="flex flex-col p-0">
               <SheetTitle className="sr-only">Menu</SheetTitle>
-               <div className="flex flex-col h-full">
+               
                 <div className="flex items-center justify-between p-6 border-b">
                     <Link href="/" className="flex items-center gap-2" onClick={() => handleLinkClick()}>
                         <BookOpenCheck className="h-6 w-6 text-primary" />
@@ -171,16 +172,21 @@ export default function Header() {
                     </Link>
                 </div>
 
-                <nav className="flex flex-col gap-4 text-lg p-6 flex-grow">
-                  {navLinks.map((link) => (
-                    <NavLink key={link.href} {...link} onSelect={handleLinkClick} />
-                  ))}
-                  <div className="my-2 border-t border-border/50"></div>
-                  {user && futureNavLinks.map((link) => (
-                    <NavLink key={link.label} {...link} onSelect={handleLinkClick} />
-                  ))}
-                  {isClient && isFaculty && (
-                    <div className="flex items-center justify-between pt-4 mt-auto border-t">
+                <ScrollArea className="flex-grow">
+                    <nav className="flex flex-col gap-4 text-lg p-6">
+                      {navLinks.map((link) => (
+                        <NavLink key={link.href} {...link} onSelect={handleLinkClick} />
+                      ))}
+                      <div className="my-2 border-t border-border/50"></div>
+                      {user && futureNavLinks.map((link) => (
+                        <NavLink key={link.label} {...link} onSelect={handleLinkClick} />
+                      ))}
+                    </nav>
+                </ScrollArea>
+                
+                <div className="p-6 border-t mt-auto">
+                   {isClient && isFaculty && (
+                    <div className="flex items-center justify-between pb-4 mb-4 border-b">
                       <Label htmlFor="mobile-edit-mode-toggle" className="text-foreground/80 flex items-center gap-2 text-base cursor-pointer">
                         <Pencil className="w-5 h-5" />
                         Edit Mode
@@ -188,9 +194,6 @@ export default function Header() {
                       <Switch id="mobile-edit-mode-toggle" checked={isEditMode} onCheckedChange={setIsEditMode}/>
                     </div>
                   )}
-                </nav>
-                
-                <div className="p-6 border-t">
                   {user ? (
                     <Button variant="outline" onClick={handleLogout} className="w-full">
                         <LogOut className="mr-2 h-4 w-4" /> Logout
@@ -201,7 +204,6 @@ export default function Header() {
                     </Button>
                   )}
                 </div>
-              </div>
             </SheetContent>
           </Sheet>
         </div>
