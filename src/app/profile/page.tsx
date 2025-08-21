@@ -106,8 +106,8 @@ export default function ProfilePage() {
   const { user, userProfile, loading, setUserProfile } = useAuth();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const [profileData, setProfileData] = useState<Partial<UserProfile>>({});
-  const [initialProfileData, setInitialProfileData] = useState<Partial<UserProfile>>({});
+  const [profileData, setProfileData] = useState<Partial<UserProfile> | null>(null);
+  const [initialProfileData, setInitialProfileData] = useState<Partial<UserProfile> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
@@ -126,10 +126,10 @@ export default function ProfilePage() {
   }, [user, userProfile, loading, router]);
   
 
-  const hasChanges = JSON.stringify(profileData) !== JSON.stringify(initialProfileData);
+  const hasChanges = profileData && initialProfileData && JSON.stringify(profileData) !== JSON.stringify(initialProfileData);
 
   const handleSaveChanges = async () => {
-    if (!user || !hasChanges) return;
+    if (!user || !hasChanges || !profileData) return;
     setIsSaving(true);
     try {
         await updateUserProfile(user.uid, profileData);
@@ -163,11 +163,11 @@ export default function ProfilePage() {
 
   const handleResetChanges = () => {
     setProfileData(initialProfileData);
-    if(initialProfileData.theme) setTheme(initialProfileData.theme)
+    if(initialProfileData?.theme) setTheme(initialProfileData.theme)
   }
 
   const renderAvatarContent = () => {
-    const avatarKey = profileData.avatar || userProfile?.avatar;
+    const avatarKey = profileData?.avatar || userProfile?.avatar;
     if (avatarKey) {
       const Icon = avatarIcons[avatarKey];
       if (Icon) return <Icon className="w-16 h-16 text-primary" />;
@@ -196,7 +196,7 @@ export default function ProfilePage() {
     </div>
   )
 
-  if (loading || !user || !userProfile) {
+  if (loading || !user || !userProfile || !profileData) {
     return (
       <div className="flex h-screen items-center justify-center">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -266,11 +266,11 @@ export default function ProfilePage() {
               <div className="grid sm:grid-cols-2 gap-6">
                   <div>
                       <Label htmlFor="displayName">Display Name</Label>
-                      <Input id="displayName" value={profileData.displayName || ''} onChange={e => setProfileData(p => ({...p, displayName: e.target.value}))} />
+                      <Input id="displayName" value={profileData.displayName || ''} onChange={e => setProfileData(p => ({...p!, displayName: e.target.value}))} />
                   </div>
                   <div>
                       <Label htmlFor="age">Age</Label>
-                      <Input id="age" type="number" value={profileData.age || ''} onChange={e => setProfileData(p => ({...p, age: parseInt(e.target.value) || undefined}))} />
+                      <Input id="age" type="number" value={profileData.age || ''} onChange={e => setProfileData(p => ({...p!, age: parseInt(e.target.value) || undefined}))} />
                   </div>
                   <div>
                        <Label htmlFor="email">Email</Label>
@@ -288,7 +288,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                       <Label htmlFor="gender">Gender</Label>
-                       <Select value={profileData.gender} onValueChange={v => setProfileData(p => ({...p, gender: v as any}))}>
+                       <Select value={profileData.gender} onValueChange={v => setProfileData(p => ({...p!, gender: v as any}))}>
                           <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
                           <SelectContent>
                               {genderOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
@@ -306,7 +306,7 @@ export default function ProfilePage() {
                   <div className="grid sm:grid-cols-2 gap-6">
                       <div>
                           <Label>Grade/Class</Label>
-                          <Select value={profileData.grade} onValueChange={v => setProfileData(p => ({...p, grade: v}))}>
+                          <Select value={profileData.grade} onValueChange={v => setProfileData(p => ({...p!, grade: v}))}>
                               <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
                               <SelectContent>
                                   {gradeOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
@@ -315,7 +315,7 @@ export default function ProfilePage() {
                       </div>
                        <div>
                           <Label>Board</Label>
-                          <Select value={profileData.board} onValueChange={v => setProfileData(p => ({...p, board: v}))}>
+                          <Select value={profileData.board} onValueChange={v => setProfileData(p => ({...p!, board: v}))}>
                               <SelectTrigger><SelectValue placeholder="Select board" /></SelectTrigger>
                               <SelectContent>
                                   {boardOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
@@ -332,7 +332,7 @@ export default function ProfilePage() {
                           const newSubjects = current.includes(subject)
                               ? current.filter(s => s !== subject)
                               : [...current, subject];
-                          setProfileData(p => ({ ...p, subjects: newSubjects }));
+                          setProfileData(p => ({ ...p!, subjects: newSubjects }));
                       }}
                   />
               </CardContent>
@@ -351,7 +351,7 @@ export default function ProfilePage() {
                           const newGoals = current.includes(goal)
                               ? current.filter(g => g !== goal)
                               : [...current, goal];
-                          setProfileData(p => ({ ...p, goals: newGoals }));
+                          setProfileData(p => ({ ...p!, goals: newGoals }));
                       }}
                   />
                    <MultiSelectCard 
@@ -363,7 +363,7 @@ export default function ProfilePage() {
                           const newStyles = current.includes(style)
                               ? current.filter(s => s !== style)
                               : [...current, style];
-                          setProfileData(p => ({ ...p, learningStyle: newStyles as any[] }));
+                          setProfileData(p => ({ ...p!, learningStyle: newStyles as any[] }));
                       }}
                   />
                    <div>
@@ -371,7 +371,7 @@ export default function ProfilePage() {
                       <div className="flex items-center gap-4 mt-2">
                           <Slider
                               value={[profileData.preferredStudyDuration || 1.5]}
-                              onValueChange={(value) => setProfileData(p => ({ ...p, preferredStudyDuration: value[0] }))}
+                              onValueChange={(value) => setProfileData(p => ({ ...p!, preferredStudyDuration: value[0] }))}
                               max={8} min={0.5} step={0.5}
                           />
                           <span className="font-bold text-primary text-sm w-20 text-center">{profileData.preferredStudyDuration || 1.5} hrs</span>
@@ -381,7 +381,7 @@ export default function ProfilePage() {
                       <Label className="font-semibold">Most Productive Time</Label>
                       <RadioGroup 
                           value={profileData.preferredStudyTime}
-                          onValueChange={(value) => setProfileData(p => ({...p, preferredStudyTime: value as any }))}
+                          onValueChange={(value) => setProfileData(p => ({...p!, preferredStudyTime: value as any }))}
                           className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2"
                       >
                           {studyTimeOptions.map(option => (
@@ -415,9 +415,9 @@ export default function ProfilePage() {
                                   primary: { h: 34, s: 96, l: 49 },
                                   background: { h: 35, s: 80, l: 97 },
                               };
-                              setProfileData(p => ({...p, theme: 'custom', customTheme: p.customTheme || defaultCustom }));
+                              setProfileData(p => ({...p!, theme: 'custom', customTheme: p!.customTheme || defaultCustom }));
                           } else {
-                              setProfileData(p => ({...p, theme: value, customTheme: p.customTheme })); // Keep customTheme data
+                              setProfileData(p => ({...p!, theme: value, customTheme: p!.customTheme })); // Keep customTheme data
                           }
                       }}
                       className="grid grid-cols-2 sm:grid-cols-4 gap-4"
@@ -439,7 +439,7 @@ export default function ProfilePage() {
                                   const b_h = (p_h + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 60) + 30)) % 360;
                                   const b_s = Math.floor(Math.random() * 20) + 70;
                                   const b_l = Math.floor(Math.random() * 10) + 88;
-                                  setProfileData(p => ({...p, customTheme: { primary: {h: p_h, s: p_s, l: p_l}, background: {h: b_h, s: b_s, l: b_l}}}));
+                                  setProfileData(p => ({...p!, customTheme: { primary: {h: p_h, s: p_s, l: p_l}, background: {h: b_h, s: b_s, l: b_l}}}));
                               }}><Dices className="w-4 h-4 mr-2"/> Try Your Luck</Button>
                           </div>
                           <div className="grid md:grid-cols-2 gap-8">
@@ -447,15 +447,15 @@ export default function ProfilePage() {
                                   <h4 className="font-semibold text-center mb-2" style={{color: `hsl(${profileData.customTheme?.primary.h}, ${profileData.customTheme?.primary.s}%, ${profileData.customTheme?.primary.l}%)`}}>Primary Color</h4>
                                   <div className="space-y-2">
                                       <Label>Hue ({profileData.customTheme?.primary.h})</Label>
-                                      <Slider value={[profileData.customTheme?.primary.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, h: val}} }))} max={360} step={1} />
+                                      <Slider value={[profileData.customTheme?.primary.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p!, customTheme: {...p!.customTheme!, primary: {...p!.customTheme!.primary, h: val}} }))} max={360} step={1} />
                                   </div>
                                    <div className="space-y-2">
                                       <Label>Saturation ({profileData.customTheme?.primary.s}%)</Label>
-                                      <Slider value={[profileData.customTheme?.primary.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, s: val}} }))} max={100} step={1} />
+                                      <Slider value={[profileData.customTheme?.primary.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p!, customTheme: {...p!.customTheme!, primary: {...p!.customTheme!.primary, s: val}} }))} max={100} step={1} />
                                   </div>
                                    <div className="space-y-2">
                                       <Label>Lightness ({profileData.customTheme?.primary.l}%)</Label>
-                                      <Slider value={[profileData.customTheme?.primary.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, l: val}} }))} max={100} step={1} />
+                                      <Slider value={[profileData.customTheme?.primary.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p!, customTheme: {...p!.customTheme!, primary: {...p!.customTheme!.primary, l: val}} }))} max={100} step={1} />
                                   </div>
                               </div>
                                <div>
@@ -467,15 +467,15 @@ export default function ProfilePage() {
                                   }}>Background Color</h4>
                                    <div className="space-y-2">
                                       <Label>Hue ({profileData.customTheme?.background.h})</Label>
-                                      <Slider value={[profileData.customTheme?.background.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, h: val}} }))} max={360} step={1} />
+                                      <Slider value={[profileData.customTheme?.background.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p!, customTheme: {...p!.customTheme!, background: {...p!.customTheme!.background, h: val}} }))} max={360} step={1} />
                                   </div>
                                    <div className="space-y-2">
                                       <Label>Saturation ({profileData.customTheme?.background.s}%)</Label>
-                                      <Slider value={[profileData.customTheme?.background.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, s: val}} }))} max={100} step={1} />
+                                      <Slider value={[profileData.customTheme?.background.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p!, customTheme: {...p!.customTheme!, background: {...p!.customTheme!.background, s: val}} }))} max={100} step={1} />
                                   </div>
                                    <div className="space-y-2">
                                       <Label>Lightness ({profileData.customTheme?.background.l}%)</Label>
-                                      <Slider value={[profileData.customTheme?.background.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, l: val}} }))} max={100} step={1} />
+                                      <Slider value={[profileData.customTheme?.background.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p!, customTheme: {...p!.customTheme!, background: {...p!.customTheme!.background, l: val}} }))} max={100} step={1} />
                                   </div>
                               </div>
                           </div>

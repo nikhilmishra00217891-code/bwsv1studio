@@ -153,7 +153,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                   </TableCell>
                   <TableCell>
                     {user.onboardingComplete ? 
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge> : 
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Completed</Badge> : 
                         <Badge variant="destructive">Pending</Badge>
                     }
                   </TableCell>
@@ -188,7 +188,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure you want to delete this user?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently delete the user profile for <span className="font-bold text-foreground">{userToDelete?.displayName}</span> ({userToDelete?.email}). This action is irreversible.
+                        This will remove the user profile for <span className="font-bold text-foreground">{userToDelete?.displayName}</span> ({userToDelete?.email}). This action is a "soft delete" and can be reversed by developers if needed.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
