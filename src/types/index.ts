@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 
 export interface Lesson {
@@ -60,9 +61,10 @@ export interface UserProfile {
     // Onboarding data - Step 5
     interests?: string[];
     // Onboarding data - Step 6
-    learningStyle?: ('video' | 'reading' | 'practice' | 'discussion')[];
-    // Onboarding data - Future steps
+    learningStyle?: ('video' | 'reading' | 'practice' | 'discussion' | string)[];
+    // Onboarding data - Step 7
     theme?: string;
+    // Onboarding data - Step 8
     avatar?: string;
     // Original fields
     enrolledCourses?: string[];

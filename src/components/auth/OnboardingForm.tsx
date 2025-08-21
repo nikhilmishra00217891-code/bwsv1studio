@@ -2,12 +2,12 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare } from "lucide-react";
+import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare, Palette, Smile } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent } from "../ui/card";
@@ -19,6 +19,7 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTheme } from 'next-themes';
 
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
@@ -103,6 +104,24 @@ const learningStyleOptions = [
     { id: 'reading', title: 'Reading Notes', icon: BookOpen, description: "I prefer detailed text and diagrams to understand concepts." },
     { id: 'practice', title: 'Practice Questions', icon: PenSquare, description: "Doing is learning. I master topics by solving problems." },
     { id: 'discussion', title: 'Group Discussions', icon: MessageCircle, description: "I gain new perspectives by talking with peers." },
+]
+
+const avatarOptions = [
+    { id: 'rocket', icon: '🚀' },
+    { id: 'brain', icon: '🧠' },
+    { id: 'trophy', icon: '🏆' },
+    { id: 'ninja', icon: '🥷' },
+    { id: 'star', icon: '🌟' },
+    { id: 'lion', icon: '🦁' },
+    { id: 'eagle', icon: '🦅' },
+    { id: 'dragon', icon: '🐲' },
+];
+
+const themeOptions = [
+    { id: 'light', name: 'Default Light', class: 'light' },
+    { id: 'dark', name: 'Default Dark', class: 'dark' },
+    { id: 'proudshe', name: 'Proudshe', class: 'proudshe' },
+    { id: 'retrogamer', name: 'Retro Gamer', class: 'retrogamer' },
 ]
 
 
@@ -572,7 +591,8 @@ const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserPr
     };
 
     const getCustomLearningStyleValue = () => {
-        return data.learningStyle?.find(s => !learningStyleOptions.map(o => o.id).includes(s)) || '';
+        const value = data.learningStyle?.find(s => !learningStyleOptions.map(o => o.id).includes(s as any));
+        return typeof value === 'string' ? value : '';
     };
 
     return (
@@ -640,6 +660,130 @@ const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserPr
     )
 };
 
+const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
+    const { setTheme } = useTheme();
+    const [primaryHue, setPrimaryHue] = useState(34);
+    const [primarySaturation, setPrimarySaturation] = useState(96);
+    const [primaryLightness, setPrimaryLightness] = useState(49);
+    const [accentHue, setAccentHue] = useState(47);
+    const [accentSaturation, setAccentSaturation] = useState(96);
+    const [accentLightness, setAccentLightness] = useState(50);
+    const [isCustomizing, setIsCustomizing] = useState(false);
+
+    useEffect(() => {
+        if (isCustomizing) {
+            const root = document.documentElement;
+            root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
+            root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
+            // Also update ring color for consistency
+            root.style.setProperty('--ring', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
+        }
+    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
+    
+    const handleThemeSelect = (theme: string) => {
+        setIsCustomizing(false);
+        setTheme(theme);
+        setData({ theme: theme });
+    }
+
+    const handleCustomizationStart = () => {
+        setIsCustomizing(true);
+        setData({ theme: 'custom' });
+        // Set a default custom theme based on current primary/accent
+        const root = document.documentElement;
+        root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
+        root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
+        root.style.setProperty('--ring', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
+    }
+
+    return (
+        <OnboardingStepWrapper title="Customize Your Vibe" step={7} totalSteps={totalSteps}>
+            <div className="max-w-3xl mx-auto space-y-12">
+                <div>
+                    <h3 className="text-xl font-bold text-center mb-6">Choose a Preset</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {themeOptions.map(option => (
+                            <div key={option.id} className="text-center">
+                                <Button 
+                                    variant="outline"
+                                    onClick={() => handleThemeSelect(option.id)}
+                                    className={cn(
+                                        "w-full h-24 border-4 transition-all",
+                                        data.theme === option.id && !isCustomizing ? "border-primary scale-105" : "border-muted",
+                                        option.class
+                                    )}
+                                >
+                                    <div className="w-1/2 h-full bg-primary"></div>
+                                    <div className="w-1/2 h-full bg-accent"></div>
+                                </Button>
+                                <p className="text-sm font-medium mt-2">{option.name}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="text-xl font-bold text-center mb-6">Or, Create Your Own</h3>
+                    {!isCustomizing ? (
+                        <div className="text-center">
+                            <Button size="lg" variant="outline" onClick={handleCustomizationStart}>
+                                <Palette className="mr-2" /> Make My Own Theme
+                            </Button>
+                        </div>
+                    ) : (
+                        <Card className={cn("p-6 space-y-6", isCustomizing && "ring-2 ring-primary")}>
+                            <div>
+                                <h4 className="font-semibold mb-2">Primary Color</h4>
+                                <div className="space-y-3">
+                                    <Label>Hue ({primaryHue})</Label><Slider value={[primaryHue]} onValueChange={([v]) => setPrimaryHue(v)} max={360} />
+                                    <Label>Saturation ({primarySaturation}%)</Label><Slider value={[primarySaturation]} onValueChange={([v]) => setPrimarySaturation(v)} max={100} />
+                                    <Label>Lightness ({primaryLightness}%)</Label><Slider value={[primaryLightness]} onValueChange={([v]) => setPrimaryLightness(v)} max={100} />
+                                </div>
+                            </div>
+                             <div className="border-t pt-6">
+                                <h4 className="font-semibold mb-2">Accent Color</h4>
+                                <div className="space-y-3">
+                                    <Label>Hue ({accentHue})</Label><Slider value={[accentHue]} onValueChange={([v]) => setAccentHue(v)} max={360} />
+                                    <Label>Saturation ({accentSaturation}%)</Label><Slider value={[accentSaturation]} onValueChange={([v]) => setAccentSaturation(v)} max={100} />
+                                    <Label>Lightness ({accentLightness}%)</Label><Slider value={[accentLightness]} onValueChange={([v]) => setAccentLightness(v)} max={100} />
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+                </div>
+            </div>
+        </OnboardingStepWrapper>
+    );
+};
+
+const EngagementBoostStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
+    return (
+        <OnboardingStepWrapper title="Pick a Motivational Avatar" step={8} totalSteps={totalSteps}>
+            <div className="max-w-xl mx-auto">
+                <p className="text-muted-foreground text-center mb-8">
+                    This avatar will represent you in challenges, streaks, and leaderboards!
+                </p>
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                    {avatarOptions.map(option => (
+                        <Card
+                            key={option.id}
+                            onClick={() => setData({ avatar: option.icon })}
+                            className={cn(
+                                "p-4 flex items-center justify-center text-center cursor-pointer transition-all duration-200 transform hover:scale-110 hover:shadow-lg",
+                                data.avatar === option.icon && "ring-4 ring-primary shadow-2xl scale-110"
+                            )}
+                        >
+                            <span className="text-5xl">{option.icon}</span>
+                        </Card>
+                    ))}
+                </div>
+                <div className="text-center mt-8">
+                     <Button variant="link" onClick={() => setData({ avatar: '' })}>I'll choose later</Button>
+                </div>
+            </div>
+        </OnboardingStepWrapper>
+    )
+};
 
 // Placeholder for future steps
 const PlaceholderStep = ({ step, onNext, onPrev, totalSteps }: { step: number; onNext: () => void; onPrev: () => void; totalSteps: number }) => {
@@ -714,6 +858,8 @@ export function OnboardingForm() {
         case 4: return <LearningJourneyStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 5: return <InterestsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 6: return <LearningStyleStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 7: return <ThemeCustomizationStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 8: return <EngagementBoostStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case totalSteps: return (
             <div className="flex h-full items-center justify-center">
                  <div>
@@ -760,4 +906,3 @@ export function OnboardingForm() {
     </div>
   );
 }
-
