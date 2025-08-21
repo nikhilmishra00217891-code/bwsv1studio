@@ -49,6 +49,7 @@ export interface UserProfile {
     photoURL?: string;
     role: 'student' | 'faculty';
     onboardingComplete?: boolean;
+    createdAt?: string | null; // Changed to string for serialization
     // Onboarding data - Step 2
     mobile?: MobileNumber;
     age?: number;

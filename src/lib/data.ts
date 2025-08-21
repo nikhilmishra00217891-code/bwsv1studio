@@ -1,7 +1,7 @@
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 
@@ -223,7 +223,14 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
     if (snapshot.empty) {
         return [];
     }
-    return snapshot.docs.map(
-        (doc) => ({ ...doc.data() } as UserProfile)
-    );
+    return snapshot.docs.map((doc) => {
+        const data = doc.data();
+        // Manually convert Firestore Timestamp to a serializable format (ISO string)
+        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null;
+
+        return { 
+            ...data,
+            createdAt: createdAt,
+         } as UserProfile;
+    });
 };

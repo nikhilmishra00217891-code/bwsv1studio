@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -49,7 +50,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Grade</TableHead>
-                <TableHead>Board</TableHead>
+                <TableHead>Joined</TableHead>
                 <TableHead>Onboarding</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -67,7 +68,9 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                     </Badge>
                   </TableCell>
                   <TableCell>{user.grade || 'N/A'}</TableCell>
-                  <TableCell>{user.board || 'N/A'}</TableCell>
+                   <TableCell>
+                    {user.createdAt ? format(new Date(user.createdAt), 'PP') : 'N/A'}
+                  </TableCell>
                   <TableCell>
                     {user.onboardingComplete ? 
                         <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge> : 
