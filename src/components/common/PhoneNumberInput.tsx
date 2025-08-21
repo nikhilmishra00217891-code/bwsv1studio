@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from '@/lib/utils';
 import type { MobileNumber } from '@/types';
 
-const countries = [
+export const countries = [
     { code: '+91', name: 'India', flag: '🇮🇳', digits: 10 },
     { code: '+1', name: 'USA', flag: '🇺🇸', digits: 10 },
     { code: '+44', name: 'UK', flag: '🇬🇧', digits: 10 },
