@@ -122,7 +122,7 @@ export default function Header() {
       const Icon = avatarIcons[userProfile.avatar];
       if(Icon) return <Icon className="w-5 h-5" />;
     }
-    return user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() ?? 'U'
+    return user?.displayName ? user.displayName[0].toUpperCase() : user?.email?.[0].toUpperCase() ?? 'U'
   }
 
   return (
@@ -238,6 +238,7 @@ const navLinks = [
   { href: "/announcements", label: "Announcements", icon: Megaphone },
   { href: "/about", label: "About", icon: Info },
   { href: "/contact", label: "Contact", icon: Phone },
+  { href: "/dashboard", label: "Dashboard", icon: UserCircle },
 ];
 
 const futureNavLinks = [

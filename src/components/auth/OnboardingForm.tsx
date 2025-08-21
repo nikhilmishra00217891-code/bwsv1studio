@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTheme } from "next-themes";
 import { Badge } from "../ui/badge";
-import { PhoneNumberInput } from "../common/PhoneNumberInput";
+import { PhoneNumberInput, countries } from "../common/PhoneNumberInput";
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
     return (
@@ -1049,8 +1049,9 @@ export function OnboardingForm() {
   const isStepValid = () => {
     switch (step) {
       case 2: // Basic Details
-        const country = countries.find(c => c.code === (userData.mobile?.countryCode || '+91')) || countries[0];
-        return !!userData.displayName && !!userData.mobile?.number && userData.mobile.number.length === country.digits;
+        if (!userData.mobile || !userData.mobile.countryCode || !userData.mobile.number) return false;
+        const country = countries.find(c => c.code === userData.mobile?.countryCode) || countries[0];
+        return !!userData.displayName && userData.mobile.number.length === country.digits;
       case 3: // Academic Info
         return !!userData.grade && !!userData.board && !!userData.subjects && userData.subjects.length > 0;
       case 4: // Learning Journey
@@ -1173,10 +1174,3 @@ export function OnboardingForm() {
     </div>
   );
 }
-
-const countries = [
-    { code: '+91', name: 'India', flag: '🇮🇳', digits: 10 },
-    { code: '+1', name: 'USA', flag: '🇺🇸', digits: 10 },
-    { code: '+44', name: 'UK', flag: '🇬🇧', digits: 10 },
-    { code: '+61', name: 'Australia', flag: '🇦🇺', digits: 9 },
-];

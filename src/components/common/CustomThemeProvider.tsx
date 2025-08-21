@@ -3,25 +3,29 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useTheme } from 'next-themes';
 
 export default function CustomThemeProvider({ children }: { children: React.ReactNode }) {
     const { userProfile } = useAuth();
+    const { setTheme } = useTheme();
 
     useEffect(() => {
         const root = document.documentElement;
 
         if (userProfile?.theme === 'custom' && userProfile.customTheme) {
             const { primary, background } = userProfile.customTheme;
+            setTheme('light'); // Set a base theme for custom styles to work on
             root.style.setProperty('--primary', `${primary.h} ${primary.s}% ${primary.l}%`);
             root.style.setProperty('--card', `${background.h} ${background.s}% ${background.l}%`);
-            // We can derive other colors from these, or set them explicitly if needed
-            // For now, let's keep other colors as they are in globals.css for simplicity
-        } else {
-            // Cleanup inline styles if not using a custom theme
+        } else if (userProfile?.theme) {
+            setTheme(userProfile.theme);
             root.style.removeProperty('--primary');
             root.style.removeProperty('--card');
+        } else {
+             root.style.removeProperty('--primary');
+             root.style.removeProperty('--card');
         }
-    }, [userProfile]);
+    }, [userProfile, setTheme]);
 
     return <>{children}</>;
 }
