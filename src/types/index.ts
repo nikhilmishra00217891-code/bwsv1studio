@@ -67,13 +67,13 @@ export interface UserProfile {
     theme?: string;
     customTheme?: {
         primary: { h: number; s: number; l: number };
-        accent: { h: number; s: number; l: number };
+        background: { h: number; s: number; l: number };
     }
     // Onboarding data - Step 8
     avatar?: string;
     // Original fields
     enrolledCourses?: string[];
-    preferredSubjects?: string[];
+    progress?: { [courseId: string]: number };
 }
 
 export interface Announcement {

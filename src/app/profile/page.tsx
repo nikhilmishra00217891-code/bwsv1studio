@@ -4,7 +4,7 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LoaderCircle, Mail, User, Rocket, Brain, Trophy, VenetianMask, StarIcon, Award, Bird, FerrisWheel, Phone, Pencil, Save, Undo, Check } from "lucide-react";
+import { LoaderCircle, Mail, User, Rocket, Brain, Trophy, VenetianMask, StarIcon, Award, Bird, FerrisWheel, Phone, Pencil, Save, Undo, Check, Dices, Palette } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { UserProfile } from "@/types";
@@ -28,6 +28,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useTheme } from "next-themes";
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -86,8 +87,9 @@ const studyTimeOptions = [
 
 
 export default function ProfilePage() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, setUserProfile } = useAuth();
   const router = useRouter();
+  const { setTheme } = useTheme();
   const [profileData, setProfileData] = useState<Partial<UserProfile>>({});
   const [initialProfileData, setInitialProfileData] = useState<Partial<UserProfile>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -102,6 +104,23 @@ export default function ProfilePage() {
       setInitialProfileData(userProfile);
     }
   }, [user, userProfile, loading, router]);
+  
+   useEffect(() => {
+    if (profileData?.theme === 'custom' && profileData.customTheme) {
+        const root = document.documentElement;
+        root.style.setProperty('--primary', `${profileData.customTheme.primary.h} ${profileData.customTheme.primary.s}% ${profileData.customTheme.primary.l}%`);
+        root.style.setProperty('--card', `${profileData.customTheme.background.h} ${profileData.customTheme.background.s}% ${profileData.customTheme.background.l}%`);
+    }
+
+    // Cleanup function to remove styles when component unmounts or theme changes
+    return () => {
+        if(profileData?.theme === 'custom') {
+            const root = document.documentElement;
+            root.style.removeProperty('--primary');
+            root.style.removeProperty('--card');
+        }
+    };
+}, [profileData?.customTheme, profileData?.theme]);
 
   const hasChanges = JSON.stringify(profileData) !== JSON.stringify(initialProfileData);
 
@@ -111,10 +130,17 @@ export default function ProfilePage() {
     try {
         await updateUserProfile(user.uid, profileData);
         setInitialProfileData(profileData); // Update initial state to reflect saved changes
+        setUserProfile(profileData as UserProfile); // Update context
         toast({
             title: "Profile Updated!",
             description: "Your changes have been saved successfully.",
         });
+        
+        // Apply theme globally after saving
+        if (profileData.theme && profileData.theme !== 'custom') {
+            setTheme(profileData.theme);
+        }
+
     } catch(error) {
         console.error("Error updating profile: ", error);
         toast({
@@ -246,7 +272,7 @@ export default function ProfilePage() {
                      <Label htmlFor="mobile">Mobile Number</Label>
                      <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
                         <Phone className="w-4 h-4"/>
-                        <span>{userProfile.mobile || 'Not set'}</span>
+                        <span>{userProfile?.mobile || 'Not set'}</span>
                      </div>
                 </div>
                 <div>
@@ -359,6 +385,90 @@ export default function ProfilePage() {
                         ))}
                     </RadioGroup>
                 </div>
+            </CardContent>
+        </Card>
+
+        {/* --- Appearance Card --- */}
+        <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle>Appearance</CardTitle>
+                <CardDescription>Choose a preset theme or create your own vibe.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <RadioGroup 
+                    value={profileData.theme}
+                    onValueChange={(value) => {
+                        if (value === 'custom') {
+                            const defaultCustom = {
+                                primary: { h: 34, s: 96, l: 49 },
+                                background: { h: 35, s: 80, l: 97 },
+                            };
+                            setProfileData(p => ({...p, theme: 'custom', customTheme: p.customTheme || defaultCustom }));
+                        } else {
+                            setProfileData(p => ({...p, theme: value }));
+                            setTheme(value);
+                            const root = document.documentElement;
+                            root.style.removeProperty('--primary');
+                            root.style.removeProperty('--card');
+                        }
+                    }}
+                    className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+                >
+                    <Label htmlFor="theme-light" className="cursor-pointer"><RadioGroupItem value="light" id="theme-light" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'light' && 'border-primary ring-2 ring-primary')}>Light</div></Label>
+                    <Label htmlFor="theme-dark" className="cursor-pointer"><RadioGroupItem value="dark" id="theme-dark" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'dark' && 'border-primary ring-2 ring-primary')}>Dark</div></Label>
+                    <Label htmlFor="theme-proudshe" className="cursor-pointer"><RadioGroupItem value="proudshe" id="theme-proudshe" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'proudshe' && 'border-primary ring-2 ring-primary')}>Proudshe</div></Label>
+                    <Label htmlFor="theme-retrogamer" className="cursor-pointer"><RadioGroupItem value="retrogamer" id="theme-retrogamer" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'retrogamer' && 'border-primary ring-2 ring-primary')}>Retro Gamer</div></Label>
+                    <Label htmlFor="theme-custom" className="cursor-pointer"><RadioGroupItem value="custom" id="theme-custom" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center flex items-center justify-center gap-2", profileData.theme === 'custom' && 'border-primary ring-2 ring-primary')}><Palette className="w-4 h-4"/> Custom</div></Label>
+                </RadioGroup>
+
+                {profileData.theme === 'custom' && (
+                    <Card className="p-4 bg-muted/50">
+                        <div className="flex justify-end mb-4">
+                            <Button variant="ghost" size="sm" onClick={() => {
+                                const p_h = Math.floor(Math.random() * 360);
+                                const p_s = Math.floor(Math.random() * 30) + 70;
+                                const p_l = Math.floor(Math.random() * 20) + 40;
+                                const b_h = (p_h + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 60) + 30)) % 360;
+                                const b_s = Math.floor(Math.random() * 20) + 70;
+                                const b_l = Math.floor(Math.random() * 10) + 88;
+                                setProfileData(p => ({...p, customTheme: { primary: {h: p_h, s: p_s, l: p_l}, background: {h: b_h, s: b_s, l: b_l}}}));
+                            }}><Dices className="w-4 h-4 mr-2"/> Try Your Luck</Button>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-8">
+                             <div>
+                                <h4 className="font-semibold text-center mb-2" style={{color: `hsl(${profileData.customTheme?.primary.h}, ${profileData.customTheme?.primary.s}%, ${profileData.customTheme?.primary.l}%)`}}>Primary Color</h4>
+                                <div className="space-y-2">
+                                    <Label>Hue ({profileData.customTheme?.primary.h})</Label>
+                                    <Slider value={[profileData.customTheme?.primary.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, h: val}} }))} max={360} step={1} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label>Saturation ({profileData.customTheme?.primary.s}%)</Label>
+                                    <Slider value={[profileData.customTheme?.primary.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, s: val}} }))} max={100} step={1} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label>Lightness ({profileData.customTheme?.primary.l}%)</Label>
+                                    <Slider value={[profileData.customTheme?.primary.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, primary: {...p.customTheme!.primary, l: val}} }))} max={100} step={1} />
+                                </div>
+                            </div>
+                             <div>
+                                <h4 className="font-semibold text-center mb-2">Background Color</h4>
+                                 <div className="space-y-2">
+                                    <Label>Hue ({profileData.customTheme?.background.h})</Label>
+                                    <Slider value={[profileData.customTheme?.background.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, h: val}} }))} max={360} step={1} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label>Saturation ({profileData.customTheme?.background.s}%)</Label>
+                                    <Slider value={[profileData.customTheme?.background.s || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, s: val}} }))} max={100} step={1} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label>Lightness ({profileData.customTheme?.background.l}%)</Label>
+                                    <Slider value={[profileData.customTheme?.background.l || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, l: val}} }))} max={100} step={1} />
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+                )}
+
             </CardContent>
         </Card>
 

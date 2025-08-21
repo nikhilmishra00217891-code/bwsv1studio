@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/common/ThemeProvider";
 import { EditModeProvider } from "@/components/common/EditModeProvider";
 import MainLayout from "./MainLayout";
+import CustomThemeProvider from "@/components/common/CustomThemeProvider";
 
 
 const poppins = Poppins({
@@ -29,21 +30,23 @@ export default function RootLayout({
   return (
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
       <body className={`${poppins.variable} font-body antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          themes={["light", "dark", "proudshe", "retrogamer"]}
-        >
-          <AuthProvider>
-            <EditModeProvider>
-              <MainLayout>
-                {children}
-              </MainLayout>
-              <Toaster />
-            </EditModeProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <CustomThemeProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              themes={["light", "dark", "proudshe", "retrogamer"]}
+            >
+                <EditModeProvider>
+                  <MainLayout>
+                    {children}
+                  </MainLayout>
+                  <Toaster />
+                </EditModeProvider>
+            </ThemeProvider>
+          </CustomThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );
