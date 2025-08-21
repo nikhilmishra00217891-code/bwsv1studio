@@ -275,10 +275,10 @@ export default function ProfilePage() {
                 </div>
                  <div>
                     <Label htmlFor="mobile">Mobile Number</Label>
-                     <PhoneNumberInput 
-                        value={profileData.mobile || { countryCode: '+91', number: '' }}
-                        onChange={(value) => setProfileData(p => ({...p, mobile: value }))}
-                    />
+                     <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
+                        <Phone className="w-4 h-4"/>
+                        <span>{profileData.mobile?.countryCode} {profileData.mobile?.number || "Not provided"}</span>
+                     </div>
                 </div>
                 <div>
                     <Label htmlFor="gender">Gender</Label>
