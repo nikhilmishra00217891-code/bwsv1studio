@@ -5,14 +5,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { OnboardingForm } from "@/components/auth/OnboardingForm";
-import type { Metadata } from "next";
 import { LoaderCircle } from "lucide-react";
 
-// Metadata can still be exported from a client component
-export const metadata: Metadata = {
-    title: "Welcome! - BiharWaleSirji",
-    description: "Let's get you set up for an amazing learning journey.",
-}
 
 export default function OnboardingPage() {
     const { user, userProfile, loading } = useAuth();
