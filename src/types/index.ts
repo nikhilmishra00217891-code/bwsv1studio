@@ -64,6 +64,10 @@ export interface UserProfile {
     learningStyle?: ('video' | 'reading' | 'practice' | 'discussion' | string)[];
     // Onboarding data - Step 7
     theme?: string;
+    customTheme?: {
+        primary: { h: number; s: number; l: number };
+        accent: { h: number; s: number; l: number };
+    }
     // Onboarding data - Step 8
     avatar?: string;
     // Original fields
@@ -81,3 +85,6 @@ export interface Announcement {
   updatedAt?: Timestamp;
   reactions: string[];
 }
+
+
+    

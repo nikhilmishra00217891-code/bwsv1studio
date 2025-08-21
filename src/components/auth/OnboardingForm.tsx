@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -700,26 +699,85 @@ const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserPr
 
 const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
     const { theme, setTheme } = useTheme();
-
-    const handleThemeSelect = (themeId: string) => {
+    const [isCustomizing, setIsCustomizing] = useState(false);
+    
+    // HSL state for custom theme
+    const [primaryHue, setPrimaryHue] = useState(34);
+    const [primarySaturation, setPrimarySaturation] = useState(96);
+    const [primaryLightness, setPrimaryLightness] = useState(49);
+    
+    const [accentHue, setAccentHue] = useState(47);
+    const [accentSaturation, setAccentSaturation] = useState(96);
+    const [accentLightness, setAccentLightness] = useState(50);
+    
+    useEffect(() => {
+        if (isCustomizing) {
+            const root = document.documentElement;
+            root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
+            root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
+            // Store the custom values
+            setData({
+                theme: 'custom',
+                customTheme: {
+                    primary: { h: primaryHue, s: primarySaturation, l: primaryLightness },
+                    accent: { h: accentHue, s: accentSaturation, l: accentLightness }
+                }
+            })
+        }
+    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness, setData]);
+    
+    const handlePresetSelect = (themeId: string) => {
+        setIsCustomizing(false);
         setTheme(themeId);
-        setData({ theme: themeId });
+        setData({ theme: themeId, customTheme: undefined });
+        
+        // Remove inline styles when a preset is chosen
+        const root = document.documentElement;
+        root.style.removeProperty('--primary');
+        root.style.removeProperty('--accent');
+    }
+    
+    const handleStartCustomizing = () => {
+        setIsCustomizing(true);
+        // We set a 'custom' theme class to disable the preset theme css variables
+        setTheme('light'); // set to a neutral base
+        setData({ theme: 'custom' });
+    }
+
+    const tryYourLuck = () => {
+        if (!isCustomizing) handleStartCustomizing();
+        
+        const p_h = Math.floor(Math.random() * 360);
+        const p_s = Math.floor(Math.random() * 30) + 70; // 70-100
+        const p_l = Math.floor(Math.random() * 20) + 40; // 40-60
+        
+        const a_h = (p_h + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 60) + 30)) % 360;
+        const a_s = Math.floor(Math.random() * 30) + 70;
+        const a_l = Math.floor(Math.random() * 20) + 45;
+
+        setPrimaryHue(p_h);
+        setPrimarySaturation(p_s);
+        setPrimaryLightness(p_l);
+        setAccentHue(a_h);
+        setAccentSaturation(a_s);
+        setAccentLightness(a_l);
     }
 
     return (
         <OnboardingStepWrapper title="Choose Your Vibe" step={7} totalSteps={totalSteps}>
-             <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto">
                 <p className="text-muted-foreground text-center mb-8">
-                    Pick a theme that makes you feel motivated. You can always change this later!
+                    Pick a theme that makes you feel motivated, or create your own!
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <h3 className="text-lg font-bold text-center mb-4">Choose a Preset</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {themeOptions.map(option => (
                         <Card 
                             key={option.id}
-                            onClick={() => handleThemeSelect(option.id)}
+                            onClick={() => handlePresetSelect(option.id)}
                             className={cn(
                                 "cursor-pointer transition-all duration-200",
-                                data.theme === option.id ? "ring-4 ring-primary ring-offset-4 ring-offset-background" : "hover:ring-2 hover:ring-primary/50"
+                                !isCustomizing && data.theme === option.id ? "ring-4 ring-primary ring-offset-4 ring-offset-background" : "hover:ring-2 hover:ring-primary/50"
                             )}
                         >
                             <CardContent className="p-0">
@@ -727,22 +785,78 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                     <h3 className="font-headline text-lg font-bold">{option.name}</h3>
                                 </div>
                                 <div 
-                                    className="h-40 rounded-b-lg p-4 flex flex-col justify-end"
+                                    className="h-24 rounded-b-lg p-3 flex flex-col justify-end"
                                     style={{ backgroundColor: option.colors.bg }}
                                 >
                                     <div className="flex items-center gap-2">
-                                        <div className="w-1/2 h-10 rounded" style={{backgroundColor: option.colors.primary}}></div>
-                                        <div className="w-1/2 h-10 rounded" style={{backgroundColor: option.colors.accent}}></div>
+                                        <div className="w-1/2 h-8 rounded" style={{backgroundColor: option.colors.primary}}></div>
+                                        <div className="w-1/2 h-8 rounded" style={{backgroundColor: option.colors.accent}}></div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
                     ))}
                 </div>
+
+                <div className="my-12 text-center text-muted-foreground">OR</div>
+
+                <Card className={cn("p-6", isCustomizing && "ring-4 ring-primary ring-offset-4 ring-offset-background")}>
+                     {!isCustomizing ? (
+                         <div className="text-center">
+                            <h3 className="text-lg font-bold mb-2">Create Your Own</h3>
+                            <p className="text-muted-foreground mb-4">Unleash your creativity and design your own theme.</p>
+                            <Button onClick={handleStartCustomizing}>
+                                <Palette className="mr-2"/> Make My Own Theme
+                            </Button>
+                         </div>
+                     ) : (
+                         <div>
+                            <div className="flex justify-between items-center mb-6">
+                               <h3 className="text-lg font-bold">Create Your Own</h3>
+                               <Button onClick={tryYourLuck} variant="outline" size="sm"><Dices className="mr-2"/> Try Your Luck</Button>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-8">
+                                {/* Primary Color */}
+                                <div className="space-y-4">
+                                    <h4 className="font-semibold text-center" style={{color: `hsl(${primaryHue} ${primarySaturation}% ${primaryLightness}%)`}}>Primary Color</h4>
+                                    <div className="space-y-2">
+                                        <Label>Hue ({primaryHue})</Label>
+                                        <Slider value={[primaryHue]} onValueChange={([val]) => setPrimaryHue(val)} max={360} step={1} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Saturation ({primarySaturation}%)</Label>
+                                        <Slider value={[primarySaturation]} onValueChange={([val]) => setPrimarySaturation(val)} max={100} step={1} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Lightness ({primaryLightness}%)</Label>
+                                        <Slider value={[primaryLightness]} onValueChange={([val]) => setPrimaryLightness(val)} max={100} step={1} />
+                                    </div>
+                                </div>
+                                {/* Accent Color */}
+                                <div className="space-y-4">
+                                     <h4 className="font-semibold text-center" style={{color: `hsl(${accentHue} ${accentSaturation}% ${accentLightness}%)`}}>Accent Color</h4>
+                                    <div className="space-y-2">
+                                        <Label>Hue ({accentHue})</Label>
+                                        <Slider value={[accentHue]} onValueChange={([val]) => setAccentHue(val)} max={360} step={1} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Saturation ({accentSaturation}%)</Label>
+                                        <Slider value={[accentSaturation]} onValueChange={([val]) => setAccentSaturation(val)} max={100} step={1} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Lightness ({accentLightness}%)</Label>
+                                        <Slider value={[accentLightness]} onValueChange={([val]) => setAccentLightness(val)} max={100} step={1} />
+                                    </div>
+                                </div>
+                            </div>
+                         </div>
+                     )}
+                </Card>
             </div>
         </OnboardingStepWrapper>
     )
 };
+
 
 const EngagementBoostStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
     return (
@@ -798,21 +912,21 @@ export function OnboardingForm() {
   const router = useRouter();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
-  const [initialTheme, setInitialTheme] = useState<string | undefined>(undefined);
-
-  // Store the initial theme when the component mounts
-  useEffect(() => {
-    if (theme) {
-        setInitialTheme(theme);
-    }
-  }, []); // Empty dependency array ensures this runs only once on mount
   
-  // Set default theme for the form
   useEffect(() => {
     if (!userData.theme) {
         setUserData(prev => ({...prev, theme: theme || 'light' }));
     }
   }, [theme, userData.theme]);
+
+  // When component unmounts, reset any custom styles
+  useEffect(() => {
+    return () => {
+        const root = document.documentElement;
+        root.style.removeProperty('--primary');
+        root.style.removeProperty('--accent');
+    }
+  }, []);
 
   const totalSteps = 8;
   const progress = ((step - 1) / (totalSteps -1)) * 100;
@@ -830,13 +944,20 @@ export function OnboardingForm() {
     try {
         await updateUserProfile(user.uid, { ...userData, onboardingComplete: true });
 
-        // The user's chosen theme is already applied via useTheme, so we don't need to set it again here
-        // But we save it to their profile for future sessions.
-
         toast({
             title: "Awesome! You’re all set.",
             description: "Let’s start your journey 🚀",
         });
+        
+        // Finalize theme selection
+        if (userData.theme && userData.theme !== 'custom') {
+            setTheme(userData.theme);
+        } else if (userData.theme === 'custom') {
+             // The styles are already applied, but we set the theme to a base
+             // so next-themes doesn't override our custom styles.
+             setTheme('light'); 
+        }
+
         router.push('/dashboard');
     } catch (error) {
         console.error("Failed to save onboarding data", error);
@@ -911,3 +1032,6 @@ export function OnboardingForm() {
     </div>
   );
 }
+
+
+    
