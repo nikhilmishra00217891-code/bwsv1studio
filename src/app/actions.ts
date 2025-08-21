@@ -2,6 +2,9 @@
 "use server";
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat } from "@/ai/flows";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import type { UserProfile } from "@/types";
 
 interface Message {
   role: "user" | "assistant";
@@ -69,5 +72,64 @@ export async function askAiMentor(
   } catch(error) {
     console.error('Generic AI chat error:', error);
     return "That's a great question! I'm having a little trouble thinking right now, but please ask me something else.";
+  }
+}
+
+export async function submitFeedback(userId: string, feedback: string): Promise<{success: boolean, message: string}> {
+  if (!process.env.DISCORD_WEBHOOK_URL) {
+    console.error("Discord webhook URL is not configured.");
+    return { success: false, message: "Feedback system is not configured."};
+  }
+
+  if (!userId) {
+    return { success: false, message: "You must be logged in to submit feedback."}
+  }
+
+  try {
+    const userDocRef = doc(db, "users", userId);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      return { success: false, message: "User profile not found." };
+    }
+
+    const profile = userDocSnap.data() as UserProfile;
+    
+    const embed = {
+      title: "New Feedback Submitted! 📝",
+      description: feedback,
+      color: 0xF99006, // BiharWaleSirji Orange
+      fields: [
+        { name: "User", value: `${profile.displayName} (\`${profile.email}\`)`, inline: true },
+        { name: "User ID", value: `\`${profile.uid}\``, inline: true },
+        { name: "Role", value: profile.role || 'N/A', inline: true },
+        { name: "Grade", value: profile.grade || 'N/A', inline: true },
+        { name: "Board", value: profile.board || 'N/A', inline: true },
+        { name: "Phone", value: `${profile.mobile?.countryCode || ''} ${profile.mobile?.number || 'N/A'}`, inline: true},
+        { name: "Goals", value: profile.goals?.join(', ') || 'N/A' },
+        { name: "Subjects", value: profile.subjects?.join(', ') || 'N/A' },
+        { name: "Learning Style", value: profile.learningStyle?.join(', ') || 'N/A' },
+      ],
+      timestamp: new Date().toISOString(),
+      footer: {
+        text: `BiharWaleSirji Feedback System`
+      }
+    };
+
+    const response = await fetch(process.env.DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+
+    if (!response.ok) {
+      console.error('Discord API Error:', response.status, await response.text());
+      throw new Error("Could not send feedback to Discord.");
+    }
+    
+    return { success: true, message: "Feedback submitted successfully!" };
+  } catch (error) {
+    console.error("Error submitting feedback:", error);
+    return { success: false, message: "An unexpected error occurred while submitting your feedback." };
   }
 }

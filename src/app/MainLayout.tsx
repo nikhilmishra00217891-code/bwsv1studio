@@ -8,6 +8,7 @@ import AiMentorWidget from "@/components/common/AiMentorWidget";
 import { Button } from "@/components/ui/button";
 import { Phone } from "lucide-react";
 import Link from "next/link";
+import FeedbackWidget from "@/components/common/FeedbackWidget";
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </div>
             {!isOnboarding && (
                  <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
+                    <FeedbackWidget />
                     <Button
                         asChild
                         className="h-16 w-16 rounded-full shadow-lg"
