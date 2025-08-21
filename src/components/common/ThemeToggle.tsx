@@ -32,16 +32,20 @@ export function ThemeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
+          <Sun className="mr-2 h-4 w-4" />
+          <span>Light</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
+          <Moon className="mr-2 h-4 w-4" />
+          <span>Dark</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("proudshe")}>
-          Proudshe
+          <Heart className="mr-2 h-4 w-4" />
+          <span>Proudshe</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("retrogamer")}>
-          Retro Gamer
+          <Gamepad2 className="mr-2 h-4 w-4" />
+          <span>Retro Gamer</span>
         </DropdownMenuItem>
         {hasCustomTheme && (
             <DropdownMenuItem onClick={() => setTheme("custom")}>
