@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
@@ -724,7 +725,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                 }
             })
         }
-    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness, setData]);
+    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
     
     const handlePresetSelect = (themeId: string) => {
         setIsCustomizing(false);
@@ -1032,6 +1033,3 @@ export function OnboardingForm() {
     </div>
   );
 }
-
-
-    
