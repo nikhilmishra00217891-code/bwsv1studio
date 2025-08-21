@@ -7,7 +7,7 @@ import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare, Palette, Smile } from "lucide-react";
+import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare, Palette, Smile, Dices } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent } from "../ui/card";
@@ -669,14 +669,24 @@ const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserPr
 
 const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
     const { setTheme } = useTheme();
+    
+    // State for the custom theme creator
+    const [isCustomizing, setIsCustomizing] = useState(false);
     const [primaryHue, setPrimaryHue] = useState(34);
     const [primarySaturation, setPrimarySaturation] = useState(96);
     const [primaryLightness, setPrimaryLightness] = useState(49);
     const [accentHue, setAccentHue] = useState(47);
     const [accentSaturation, setAccentSaturation] = useState(96);
     const [accentLightness, setAccentLightness] = useState(50);
-    const [isCustomizing, setIsCustomizing] = useState(false);
 
+    const removeCustomThemeStyles = () => {
+        const root = document.documentElement;
+        root.style.removeProperty('--primary');
+        root.style.removeProperty('--ring');
+        root.style.removeProperty('--accent');
+    }
+
+    // Effect to apply custom styles in real-time
     useEffect(() => {
         const root = document.documentElement;
         if (isCustomizing) {
@@ -686,23 +696,44 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
         }
         // Cleanup function to remove styles when component unmounts or isCustomizing becomes false
         return () => {
-            root.style.removeProperty('--primary');
-            root.style.removeProperty('--ring');
-            root.style.removeProperty('--accent');
+             if (isCustomizing) {
+                removeCustomThemeStyles();
+             }
         };
     }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
-    
-    const handleThemeSelect = (theme: string) => {
+
+    const handleThemeSelect = (themeClass: string) => {
         setIsCustomizing(false);
-        setTheme(theme);
-        setData({ theme: theme });
+        removeCustomThemeStyles(); // Clear any custom styles
+        setTheme(themeClass); // Apply preset theme
+        setData({ theme: themeClass });
     }
 
     const handleCustomizationStart = () => {
         // Set a base theme to ensure all variables are defined before overriding
-        setTheme('light'); 
+        setTheme('light');
         setIsCustomizing(true);
         setData({ theme: 'custom' });
+    }
+
+    const handleTryYourLuck = () => {
+        if(!isCustomizing) handleCustomizationStart();
+
+        const p_h = Math.floor(Math.random() * 360);
+        const p_s = Math.floor(Math.random() * 40) + 60; // 60-100% saturation
+        const p_l = Math.floor(Math.random() * 20) + 40; // 40-60% lightness
+
+        // Analogous accent color
+        const a_h = (p_h + 30) % 360;
+        const a_s = p_s;
+        const a_l = p_l;
+
+        setPrimaryHue(p_h);
+        setPrimarySaturation(p_s);
+        setPrimaryLightness(p_l);
+        setAccentHue(a_h);
+        setAccentSaturation(a_s);
+        setAccentLightness(a_l);
     }
 
     return (
@@ -719,7 +750,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                     className={cn(
                                         "w-full h-24 border-4 transition-all",
                                         data.theme === option.id && !isCustomizing ? "border-primary scale-105" : "border-muted",
-                                        option.class
+                                        option.class // Apply theme class for preview
                                     )}
                                 >
                                     <div className="w-1/2 h-full bg-primary"></div>
@@ -732,9 +763,11 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                 </div>
 
                 <div>
-                    <h3 className="text-xl font-bold text-center mb-6">Or, Create Your Own</h3>
+                    <h3 className="text-xl font-bold text-center mb-2">Or, Create Your Own</h3>
+                    <p className="text-muted-foreground text-center mb-6">Adjust the sliders to see the magic happen in real-time!</p>
+                    
                     {!isCustomizing ? (
-                        <div className="text-center">
+                         <div className="text-center">
                             <Button size="lg" variant="outline" onClick={handleCustomizationStart}>
                                 <Palette className="mr-2" /> Make My Own Theme
                             </Button>
@@ -756,6 +789,11 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                     <Label>Saturation ({accentSaturation}%)</Label><Slider value={[accentSaturation]} onValueChange={([v]) => setAccentSaturation(v)} max={100} />
                                     <Label>Lightness ({accentLightness}%)</Label><Slider value={[accentLightness]} onValueChange={([v]) => setAccentLightness(v)} max={100} />
                                 </div>
+                            </div>
+                             <div className="border-t pt-6 text-center">
+                                <Button onClick={handleTryYourLuck}>
+                                    <Dices className="mr-2" /> Try Your Luck
+                                </Button>
                             </div>
                         </Card>
                     )}
@@ -833,7 +871,21 @@ export function OnboardingForm() {
     if (!user) return;
     setIsLoading(true);
     try {
-        await updateUserProfile(user.uid, { ...userData, onboardingComplete: true });
+        // Before saving, if theme was custom, save the HSL values
+        if (userData.theme === 'custom') {
+            const root = document.documentElement.style;
+            const finalUserData = {
+                ...userData,
+                customTheme: {
+                    primary: root.getPropertyValue('--primary'),
+                    accent: root.getPropertyValue('--accent'),
+                }
+            };
+            await updateUserProfile(user.uid, { ...finalUserData, onboardingComplete: true });
+        } else {
+             await updateUserProfile(user.uid, { ...userData, onboardingComplete: true });
+        }
+
         toast({
             title: "Awesome! You’re all set.",
             description: "Let’s start your journey 🚀",
