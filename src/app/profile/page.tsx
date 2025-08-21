@@ -442,7 +442,11 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                              <div>
-                                <h4 className="font-semibold text-center mb-2">Background Color</h4>
+                                <h4 className="font-semibold text-center mb-2" style={{
+                                    backgroundColor: `hsl(${profileData.customTheme?.background.h}, ${profileData.customTheme?.background.s}%, ${profileData.customTheme?.background.l}%)`,
+                                    padding: '0.25rem',
+                                    borderRadius: '0.25rem'
+                                }}>Background Color</h4>
                                  <div className="space-y-2">
                                     <Label>Hue ({profileData.customTheme?.background.h})</Label>
                                     <Slider value={[profileData.customTheme?.background.h || 0]} onValueChange={([val]) => setProfileData(p => ({...p, customTheme: {...p.customTheme!, background: {...p.customTheme!.background, h: val}} }))} max={360} step={1} />

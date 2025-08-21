@@ -8,6 +8,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { createContext, useContext, useEffect, useState, type ReactNode, Dispatch, SetStateAction } from "react";
 import type { UserProfile } from "@/types";
 import { getTextContent } from "@/lib/data/content";
+import { useTheme } from "next-themes";
 
 interface AuthContextType {
   user: User | null;
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [textContent, setTextContent] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const { setTheme } = useTheme();
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -45,7 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
-          setUserProfile(userDocSnap.data() as UserProfile);
+          const profile = userDocSnap.data() as UserProfile;
+          setUserProfile(profile);
+          // Set the theme once when the profile loads
+          if (profile.theme) {
+            setTheme(profile.theme);
+          }
         } else {
             setUserProfile(null);
         }
@@ -56,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [setTheme]);
 
   return (
     <AuthContext.Provider value={{ user, userProfile, textContent, loading, setUserProfile }}>
