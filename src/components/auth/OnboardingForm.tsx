@@ -707,9 +707,9 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
     const [primarySaturation, setPrimarySaturation] = useState(96);
     const [primaryLightness, setPrimaryLightness] = useState(49);
     
-    const [accentHue, setAccentHue] = useState(47);
-    const [accentSaturation, setAccentSaturation] = useState(96);
-    const [accentLightness, setAccentLightness] = useState(50);
+    const [accentHue, setAccentHue] = useState(35);
+    const [accentSaturation, setAccentSaturation] = useState(87);
+    const [accentLightness, setAccentLightness] = useState(92);
     
     const localDataRef = useRef(data);
     localDataRef.current = data;
@@ -718,14 +718,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
         if (isCustomizing) {
             const root = document.documentElement;
             root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
-            root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
-            setData({
-                theme: 'custom',
-                customTheme: {
-                    primary: { h: primaryHue, s: primarySaturation, l: primaryLightness },
-                    accent: { h: accentHue, s: accentSaturation, l: accentLightness }
-                }
-            })
+            root.style.setProperty('--card', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
         }
     }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
     
@@ -737,7 +730,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
         // Remove inline styles when a preset is chosen
         const root = document.documentElement;
         root.style.removeProperty('--primary');
-        root.style.removeProperty('--accent');
+        root.style.removeProperty('--card');
     }
     
     const handleStartCustomizing = () => {
@@ -837,7 +830,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                 </div>
                                 {/* Accent Color */}
                                 <div className="space-y-4">
-                                     <h4 className="font-semibold text-center">Accent Color</h4>
+                                     <h4 className="font-semibold text-center">Background Color</h4>
                                     <div className="space-y-2">
                                         <Label>Hue ({accentHue})</Label>
                                         <Slider value={[accentHue]} onValueChange={([val]) => setAccentHue(val)} max={360} step={1} />
@@ -930,7 +923,7 @@ export function OnboardingForm() {
     return () => {
         const root = document.documentElement;
         root.style.removeProperty('--primary');
-        root.style.removeProperty('--accent');
+        root.style.removeProperty('--card');
     }
   }, []);
 
@@ -958,10 +951,14 @@ export function OnboardingForm() {
         // Finalize theme selection
         if (userData.theme && userData.theme !== 'custom') {
             setTheme(userData.theme);
-        } else if (userData.theme === 'custom') {
+        } else if (userData.theme === 'custom' && userData.customTheme) {
              // The styles are already applied, but we set the theme to a base
              // so next-themes doesn't override our custom styles.
              setTheme('light'); 
+             const root = document.documentElement;
+             const { primary, accent } = userData.customTheme;
+             root.style.setProperty('--primary', `${primary.h} ${primary.s}% ${primary.l}%`);
+             root.style.setProperty('--card', `${accent.h} ${accent.s}% ${accent.l}%`);
         }
 
         router.push('/dashboard');
