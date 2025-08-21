@@ -9,11 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Phone } from "lucide-react";
 import Link from "next/link";
 import FeedbackWidget from "@/components/common/FeedbackWidget";
+import { useAuth } from "@/components/auth/AuthProvider";
+import SuspendedAccountFirewall from "@/components/auth/SuspendedAccountFirewall";
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const { userProfile } = useAuth();
     const isOnboarding = pathname === '/onboarding';
+
+    if (userProfile?.suspension?.isSuspended) {
+        return <SuspendedAccountFirewall reason={userProfile.suspension.reason} />;
+    }
 
     return (
         <>
