@@ -90,7 +90,7 @@ const studyTimeOptions = [
 export default function ProfilePage() {
   const { user, userProfile, loading, setUserProfile } = useAuth();
   const router = useRouter();
-  const { setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [profileData, setProfileData] = useState<Partial<UserProfile>>({});
   const [initialProfileData, setInitialProfileData] = useState<Partial<UserProfile>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -111,7 +111,7 @@ export default function ProfilePage() {
   }, [user, userProfile, loading, router]);
   
    useEffect(() => {
-    if (profileData?.theme === 'custom' && profileData.customTheme) {
+    if (theme === 'custom' && profileData?.theme === 'custom' && profileData.customTheme) {
         const root = document.documentElement;
         root.style.setProperty('--primary', `${profileData.customTheme.primary.h} ${profileData.customTheme.primary.s}% ${profileData.customTheme.primary.l}%`);
         root.style.setProperty('--card', `${profileData.customTheme.background.h} ${profileData.customTheme.background.s}% ${profileData.customTheme.background.l}%`);
@@ -125,7 +125,7 @@ export default function ProfilePage() {
             root.style.removeProperty('--card');
         }
     };
-}, [profileData?.customTheme, profileData?.theme]);
+}, [profileData?.customTheme, profileData?.theme, theme]);
 
   const hasChanges = JSON.stringify(profileData) !== JSON.stringify(initialProfileData);
 
@@ -135,16 +135,14 @@ export default function ProfilePage() {
     try {
         await updateUserProfile(user.uid, profileData);
         
-        // Apply theme globally after saving
-        if (profileData.theme === 'custom') {
-            setTheme('light'); // Set base to light before applying custom vars
-        } else if (profileData.theme) {
-            setTheme(profileData.theme);
-        }
-        
         // This is crucial: update the user profile in the auth context
         // This will trigger the CustomThemeProvider to apply the new styles
         setUserProfile(profileData as UserProfile); 
+        
+        // Apply theme globally after saving
+        if (profileData.theme) {
+            setTheme(profileData.theme);
+        }
         
         setInitialProfileData(profileData); // Update initial state to reflect saved changes
 
@@ -167,6 +165,7 @@ export default function ProfilePage() {
 
   const handleResetChanges = () => {
     setProfileData(initialProfileData);
+    if(initialProfileData.theme) setTheme(initialProfileData.theme)
   }
 
   const renderAvatarContent = () => {
@@ -410,8 +409,8 @@ export default function ProfilePage() {
                 <RadioGroup 
                     value={profileData.theme}
                     onValueChange={(value) => {
+                        setTheme(value); // Instantly preview theme
                         if (value === 'custom') {
-                            setTheme('light');
                             const defaultCustom = {
                                 primary: { h: 34, s: 96, l: 49 },
                                 background: { h: 35, s: 80, l: 97 },
@@ -419,10 +418,6 @@ export default function ProfilePage() {
                             setProfileData(p => ({...p, theme: 'custom', customTheme: p.customTheme || defaultCustom }));
                         } else {
                             setProfileData(p => ({...p, theme: value, customTheme: undefined }));
-                            setTheme(value);
-                            const root = document.documentElement;
-                            root.style.removeProperty('--primary');
-                            root.style.removeProperty('--card');
                         }
                     }}
                     className="grid grid-cols-2 sm:grid-cols-4 gap-4"

@@ -31,21 +31,21 @@ export default function RootLayout({
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
       <body className={`${poppins.variable} font-body antialiased`}>
         <AuthProvider>
-          <CustomThemeProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              themes={["light", "dark", "proudshe", "retrogamer"]}
-            >
-                <EditModeProvider>
-                  <MainLayout>
-                    {children}
-                  </MainLayout>
-                  <Toaster />
-                </EditModeProvider>
-            </ThemeProvider>
-          </CustomThemeProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            themes={["light", "dark", "proudshe", "retrogamer", "custom"]}
+          >
+            <CustomThemeProvider>
+              <EditModeProvider>
+                <MainLayout>
+                  {children}
+                </MainLayout>
+                <Toaster />
+              </EditModeProvider>
+            </CustomThemeProvider>
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>
