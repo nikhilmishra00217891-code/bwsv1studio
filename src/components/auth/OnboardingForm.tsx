@@ -6,7 +6,7 @@ import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
 import { updateUserProfile } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit } from "lucide-react";
+import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent } from "../ui/card";
@@ -88,18 +88,34 @@ const motivationOptions = [
     { id: 'guidance', title: 'Guidance', subtitle: 'Teacher feedback & reminders.', icon: Handshake },
 ]
 
+const interestOptions = [
+    { id: 'music', title: 'Music', icon: Music },
+    { id: 'sports', title: 'Sports', icon: Trophy },
+    { id: 'gaming', title: 'Gaming', icon: Gamepad2 },
+    { id: 'coding', title: 'Coding', icon: Code },
+    { id: 'reading', title: 'Reading', icon: BookOpen },
+    { id: 'podcasts', title: 'Podcasts', icon: Mic2 },
+]
 
-const OnboardingStepWrapper = ({ title, children, step }: { title: string, children: React.ReactNode, step: number }) => (
+const learningStyleOptions = [
+    { id: 'video', title: 'Watching Videos', icon: Clapperboard, description: "I learn best by seeing and hearing explanations." },
+    { id: 'reading', title: 'Reading Notes', icon: BookOpen, description: "I prefer detailed text and diagrams to understand concepts." },
+    { id: 'practice', title: 'Practice Questions', icon: PenSquare, description: "Doing is learning. I master topics by solving problems." },
+    { id: 'discussion', title: 'Group Discussions', icon: MessageCircle, description: "I gain new perspectives by talking with peers." },
+]
+
+
+const OnboardingStepWrapper = ({ title, children, step, totalSteps }: { title: string, children: React.ReactNode, step: number, totalSteps: number }) => (
     <div className="animate-slide-in-from-right w-full max-w-4xl mx-auto px-4 py-8">
-        <p className="text-sm font-semibold text-primary tracking-widest uppercase text-center">{`Step ${step - 1} / 10`}</p>
+        <p className="text-sm font-semibold text-primary tracking-widest uppercase text-center">{`Step ${step - 1} / ${totalSteps-1}`}</p>
         <h2 className="text-3xl md:text-4xl font-bold font-headline text-center mt-2 mb-12">{title}</h2>
         {children}
     </div>
 )
 
-const BasicDetailsStep = ({ data, setData }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void }) => {
+const BasicDetailsStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
     return (
-        <OnboardingStepWrapper title="Tell Us a Little About Yourself" step={2}>
+        <OnboardingStepWrapper title="Tell Us a Little About Yourself" step={2} totalSteps={totalSteps}>
             <div className="max-w-lg mx-auto space-y-8">
                 <div className="relative flex items-center">
                     <User className="absolute left-4 w-5 h-5 text-muted-foreground" />
@@ -143,7 +159,7 @@ const BasicDetailsStep = ({ data, setData }: { data: Partial<UserProfile>, setDa
     )
 }
 
-const AcademicInfoStep = ({ data, setData }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void }) => {
+const AcademicInfoStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
     const [customGrade, setCustomGrade] = useState(false);
     const [customBoard, setCustomBoard] = useState(false);
     const [customSubject, setCustomSubject] = useState(false);
@@ -182,7 +198,7 @@ const AcademicInfoStep = ({ data, setData }: { data: Partial<UserProfile>, setDa
     const boardOptions = ['CBSE', 'ICSE', 'State Board'];
 
     return (
-        <OnboardingStepWrapper title="Your Academic World" step={3}>
+        <OnboardingStepWrapper title="Your Academic World" step={3} totalSteps={totalSteps}>
             <div className="max-w-xl mx-auto space-y-10">
                  <div className="space-y-2">
                     <Label>Which class/grade are you in?</Label>
@@ -305,7 +321,7 @@ const AcademicInfoStep = ({ data, setData }: { data: Partial<UserProfile>, setDa
     )
 }
 
-const LearningJourneyStep = ({ data, setData }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void }) => {
+const LearningJourneyStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
     const toggleGoal = (goal: string) => {
         const currentGoals = data.goals || [];
         const newGoals = currentGoals.includes(goal)
@@ -330,7 +346,7 @@ const LearningJourneyStep = ({ data, setData }: { data: Partial<UserProfile>, se
 
 
     return (
-        <OnboardingStepWrapper title="Your Learning Journey" step={4}>
+        <OnboardingStepWrapper title="Your Learning Journey" step={4} totalSteps={totalSteps}>
             <div className="max-w-3xl mx-auto space-y-16">
                 {/* Main Goal */}
                 <div>
@@ -448,13 +464,91 @@ const LearningJourneyStep = ({ data, setData }: { data: Partial<UserProfile>, se
     );
 };
 
+const InterestsStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
+    const toggleInterest = (interest: string) => {
+        const currentInterests = data.interests || [];
+        const newInterests = currentInterests.includes(interest)
+            ? currentInterests.filter(i => i !== interest)
+            : [...currentInterests, interest];
+        setData({ interests: newInterests });
+    };
+
+    return (
+        <OnboardingStepWrapper title="What else excites you?" step={5} totalSteps={totalSteps}>
+            <div className="max-w-2xl mx-auto">
+                <p className="text-muted-foreground text-center mb-8">
+                    Knowing your hobbies helps us make your learning experience more fun and personalized!
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    {interestOptions.map(option => (
+                        <Card
+                            key={option.id}
+                            onClick={() => toggleInterest(option.title)}
+                            className={cn(
+                                "p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 transform-gpu",
+                                "hover:shadow-lg hover:border-primary/50",
+                                (data.interests || []).includes(option.title) ? "animate-pop-in ring-2 ring-primary shadow-xl" : "hover:-translate-y-1"
+                            )}
+                        >
+                            <option.icon className="w-10 h-10 mb-2 text-primary" />
+                            <span className="font-semibold">{option.title}</span>
+                        </Card>
+                    ))}
+                    {/* Add a "Fill yourself" option here if needed */}
+                </div>
+            </div>
+        </OnboardingStepWrapper>
+    );
+};
+
+const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
+    const toggleLearningStyle = (style: string) => {
+        const currentStyles = data.learningStyle || [];
+        const newStyles = currentStyles.includes(style)
+            ? currentStyles.filter(s => s !== style)
+            : [...currentStyles, style];
+        setData({ learningStyle: newStyles as any });
+    };
+
+    return (
+        <OnboardingStepWrapper title="How do you like to learn?" step={6} totalSteps={totalSteps}>
+             <div className="max-w-3xl mx-auto space-y-6">
+                {learningStyleOptions.map(option => (
+                    <Card
+                        key={option.id}
+                        onClick={() => toggleLearningStyle(option.id)}
+                        className={cn(
+                            "p-6 flex items-center gap-6 cursor-pointer transition-all duration-200",
+                            "hover:shadow-lg hover:border-primary/50",
+                            (data.learningStyle || []).includes(option.id) && "ring-2 ring-primary"
+                        )}
+                    >
+                        <div className="bg-primary/10 p-4 rounded-xl">
+                            <option.icon className="w-10 h-10 text-primary" />
+                        </div>
+                        <div className="flex-grow">
+                            <h4 className="font-bold text-lg">{option.title}</h4>
+                            <p className="text-muted-foreground text-sm mt-1">{option.description}</p>
+                        </div>
+                        {(data.learningStyle || []).includes(option.id) && (
+                             <div className="ml-auto text-primary">
+                                <Check className="w-8 h-8"/>
+                            </div>
+                        )}
+                    </Card>
+                ))}
+             </div>
+        </OnboardingStepWrapper>
+    )
+};
+
 
 // Placeholder for future steps
-const PlaceholderStep = ({ step, onNext, onPrev }: { step: number; onNext: () => void; onPrev: () => void; }) => {
+const PlaceholderStep = ({ step, onNext, onPrev, totalSteps }: { step: number; onNext: () => void; onPrev: () => void; totalSteps: number }) => {
     return (
         <div className="flex h-full items-center justify-center">
             <div>
-                <h2 className="text-2xl font-bold">Step {step}</h2>
+                <h2 className="text-2xl font-bold">Step {step - 1} / {totalSteps - 1}</h2>
                 <p>This is a placeholder for step {step}.</p>
                 <div className="flex justify-between mt-8">
                     <Button variant="outline" onClick={onPrev}>Back</Button>
@@ -517,9 +611,11 @@ export function OnboardingForm() {
   const renderStep = () => {
     switch(step) {
         case 1: return <div className="flex h-full items-center justify-center"><WelcomeStep onNext={nextStep} /></div>;
-        case 2: return <BasicDetailsStep data={userData} setData={updateLocalUserData} />;
-        case 3: return <AcademicInfoStep data={userData} setData={updateLocalUserData} />;
-        case 4: return <LearningJourneyStep data={userData} setData={updateLocalUserData} />;
+        case 2: return <BasicDetailsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 3: return <AcademicInfoStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 4: return <LearningJourneyStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 5: return <InterestsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 6: return <LearningStyleStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case totalSteps: return (
             <div className="flex h-full items-center justify-center">
                  <div>
@@ -534,7 +630,7 @@ export function OnboardingForm() {
                 </div>
             </div>
         )
-        default: return <PlaceholderStep step={step} onNext={nextStep} onPrev={prevStep} />
+        default: return <PlaceholderStep step={step} onNext={nextStep} onPrev={prevStep} totalSteps={totalSteps} />
     }
   }
 

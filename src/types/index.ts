@@ -57,9 +57,11 @@ export interface UserProfile {
     preferredStudyDuration?: number;
     preferredStudyTime?: 'morning' | 'afternoon' | 'evening' | 'night' | 'other';
     motivationStyles?: string[];
-    // Onboarding data - Future steps
+    // Onboarding data - Step 5
     interests?: string[];
+    // Onboarding data - Step 6
     learningStyle?: ('video' | 'reading' | 'practice' | 'discussion')[];
+    // Onboarding data - Future steps
     theme?: string;
     avatar?: string;
     // Original fields
