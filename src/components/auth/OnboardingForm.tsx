@@ -699,7 +699,7 @@ const LearningStyleStep = ({ data, setData, totalSteps }: { data: Partial<UserPr
 };
 
 const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
-    const { theme, setTheme } = useTheme();
+    const { setTheme } = useTheme();
     const [isCustomizing, setIsCustomizing] = useState(false);
     
     // HSL state for custom theme
@@ -719,7 +719,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
             const root = document.documentElement;
             root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
             root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
-             setData({
+            setData({
                 theme: 'custom',
                 customTheme: {
                     primary: { h: primaryHue, s: primarySaturation, l: primaryLightness },
@@ -821,7 +821,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                             <div className="grid md:grid-cols-2 gap-8">
                                 {/* Primary Color */}
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold text-center" style={{color: `hsl(${primaryHue} ${primarySaturation}% ${primaryLightness}%)`}}>Primary Color</h4>
+                                    <h4 className="font-semibold text-center">Primary Color</h4>
                                     <div className="space-y-2">
                                         <Label>Hue ({primaryHue})</Label>
                                         <Slider value={[primaryHue]} onValueChange={([val]) => setPrimaryHue(val)} max={360} step={1} />
