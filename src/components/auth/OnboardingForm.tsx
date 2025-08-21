@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare, Palette, Smile, Dices, Mail, Phone, Rocket, VenetianMask, Award, StarIcon, Cat, Bird, FerrisWheel } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { cn } from "@/lib/utils";
 import { Progress } from "../ui/progress";
 import type { UserProfile } from "@/types";
@@ -1025,6 +1025,34 @@ export function OnboardingForm() {
       setUserData(prev => ({...prev, ...newData}));
   }
 
+  const isStepValid = () => {
+    switch (step) {
+      case 2: // Basic Details
+        return !!userData.displayName && !!userData.mobile;
+      case 3: // Academic Info
+        return !!userData.grade && !!userData.board && !!userData.subjects && userData.subjects.length > 0;
+      case 4: // Learning Journey
+        return (
+          !!userData.goals && userData.goals.length > 0 &&
+          !!userData.challenges && userData.challenges.length > 0 &&
+          !!userData.preferredStudyTime &&
+          !!userData.motivationStyles && userData.motivationStyles.length > 0
+        );
+      case 5: // Interests - Optional
+        return true;
+      case 6: // Learning Style
+        return !!userData.learningStyle && userData.learningStyle.length > 0;
+      case 7: // Theme - Has defaults
+        return true;
+      case 8: // Avatar - Optional
+        return true;
+      case 9: // Summary
+        return true;
+      default: // Welcome, Finish
+        return true;
+    }
+  };
+
   const handleFinish = async () => {
     if (!user) return;
     setIsLoading(true);
@@ -1113,7 +1141,7 @@ export function OnboardingForm() {
                          <Progress value={progress} />
                      </div>
                       {step < totalSteps ? (
-                        <Button onClick={nextStep}>Next</Button>
+                        <Button onClick={nextStep} disabled={!isStepValid()}>Next</Button>
                       ) : (
                          <Button onClick={handleFinish} disabled={isLoading}>
                              {isLoading ? <LoaderCircle className="animate-spin" /> : "Finish"}
