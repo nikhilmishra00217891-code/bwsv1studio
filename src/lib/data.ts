@@ -225,12 +225,18 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
     }
     return snapshot.docs.map((doc) => {
         const data = doc.data();
-        // Manually convert Firestore Timestamp to a serializable format (ISO string)
-        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : null;
+        
+        const serializedData: any = { ...data };
 
-        return { 
-            ...data,
-            createdAt: createdAt,
-         } as UserProfile;
+        // Manually convert Firestore Timestamp to a serializable format (ISO string)
+        if (data.createdAt instanceof Timestamp) {
+            serializedData.createdAt = data.createdAt.toDate().toISOString();
+        }
+
+        if (data.suspension?.suspendedAt instanceof Timestamp) {
+            serializedData.suspension.suspendedAt = data.suspension.suspendedAt.toDate().toISOString();
+        }
+
+        return serializedData as UserProfile;
     });
 };
