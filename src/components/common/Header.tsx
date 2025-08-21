@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -22,7 +22,7 @@ import { ScrollArea } from "../ui/scroll-area";
 const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const isActive = pathname === href;
+  const isActive = pathname.startsWith(href) && href !== "/" || pathname === href;
 
   const content = (
     <>
@@ -146,8 +146,9 @@ export default function Header() {
         
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
             {navLinks.map((link) => (
-            <NavLink key={link.href} {...link} />
+                <NavLink key={link.href} {...link} />
             ))}
+            {isFaculty && <NavLink href="/admin/users" label="User Management" />}
         </nav>
         
         <div className="flex-1"></div>
@@ -197,6 +198,7 @@ export default function Header() {
                       {navLinks.map((link) => (
                         <NavLink key={link.href} {...link} onSelect={handleLinkClick} />
                       ))}
+                      {isFaculty && <NavLink href="/admin/users" label="User Management" icon={Users} onSelect={handleLinkClick} />}
                       <div className="my-2 border-t border-border/50"></div>
                       {user && futureNavLinks.map((link) => (
                         <NavLink key={link.label} {...link} onSelect={handleLinkClick} />
