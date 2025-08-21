@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -65,7 +65,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
   );
 };
 
-const mainNavPaths = ["/", "/courses", "/announcements", "/about"];
+const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact"];
 
 
 export default function Header() {
@@ -215,6 +215,7 @@ const navLinks = [
   { href: "/courses", label: "Courses", icon: Compass },
   { href: "/announcements", label: "Announcements", icon: Megaphone },
   { href: "/about", label: "About", icon: Info },
+  { href: "/contact", label: "Contact", icon: Phone },
 ];
 
 const futureNavLinks = [
@@ -223,5 +224,3 @@ const futureNavLinks = [
   { href: "#", label: "Warzone", icon: Swords },
   { href: "#", label: "Parivartan Chamber", icon: BrainCircuit },
 ];
-
-    

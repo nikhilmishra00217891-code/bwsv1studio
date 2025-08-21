@@ -77,7 +77,7 @@ export default function AiMentorWidget() {
     <Sheet>
       <SheetTrigger asChild>
         <Button
-          className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50"
+          className="h-16 w-16 rounded-full shadow-lg"
           size="icon"
           aria-label="Ask AI Mentor"
           id="ai-mentor"

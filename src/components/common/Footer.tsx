@@ -1,10 +1,12 @@
+
 import Link from 'next/link';
-import { BookOpenCheck, Youtube, Instagram, Send } from 'lucide-react';
+import { BookOpenCheck, Youtube, Instagram, Send, Phone } from 'lucide-react';
 
 const navLinks = [
   { href: '/courses', label: 'Courses' },
   { href: '/about', label: 'About Us' },
   { href: '/dashboard', label: 'Dashboard' },
+  { href: '/contact', label: 'Contact Us' },
 ];
 
 const socialLinks = [
