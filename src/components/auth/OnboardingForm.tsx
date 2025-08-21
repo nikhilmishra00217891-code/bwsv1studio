@@ -716,8 +716,17 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
             const root = document.documentElement;
             root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
             root.style.setProperty('--accent', `${accentHue} ${accentSaturation}% ${accentLightness}%`);
-            // Store the custom values
-            setData({
+            
+            // This was the source of the infinite loop.
+            // We should only update the final data when the user proceeds.
+            // For now, the visual update is enough.
+        }
+    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
+
+     useEffect(() => {
+        // This effect runs when the user stops customizing to save the final custom values.
+        if (!isCustomizing && data.theme === 'custom') {
+             setData({
                 theme: 'custom',
                 customTheme: {
                     primary: { h: primaryHue, s: primarySaturation, l: primaryLightness },
@@ -725,7 +734,8 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                 }
             })
         }
-    }, [isCustomizing, primaryHue, primarySaturation, primaryLightness, accentHue, accentSaturation, accentLightness]);
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+     }, [isCustomizing]);
     
     const handlePresetSelect = (themeId: string) => {
         setIsCustomizing(false);
@@ -861,7 +871,7 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
 
 const EngagementBoostStep = ({ data, setData, totalSteps }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number }) => {
     return (
-        <OnboardingStepWrapper title="Pick a Motivational Avatar" step={7} totalSteps={totalSteps}>
+        <OnboardingStepWrapper title="Pick a Motivational Avatar" step={8} totalSteps={totalSteps}>
             <div className="max-w-xl mx-auto">
                 <p className="text-muted-foreground text-center mb-8">
                     This avatar will represent you in challenges, streaks, and leaderboards!
@@ -929,7 +939,7 @@ export function OnboardingForm() {
     }
   }, []);
 
-  const totalSteps = 8;
+  const totalSteps = 9;
   const progress = ((step - 1) / (totalSteps -1)) * 100;
 
   const nextStep = () => setStep((prev) => (prev < totalSteps ? prev + 1 : prev));
@@ -989,6 +999,7 @@ export function OnboardingForm() {
         case 5: return <InterestsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 6: return <LearningStyleStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 7: return <ThemeCustomizationStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
+        case 8: return <EngagementBoostStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case totalSteps: return (
             <div className="flex h-full items-center justify-center">
                  <OnboardingStepWrapper title="One Last Check!" step={totalSteps} totalSteps={totalSteps}>
