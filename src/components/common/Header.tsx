@@ -148,7 +148,7 @@ export default function Header() {
             {navLinks.map((link) => (
                 <NavLink key={link.href} {...link} />
             ))}
-            {isFaculty && <NavLink href="/admin/users" label="User Management" />}
+            {isFaculty && <NavLink href="/admin/users" label="Admin" />}
         </nav>
         
         <div className="flex-1"></div>
@@ -203,7 +203,7 @@ export default function Header() {
                           <div className="my-2 border-t border-border/50"></div>
                           <p className="px-2 text-sm font-semibold text-muted-foreground">Faculty Tools</p>
                           <NavLink href="/admin/users" label="User Management" icon={Users} onSelect={handleLinkClick} />
-                          <NavLink href="/profile" label="AI Controls" icon={BrainCircuit} onSelect={handleLinkClick} />
+                          <NavLink href="/admin/ai-controls" label="AI Controls" icon={BrainCircuit} onSelect={handleLinkClick} />
                         </>
                       )}
                       <div className="my-2 border-t border-border/50"></div>
