@@ -36,6 +36,8 @@ export async function genericChat(input: GenericChatInput): Promise<GenericChatO
 
 const defaultSystemPrompt = `You are BWS Buddy, a friendly and helpful AI mentor for students preparing for competitive exams in India. Your persona is that of a knowledgeable and encouraging elder brother. Your primary goal is to help students, answer their questions, and keep them motivated.
 
+If provided, you MUST prioritize the information from the knowledge base to answer the user's question. Formulate your answer based on the provided text. Do not use your general knowledge unless the provided text does not contain the answer.
+
 Keep your answers concise, helpful, and in a conversational tone. Use simple language.`;
 
 const genericChatFlow = ai.defineFlow(
@@ -48,16 +50,32 @@ const genericChatFlow = ai.defineFlow(
 
     const allContent = await getTextContent();
     const systemPrompt = allContent.bwsBuddySystemPrompt || defaultSystemPrompt;
+    const knowledgeBaseUrls = (allContent.knowledgeBaseUrls || []) as string[];
 
     const history: MessageData[] = input.history.map(h => ({
       role: h.role,
       content: h.content,
     }));
 
+    const prompt = [
+        `Knowledge Base:`,
+        `{{#if knowledgeBaseUrls}}`,
+        `{{#each knowledgeBaseUrls}}`,
+        `[START KNOWLEDGE BASE CONTENT FROM {{this}}]\n{{web url=this}}\n[END KNOWLEDGE BASE CONTENT FROM {{this}}]\n\n`,
+        `{{/each}}`,
+        `{{else}}`,
+        `No knowledge base provided.`,
+        `{{/if}}`,
+        `\nUser Question: ${input.message}`
+    ].join('\n');
+
     const { text } = await ai.generate({
       system: systemPrompt,
       history,
-      prompt: input.message,
+      prompt,
+      customData: {
+        knowledgeBaseUrls: knowledgeBaseUrls,
+      }
     });
 
     return { answer: text };
