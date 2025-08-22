@@ -26,8 +26,15 @@ export function EditableImage(props: EditableImageProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newUrl, setNewUrl] = useState('');
   
-  // A simple check to see if the URL is valid enough to be rendered in a preview.
-  const isPreviewableUrl = (url: string) => url.startsWith('http://') || url.startsWith('https://');
+  // A more robust check to see if the URL is valid enough to be rendered in a preview.
+  const isPreviewableUrl = (url: string) => {
+    try {
+      new URL(url);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
   useEffect(() => {
     setCurrentSrc(src);
