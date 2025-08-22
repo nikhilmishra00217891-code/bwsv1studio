@@ -18,6 +18,7 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useEditMode } from "./EditModeProvider";
 import { ScrollArea } from "../ui/scroll-area";
+import SmartSearch from "../home/SmartSearch";
 
 const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void }) => {
   const pathname = usePathname();
@@ -128,33 +129,35 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-7xl items-center">
-        <div className="flex items-center gap-4 mr-auto">
+        <div className="flex items-center gap-4 md:gap-8">
              {showBackButton ? (
                  <Button variant="ghost" size="icon" className="mr-2" onClick={() => router.back()}>
                     <ArrowLeft />
                     <span className="sr-only">Back</span>
                  </Button>
              ) : (
-                <Link href="/" className="flex items-center gap-2">
+                <Link href="/" className="flex items-center gap-2 mr-4">
                     <BookOpenCheck className="h-7 w-7 text-primary" />
-                    <span className="font-bold text-xl font-headline tracking-wide">
+                    <span className="hidden sm:block font-bold text-xl font-headline tracking-wide">
                         BiharWaleSirji
                     </span>
                 </Link>
              )}
+             <div className="hidden lg:flex flex-1">
+                <SmartSearch />
+             </div>
         </div>
         
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-            {navLinks.map((link) => (
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium ml-auto">
+            {navLinks.filter(l => ['Home', 'Courses', 'Announcements'].includes(l.label)).map((link) => (
                 <NavLink key={link.href} {...link} />
             ))}
-            {isFaculty && <NavLink href="/admin/users" label="Admin" />}
         </nav>
         
-        <div className="flex-1"></div>
+        <div className="flex-1 lg:hidden"></div>
 
 
-        <div className="flex items-center gap-2 md:gap-4 ml-auto">
+        <div className="flex items-center gap-2 md:gap-4 ml-auto md:ml-6">
           <ThemeToggle />
           
           {loading ? null : user ? (
@@ -194,6 +197,9 @@ export default function Header() {
                 </div>
 
                 <ScrollArea className="flex-grow">
+                    <div className="p-6 lg:hidden">
+                      <SmartSearch />
+                    </div>
                     <nav className="flex flex-col gap-4 text-lg p-6">
                       {navLinks.map((link) => (
                         <NavLink key={link.href} {...link} onSelect={handleLinkClick} />
