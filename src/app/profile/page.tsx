@@ -4,7 +4,7 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LoaderCircle, Mail, User, Rocket, Brain, Trophy, VenetianMask, StarIcon, Award, Bird, FerrisWheel, Phone, Pencil, Save, Undo, Check, Dices, Palette } from "lucide-react";
+import { LoaderCircle, Mail, User, Rocket, Brain, Trophy, VenetianMask, StarIcon, Award, Bird, FerrisWheel, Phone, Pencil, Save, Undo, Check, Dices, Palette, BrainCircuit as BrainCircuitIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { UserProfile } from "@/types";
@@ -17,6 +17,7 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile } from "@/lib/data";
+import { saveTextContent } from "@/lib/data/content";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useTheme } from "next-themes";
 import { PhoneNumberInput } from "@/components/common/PhoneNumberInput";
+import { Textarea } from "@/components/ui/textarea";
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -103,13 +105,16 @@ const CustomThemePreview = ({ theme }: { theme: UserProfile['customTheme'] }) =>
 
 
 export default function ProfilePage() {
-  const { user, userProfile, loading, setUserProfile } = useAuth();
+  const { user, userProfile, loading, setUserProfile, textContent } = useAuth();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [profileData, setProfileData] = useState<Partial<UserProfile> | null>(null);
   const [initialProfileData, setInitialProfileData] = useState<Partial<UserProfile> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
+  const [aiSystemPrompt, setAiSystemPrompt] = useState('');
+  const [initialAiSystemPrompt, setInitialAiSystemPrompt] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -123,30 +128,38 @@ export default function ProfilePage() {
       setProfileData(initialData);
       setInitialProfileData(initialData);
     }
-  }, [user, userProfile, loading, router]);
+    const currentPrompt = textContent.bwsBuddySystemPrompt || '';
+    setAiSystemPrompt(currentPrompt);
+    setInitialAiSystemPrompt(currentPrompt);
+
+  }, [user, userProfile, loading, router, textContent]);
   
 
-  const hasChanges = profileData && initialProfileData && JSON.stringify(profileData) !== JSON.stringify(initialProfileData);
+  const hasProfileChanges = profileData && initialProfileData && JSON.stringify(profileData) !== JSON.stringify(initialProfileData);
+  const hasAiPromptChanges = aiSystemPrompt !== initialAiSystemPrompt;
+  const hasChanges = hasProfileChanges || hasAiPromptChanges;
 
   const handleSaveChanges = async () => {
-    if (!user || !hasChanges || !profileData) return;
+    if (!user || !hasChanges) return;
     setIsSaving(true);
     try {
-        await updateUserProfile(user.uid, profileData);
-        
-        // This is crucial: update the user profile in the auth context
-        setUserProfile(profileData as UserProfile); 
-        
-        // Apply theme globally after saving
-        if (profileData.theme) {
-            setTheme(profileData.theme);
+        if (hasProfileChanges && profileData) {
+            await updateUserProfile(user.uid, profileData);
+            setUserProfile(profileData as UserProfile); 
+            if (profileData.theme) {
+                setTheme(profileData.theme);
+            }
+            setInitialProfileData(profileData);
         }
         
-        setInitialProfileData(profileData); // Update initial state to reflect saved changes
+        if (hasAiPromptChanges) {
+            await saveTextContent('bwsBuddySystemPrompt', aiSystemPrompt);
+            setInitialAiSystemPrompt(aiSystemPrompt);
+        }
 
         toast({
-            title: "Profile Updated!",
-            description: "Your changes have been saved successfully.",
+            title: "Changes Saved!",
+            description: "Your updates have been saved successfully.",
         });
 
     } catch(error) {
@@ -163,7 +176,8 @@ export default function ProfilePage() {
 
   const handleResetChanges = () => {
     setProfileData(initialProfileData);
-    if(initialProfileData?.theme) setTheme(initialProfileData.theme)
+    setAiSystemPrompt(initialAiSystemPrompt);
+    if(initialProfileData?.theme) setTheme(initialProfileData.theme);
   }
 
   const renderAvatarContent = () => {
@@ -239,6 +253,36 @@ export default function ProfilePage() {
                   </Button>
               </div>
           </div>
+
+          {/* --- AI Controls Card (Faculty Only) --- */}
+          {userProfile.role === 'faculty' && (
+            <Card className="shadow-lg border-primary/30">
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <BrainCircuitIcon className="w-6 h-6 text-primary"/>
+                        <div>
+                            <CardTitle>BWS Buddy Controls</CardTitle>
+                            <CardDescription>Define the personality and knowledge of the global AI assistant.</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div>
+                        <Label htmlFor="systemPrompt" className="font-semibold">System Prompt</Label>
+                        <Textarea
+                            id="systemPrompt"
+                            value={aiSystemPrompt}
+                            onChange={(e) => setAiSystemPrompt(e.target.value)}
+                            placeholder="e.g., You are BWS Buddy, a helpful AI assistant..."
+                            className="min-h-[150px] mt-2 font-mono text-sm"
+                        />
+                         <p className="text-xs text-muted-foreground mt-2">
+                            This prompt defines the AI's core personality and instructions for all users. Changes go live immediately after saving.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+          )}
 
           {/* --- Personal Details Card --- */}
           <Card className="shadow-lg">

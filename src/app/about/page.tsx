@@ -53,15 +53,15 @@ Welcome home. Welcome to BiharWaleSirji.`}
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold font-headline">
               <EditableText
-                contentId="aboutPageBhaiyaBotTitle"
-                defaultValue={textContent.aboutPageBhaiyaBotTitle || "Meet the BhaiyaBot"}
+                contentId="aboutPageBwsBuddyTitle"
+                defaultValue={textContent.aboutPageBwsBuddyTitle || "Meet the BWS Buddy"}
                 className="w-full text-center"
               />
             </h2>
             <p className="text-lg text-muted-foreground mt-2">
               <EditableText
-                contentId="aboutPageBhaiyaBotSubtitle"
-                defaultValue={textContent.aboutPageBhaiyaBotSubtitle || "Your AI Doubt Buddy, available 24x7."}
+                contentId="aboutPageBwsBuddySubtitle"
+                defaultValue={textContent.aboutPageBwsBuddySubtitle || "Your AI Doubt Buddy, available 24x7."}
                 className="w-full text-center"
               />
             </p>

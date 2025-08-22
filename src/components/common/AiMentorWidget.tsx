@@ -21,7 +21,7 @@ export default function AiMentorWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Namaste! I'm your BhaiyaBot. How can I help you with your studies today?",
+      content: "Namaste! I'm your BWS Buddy. How can I help you with your studies today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -62,7 +62,7 @@ export default function AiMentorWidget() {
       toast({
         variant: "destructive",
         title: "Oh no! Something went wrong.",
-        description: "BhaiyaBot is taking a short break. Please try again later.",
+        description: "BWS Buddy is taking a short break. Please try again later.",
       });
        setMessages((prevMessages) => [
         ...prevMessages,
@@ -87,7 +87,7 @@ export default function AiMentorWidget() {
       </SheetTrigger>
       <SheetContent className="flex flex-col p-0">
         <SheetHeader className="p-6 pb-2">
-          <SheetTitle className="text-2xl font-headline text-center">BhaiyaBot - Your AI Mentor</SheetTitle>
+          <SheetTitle className="text-2xl font-headline text-center">BWS Buddy - Your AI Mentor</SheetTitle>
         </SheetHeader>
         <ScrollArea className="flex-grow p-6" ref={scrollAreaRef}>
           <div className="space-y-6">
@@ -129,7 +129,7 @@ export default function AiMentorWidget() {
                   </Avatar>
                 <div className="bg-secondary rounded-2xl rounded-bl-none p-3 flex items-center gap-2">
                     <LoaderCircle className="w-4 h-4 animate-spin"/>
-                    <span className="text-sm text-muted-foreground">BhaiyaBot is thinking...</span>
+                    <span className="text-sm text-muted-foreground">BWS Buddy is thinking...</span>
                 </div>
               </div>
             )}

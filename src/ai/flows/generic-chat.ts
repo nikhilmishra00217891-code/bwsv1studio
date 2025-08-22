@@ -11,6 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {MessageData, roleSchema} from "genkit";
+import { getTextContent } from '@/lib/data/content';
 
 
 const GenericChatInputSchema = z.object({
@@ -33,6 +34,10 @@ export async function genericChat(input: GenericChatInput): Promise<GenericChatO
   return genericChatFlow(input);
 }
 
+const defaultSystemPrompt = `You are BWS Buddy, a friendly and helpful AI mentor for students preparing for competitive exams in India. Your persona is that of a knowledgeable and encouraging elder brother. Your primary goal is to help students, answer their questions, and keep them motivated.
+
+Keep your answers concise, helpful, and in a conversational tone. Use simple language.`;
+
 const genericChatFlow = ai.defineFlow(
   {
     name: 'genericChatFlow',
@@ -41,15 +46,16 @@ const genericChatFlow = ai.defineFlow(
   },
   async (input) => {
 
+    const allContent = await getTextContent();
+    const systemPrompt = allContent.bwsBuddySystemPrompt || defaultSystemPrompt;
+
     const history: MessageData[] = input.history.map(h => ({
       role: h.role,
       content: h.content,
     }));
 
     const { text } = await ai.generate({
-      system: `You are BhaiyaBot, a friendly and helpful AI mentor for students preparing for competitive exams in India. Your persona is that of a knowledgeable and encouraging elder brother. Your primary goal is to help students, answer their questions, and keep them motivated.
-
-      Keep your answers concise, helpful, and in a conversational tone. Use simple language.`,
+      system: systemPrompt,
       history,
       prompt: input.message,
     });
