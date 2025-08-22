@@ -13,12 +13,13 @@ import Autoplay from "embla-carousel-autoplay";
 import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { EditableImage } from "../common/EditableImage";
+import { useAuth } from "../auth/AuthProvider";
 
-const announcements = [
+const initialAnnouncements = [
     {
         id: 1,
         contentId: "announcement_1_image",
-        src: 'https://placehold.co/1200x400.png',
+        defaultSrc: 'https://placehold.co/1200x400.png',
         alt: 'Special Offer Announcement',
         href: '#',
         "data-ai-hint": "special offer"
@@ -26,7 +27,7 @@ const announcements = [
     {
         id: 2,
         contentId: "announcement_2_image",
-        src: 'https://placehold.co/1200x400.png',
+        defaultSrc: 'https://placehold.co/1200x400.png',
         alt: 'New Course Announcement',
         href: '/courses',
         "data-ai-hint": "new course"
@@ -34,7 +35,7 @@ const announcements = [
     {
         id: 3,
         contentId: "announcement_3_image",
-        src: 'https://placehold.co/1200x400.png',
+        defaultSrc: 'https://placehold.co/1200x400.png',
         alt: 'Live Class Announcement',
         href: '#',
         "data-ai-hint": "live class"
@@ -42,7 +43,7 @@ const announcements = [
     {
         id: 4,
         contentId: "announcement_4_image",
-        src: 'https://placehold.co/1200x400.png',
+        defaultSrc: 'https://placehold.co/1200x400.png',
         alt: 'Mock Test Series Announcement',
         href: '#',
         "data-ai-hint": "mock test"
@@ -50,7 +51,7 @@ const announcements = [
     {
         id: 5,
         contentId: "announcement_5_image",
-        src: 'https://placehold.co/1200x400.png',
+        defaultSrc: 'https://placehold.co/1200x400.png',
         alt: 'Community Event Announcement',
         href: '#',
         "data-ai-hint": "community event"
@@ -61,6 +62,7 @@ export default function AnnouncementSlider() {
     const [api, setApi] = useState<CarouselApi>()
     const [current, setCurrent] = useState(0)
     const [count, setCount] = useState(0)
+    const { textContent } = useAuth();
 
     const plugin = useRef(
       Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
@@ -94,7 +96,7 @@ export default function AnnouncementSlider() {
                 onMouseLeave={plugin.current.reset}
             >
                 <CarouselContent>
-                    {announcements.map((item) => (
+                    {initialAnnouncements.map((item) => (
                          <CarouselItem key={item.id}>
                             <div className="p-1">
                                <Card className="overflow-hidden group rounded-xl shadow-lg">
@@ -102,7 +104,7 @@ export default function AnnouncementSlider() {
                                         <Link href={item.href} className="w-full h-full">
                                             <EditableImage
                                                 contentId={item.contentId}
-                                                src={item.src}
+                                                src={textContent[item.contentId] as string || item.defaultSrc}
                                                 alt={item.alt}
                                                 fill
                                                 className="object-cover transition-transform duration-300 group-hover:scale-105"
