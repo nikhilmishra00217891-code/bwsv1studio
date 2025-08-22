@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -18,7 +19,7 @@ const initialAnnouncements = [
     {
         id: 1,
         contentId: "announcement_1_image",
-        defaultSrc: 'https://placehold.co/1280x720.png',
+        defaultSrc: 'https://i.postimg.cc/kX2yL1B4/Parivartan-Ad-Banner.png',
         alt: 'Special Offer Announcement',
         href: '#',
         "data-ai-hint": "special offer"
@@ -83,53 +84,55 @@ export default function AnnouncementSlider() {
 
     return (
         <section className="container mx-auto px-6 -mt-16 md:-mt-24 mb-8">
-             <Carousel
-                setApi={setApi}
-                opts={{
-                    align: "start",
-                    loop: true,
-                }}
-                plugins={[plugin.current]}
-                className="w-full max-w-5xl mx-auto"
-                onMouseEnter={plugin.current.stop}
-                onMouseLeave={plugin.current.reset}
-            >
-                <CarouselContent>
-                    {initialAnnouncements.map((item) => (
-                         <CarouselItem key={item.id}>
-                            <div className="p-1">
-                               <Card className="overflow-hidden group rounded-xl shadow-lg">
-                                    <CardContent className="p-0 flex items-center justify-center aspect-[16/9] relative">
-                                        <Link href={item.href} className="w-full h-full">
-                                            <EditableImage
-                                                contentId={item.contentId}
-                                                src={textContent[item.contentId] as string || item.defaultSrc}
-                                                alt={item.alt}
-                                                fill
-                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                                data-ai-hint={item['data-ai-hint']}
-                                            />
-                                        </Link>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            <div>
+                 <Carousel
+                    setApi={setApi}
+                    opts={{
+                        align: "start",
+                        loop: true,
+                    }}
+                    plugins={[plugin.current]}
+                    className="w-full max-w-5xl mx-auto"
+                    onMouseEnter={plugin.current.stop}
+                    onMouseLeave={plugin.current.reset}
+                >
+                    <CarouselContent>
+                        {initialAnnouncements.map((item) => (
+                             <CarouselItem key={item.id}>
+                                <div className="p-1">
+                                   <Card className="overflow-hidden group rounded-xl shadow-lg">
+                                        <CardContent className="p-0 flex items-center justify-center aspect-[16/9] relative">
+                                            <Link href={item.href} className="w-full h-full">
+                                                <EditableImage
+                                                    contentId={item.contentId}
+                                                    src={textContent[item.contentId] as string || item.defaultSrc}
+                                                    alt={item.alt}
+                                                    fill
+                                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                                    data-ai-hint={item['data-ai-hint']}
+                                                />
+                                            </Link>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
+                <div className="flex justify-center gap-2 mt-4">
                     {Array.from({ length: count }).map((_, i) => (
                     <button
                         key={i}
                         onClick={() => api?.scrollTo(i)}
                         className={cn(
-                            'h-2 w-2 rounded-full bg-white/50 transition-all',
-                            current === i ? 'w-4 bg-white' : 'hover:bg-white/75'
+                            'h-2 w-2 rounded-full bg-primary/30 transition-all',
+                            current === i ? 'w-4 bg-primary' : 'hover:bg-primary/50'
                         )}
                         aria-label={`Go to slide ${i + 1}`}
                     />
                     ))}
                 </div>
-            </Carousel>
+             </div>
         </section>
     );
 }
