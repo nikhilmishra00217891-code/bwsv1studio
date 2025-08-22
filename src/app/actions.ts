@@ -3,7 +3,7 @@
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat } from "@/ai/flows";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove } from "firebase/firestore";
 import type { UserProfile } from "@/types";
 
 interface Message {
@@ -164,4 +164,35 @@ export async function unsuspendUser(userId: string): Promise<{success: boolean, 
     console.error("Error unsuspending user:", error);
     return { success: false, message: error.message || "An unexpected error occurred." };
   }
+}
+
+const CONTENT_DOC_REF = doc(db, "siteContent", "text");
+
+export async function addKnowledgeBaseUrl(url: string): Promise<{success: boolean, message: string}> {
+    try {
+        await updateDoc(CONTENT_DOC_REF, {
+            knowledgeBaseUrls: arrayUnion(url)
+        });
+        return { success: true, message: "URL added to knowledge base." };
+    } catch (error: any) {
+         if (error.code === 'not-found') {
+            await setDoc(CONTENT_DOC_REF, { knowledgeBaseUrls: [url] });
+            return { success: true, message: "URL added to knowledge base." };
+        } else {
+            console.error("Error adding URL:", error);
+            return { success: false, message: error.message || "An unexpected error occurred." };
+        }
+    }
+}
+
+export async function removeKnowledgeBaseUrl(url: string): Promise<{success: boolean, message: string}> {
+    try {
+        await updateDoc(CONTENT_DOC_REF, {
+            knowledgeBaseUrls: arrayRemove(url)
+        });
+        return { success: true, message: "URL removed from knowledge base." };
+    } catch (error: any) {
+        console.error("Error removing URL:", error);
+        return { success: false, message: error.message || "An unexpected error occurred." };
+    }
 }

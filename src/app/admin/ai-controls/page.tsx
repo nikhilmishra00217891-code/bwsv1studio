@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { saveTextContent } from "@/lib/data/content";
-import { BrainCircuitIcon, LoaderCircle, Save, Undo } from "lucide-react";
-import { useEffect, useState } from "react";
+import { BrainCircuitIcon, LoaderCircle, Save, Undo, BookDashed, Plus, Trash2, Link as LinkIcon } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -21,6 +21,103 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { addKnowledgeBaseUrl, removeKnowledgeBaseUrl } from "@/app/actions";
+import { useRouter } from "next/navigation";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import Link from "next/link";
+
+const KnowledgeBaseManager = () => {
+    const { textContent } = useAuth();
+    const { toast } = useToast();
+    const router = useRouter();
+    const [isPending, startTransition] = useTransition();
+
+    const [newUrl, setNewUrl] = useState("");
+    const [isAdding, setIsAdding] = useState(false);
+    
+    const knowledgeBaseUrls: string[] = (textContent.knowledgeBaseUrls as string[] || []);
+
+    const handleAddUrl = async () => {
+        if (!newUrl.trim()) return;
+        try {
+            new URL(newUrl); // Basic URL validation
+        } catch (_) {
+            toast({ variant: "destructive", title: "Invalid URL", description: "Please enter a valid URL." });
+            return;
+        }
+
+        setIsAdding(true);
+        const { success, message } = await addKnowledgeBaseUrl(newUrl);
+        if (success) {
+            toast({ title: "URL Added", description: "The new URL is now in the knowledge base." });
+            setNewUrl("");
+            startTransition(() => router.refresh());
+        } else {
+            toast({ variant: "destructive", title: "Failed to Add", description: message });
+        }
+        setIsAdding(false);
+    }
+    
+    const handleRemoveUrl = async (urlToRemove: string) => {
+        const { success, message } = await removeKnowledgeBaseUrl(urlToRemove);
+        if (success) {
+            toast({ title: "URL Removed", description: "The URL has been removed from the knowledge base." });
+            startTransition(() => router.refresh());
+        } else {
+            toast({ variant: "destructive", title: "Failed to Remove", description: message });
+        }
+    }
+
+    return (
+        <Card className="shadow-lg border-primary/30">
+            <CardHeader>
+                <div className="flex items-center gap-3">
+                    <BookDashed className="w-6 h-6 text-primary" />
+                    <div>
+                        <CardTitle>BWS Buddy Knowledge Base</CardTitle>
+                        <CardDescription>Add or remove URLs to provide the AI with specific knowledge.</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                    <Input 
+                        value={newUrl}
+                        onChange={(e) => setNewUrl(e.target.value)}
+                        placeholder="https://example.com/notes.pdf"
+                        disabled={isAdding}
+                    />
+                    <Button onClick={handleAddUrl} disabled={isAdding || !newUrl.trim()}>
+                        {isAdding ? <LoaderCircle className="animate-spin" /> : <><Plus className="w-4 h-4 mr-2"/> Add URL</>}
+                    </Button>
+                </div>
+
+                <ScrollArea className="h-64 border rounded-md">
+                     <div className="p-4 space-y-2">
+                        {knowledgeBaseUrls.length > 0 ? (
+                            knowledgeBaseUrls.map((url, index) => (
+                                <div key={index} className="flex items-center justify-between gap-4 p-2 rounded-md bg-muted/50 text-sm">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <LinkIcon className="w-4 h-4 shrink-0" />
+                                        <Link href={url} target="_blank" rel="noopener noreferrer" className="truncate hover:underline">
+                                            {url}
+                                        </Link>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleRemoveUrl(url)}>
+                                        <Trash2 className="w-4 h-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))
+                        ) : (
+                             <p className="text-center text-muted-foreground p-8">No knowledge base URLs have been added yet.</p>
+                        )}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function AiControlsPage() {
     const { textContent } = useAuth();
@@ -32,7 +129,6 @@ export default function AiControlsPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // textContent might be empty on initial load
         const currentPrompt = textContent.bwsBuddySystemPrompt || '';
         setAiSystemPrompt(currentPrompt);
         setInitialAiSystemPrompt(currentPrompt);
@@ -135,6 +231,8 @@ export default function AiControlsPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <KnowledgeBaseManager />
         </div>
     );
 }
