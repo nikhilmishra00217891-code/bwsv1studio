@@ -6,7 +6,7 @@ import Header from "@/components/common/Header";
 import Footer from "@/components/common/Footer";
 import AiMentorWidget from "@/components/common/AiMentorWidget";
 import { Button } from "@/components/ui/button";
-import { Phone } from "lucide-react";
+import { ArrowRight, Phone } from "lucide-react";
 import Link from "next/link";
 import FeedbackWidget from "@/components/common/FeedbackWidget";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -15,7 +15,7 @@ import SuspendedAccountFirewall from "@/components/auth/SuspendedAccountFirewall
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const { userProfile } = useAuth();
+    const { user, userProfile } = useAuth();
     const isOnboarding = pathname === '/onboarding';
     const isHomepage = pathname === '/';
 
@@ -23,13 +23,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         return <SuspendedAccountFirewall reason={userProfile.suspension.reason} />;
     }
 
+    const FloatingCTA = () => (
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <Button asChild size="lg" className="rounded-full shadow-lg animate-fade-in">
+          <Link href="/dashboard">
+            Continue Learning <ArrowRight className="ml-2 h-5 w-5" />
+          </Link>
+        </Button>
+      </div>
+    );
+
     return (
         <>
             <div className="flex min-h-screen flex-col">
                 {!isOnboarding && <Header />}
                 <main className="flex-1">{children}</main>
-                {isHomepage && <Footer />}
+                <Footer />
             </div>
+             {isHomepage && user && <FloatingCTA />}
             {!isOnboarding && (
                  <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
                     <FeedbackWidget />

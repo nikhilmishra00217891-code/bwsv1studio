@@ -1,22 +1,64 @@
 
-import { getTestimonials } from "@/lib/data";
-import { getTextContent } from "@/lib/data/content";
+"use client";
+
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
 import { EditableText } from "../common/EditableText";
 import { EditableImage } from "../common/EditableImage";
+import { useEffect, useRef, useState } from "react";
+import Autoplay from "embla-carousel-autoplay";
+import { useAuth } from "../auth/AuthProvider";
 
-export default async function Testimonials() {
-  const testimonials = await getTestimonials();
-  const textContent = await getTextContent();
+const staticTestimonials = [
+  {
+    id: "t1",
+    name: "Aman Kumar",
+    role: "JEE Aspirant",
+    avatar: "https://i.postimg.cc/d1W1VcYF/aman-kumar.png",
+    text: "BiharWaleSirji feels like learning from an elder brother. The concepts are explained so clearly, and the AI mentor is a game-changer for late-night doubts!",
+  },
+  {
+    id: "t2",
+    name: "Sunita Singh",
+    role: "NEET Aspirant",
+    avatar: "https://placehold.co/100x100.png",
+    text: "The personal touch is what makes this platform special. Priya Didi's biology course is fantastic. I finally feel confident in my preparation.",
+  },
+  {
+    id: "t3",
+    name: "Rajesh Mahto",
+    role: "BPSC Aspirant",
+    avatar: "https://placehold.co/100x100.png",
+    text: "Finally, a platform that understands students from Bihar. The teaching style is relatable, and the content is top-notch. Highly recommended.",
+  },
+   {
+    id: "t4",
+    name: "Priya Sharma",
+    role: "Class 12 Student",
+    avatar: "https://placehold.co/100x100.png",
+    text: "The Warzone feature made studying competitive and fun! I never thought I'd be challenging my friends to solve physics problems at 10 PM.",
+  },
+  {
+    id: "t5",
+    name: "Vikram Reddy",
+    role: "JEE Aspirant",
+    avatar: "https://placehold.co/100x100.png",
+    text: "I improved my mock test scores from 70% to 92% in just two months. The detailed analysis and targeted practice questions are incredibly helpful.",
+  },
+];
+
+export default function Testimonials() {
+  const { textContent } = useAuth();
+  const plugin = useRef(
+    Autoplay({ delay: 4000, stopOnInteraction: true, stopOnMouseEnter: true })
+  );
 
   return (
     <section className="py-20 md:py-28 bg-card/50">
@@ -40,10 +82,13 @@ export default async function Testimonials() {
             align: "start",
             loop: true,
           }}
+          plugins={[plugin.current]}
+          onMouseEnter={plugin.current.stop}
+          onMouseLeave={plugin.current.reset}
           className="w-full max-w-5xl mx-auto"
         >
           <CarouselContent>
-            {testimonials.map((testimonial) => (
+            {staticTestimonials.map((testimonial) => (
               <CarouselItem key={testimonial.id} className="md:basis-1/2 lg:basis-1/3">
                 <div className="p-2 h-full">
                   <Card className="h-full flex flex-col">
@@ -73,8 +118,7 @@ export default async function Testimonials() {
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="hidden sm:flex" />
-          <CarouselNext className="hidden sm:flex" />
+          {/* Hide default buttons to rely on autoplay and swipe */}
         </Carousel>
       </div>
     </section>
