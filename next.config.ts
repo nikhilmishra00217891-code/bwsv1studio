@@ -22,6 +22,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'postimg.cc',
+      },
+      {
+        protocol: 'https',
+        hostname: 'postimg.org',
       }
     ],
   },
