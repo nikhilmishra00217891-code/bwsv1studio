@@ -109,7 +109,7 @@ export const testimonials: Testimonial[] = [
     id: "t1",
     name: "Aman Kumar",
     role: "JEE Aspirant",
-    avatar: "https://placehold.co/100x100.png",
+    avatar: "https://i.postimg.cc/d1W1VcYF/aman-kumar.png",
     text: "BiharWaleSirji feels like learning from an elder brother. The concepts are explained so clearly, and the AI mentor is a game-changer for late-night doubts!",
   },
   {
