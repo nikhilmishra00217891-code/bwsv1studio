@@ -51,7 +51,7 @@ const genericChatFlow = ai.defineFlow(
   async (input) => {
 
     const allContent = await getTextContent();
-    const systemPrompt = allContent.bwsBuddySystemPrompt || defaultSystemPrompt;
+    const systemPrompt = allContent.bwsBuddySystemPrompt as string || defaultSystemPrompt;
     const knowledgeBaseUrls = (allContent.knowledgeBaseUrls || []) as string[];
 
     const history: MessageData[] = input.history.map(h => ({
