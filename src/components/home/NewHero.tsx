@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -23,7 +22,7 @@ const ProgressCard = ({ label, value, icon: Icon, color }: { label: string, valu
     </Card>
 );
 
-export default function Hero() {
+export default function NewHero() {
     const { user, userProfile } = useAuth();
     const [greeting, setGreeting] = useState({ text: 'Welcome', icon: Sun });
 
