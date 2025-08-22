@@ -25,6 +25,9 @@ export function EditableImage(props: EditableImageProps) {
   const [currentSrc, setCurrentSrc] = useState(src);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newUrl, setNewUrl] = useState('');
+  
+  // A simple check to see if the URL is valid enough to be rendered in a preview.
+  const isPreviewableUrl = (url: string) => url.startsWith('http://') || url.startsWith('https://');
 
   useEffect(() => {
     setCurrentSrc(src);
@@ -33,7 +36,7 @@ export function EditableImage(props: EditableImageProps) {
   const handleSave = async () => {
     if (!newUrl) return;
     try {
-      // Basic URL validation
+      // More robust URL validation for saving
       new URL(newUrl);
       await saveTextContent(contentId, newUrl);
       setCurrentSrc(newUrl);
@@ -47,7 +50,7 @@ export function EditableImage(props: EditableImageProps) {
       toast({
         variant: 'destructive',
         title: 'Invalid URL',
-        description: 'Please enter a valid and complete image URL.',
+        description: 'Please enter a valid and complete image URL (e.g., https://...).',
       });
     }
   };
@@ -88,11 +91,11 @@ export function EditableImage(props: EditableImageProps) {
             </div>
              <div className="mt-4">
                 <p className="text-sm font-medium">Current Preview</p>
-                {newUrl ? (
+                {isPreviewableUrl(newUrl) ? (
                     <Image src={newUrl} alt="New image preview" width={200} height={120} className="mt-2 rounded-md border aspect-video object-contain" />
                 ) : (
                     <div className="mt-2 rounded-md border aspect-video bg-muted flex items-center justify-center">
-                        <p className="text-sm text-muted-foreground">No URL</p>
+                        <p className="text-sm text-muted-foreground">Enter a valid URL to see a preview</p>
                     </div>
                 )}
             </div>
