@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
 import { EditableText } from "../common/EditableText";
+import { EditableImage } from "../common/EditableImage";
 
 export default async function Testimonials() {
   const testimonials = await getTestimonials();
@@ -48,7 +49,14 @@ export default async function Testimonials() {
                   <Card className="h-full flex flex-col">
                     <CardContent className="flex flex-col items-center text-center p-8 flex-grow">
                       <Avatar className="w-20 h-20 mb-4 border-4 border-primary/20">
-                        <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+                        <EditableImage
+                            contentId={`testimonial_avatar_${testimonial.id}`}
+                            src={textContent[`testimonial_avatar_${testimonial.id}`] || testimonial.avatar} 
+                            alt={testimonial.name}
+                            width={80}
+                            height={80}
+                            className="rounded-full"
+                        />
                         <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <p className="font-semibold text-lg font-headline">{testimonial.name}</p>

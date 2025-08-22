@@ -9,12 +9,14 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 import { ArrowRight } from "lucide-react";
 import { EditableText } from "../common/EditableText";
+import { EditableImage } from "../common/EditableImage";
 
 const CourseCard = ({ course }: { course: Course }) => {
   return (
     <Card className="overflow-hidden h-full flex flex-col group transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="p-0 relative">
-        <Image
+        <EditableImage
+          contentId={`course_thumb_${course.id}`}
           src={course.thumbnail}
           alt={course.title}
           width={600}

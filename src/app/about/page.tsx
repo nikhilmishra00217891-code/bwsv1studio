@@ -4,6 +4,7 @@ import { BrainCircuit, HeartHandshake } from "lucide-react";
 import type { Metadata } from "next";
 import { EditableText } from "@/components/common/EditableText";
 import { getTextContent } from "@/lib/data/content";
+import { EditableImage } from "@/components/common/EditableImage";
 
 export const metadata: Metadata = {
     title: "About Us - BiharWaleSirji",
@@ -15,8 +16,9 @@ export default async function AboutPage() {
 
   return (
     <div className="relative bg-card/50 overflow-hidden">
-        <Image 
-            src="https://placehold.co/1920x1080.png"
+        <EditableImage
+            contentId="aboutPageBgImage"
+            src={textContent.aboutPageBgImage || "https://placehold.co/1920x1080.png"}
             alt="Bihar Map"
             layout="fill"
             objectFit="cover"
