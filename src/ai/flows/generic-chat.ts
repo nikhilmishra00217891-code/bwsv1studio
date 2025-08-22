@@ -33,28 +33,6 @@ export async function genericChat(input: GenericChatInput): Promise<GenericChatO
   return genericChatFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'genericChatPrompt',
-  input: {schema: GenericChatInputSchema},
-  output: {schema: GenericChatOutputSchema},
-  prompt: `You are BhaiyaBot, a friendly and helpful AI mentor for students preparing for competitive exams in India. Your persona is that of a knowledgeable and encouraging elder brother. Your primary goal is to help students, answer their questions, and keep them motivated.
-
-  Keep your answers concise, helpful, and in a conversational tone. Use simple language.
-
-  Here is the conversation history:
-  {{#each history}}
-    {{#if (this.role === 'user')}}You: {{this.content.[0].text}}{{/if}}
-    {{#if (this.role === 'assistant')}}BhaiyaBot: {{this.content.[0].text}}{{/if}}
-  {{/each}}
-
-  The user just said:
-  "{{{message}}}"
-
-  Your response:
-  `,
-});
-
-
 const genericChatFlow = ai.defineFlow(
   {
     name: 'genericChatFlow',
@@ -62,7 +40,20 @@ const genericChatFlow = ai.defineFlow(
     outputSchema: GenericChatOutputSchema,
   },
   async (input) => {
-    const {output} = await prompt(input);
-    return output!;
+
+    const history: MessageData[] = input.history.map(h => ({
+      role: h.role,
+      content: h.content,
+    }));
+
+    const { text } = await ai.generate({
+      system: `You are BhaiyaBot, a friendly and helpful AI mentor for students preparing for competitive exams in India. Your persona is that of a knowledgeable and encouraging elder brother. Your primary goal is to help students, answer their questions, and keep them motivated.
+
+      Keep your answers concise, helpful, and in a conversational tone. Use simple language.`,
+      history,
+      prompt: input.message,
+    });
+
+    return { answer: text };
   }
 );
