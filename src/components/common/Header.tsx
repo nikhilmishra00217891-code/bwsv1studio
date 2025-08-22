@@ -198,7 +198,14 @@ export default function Header() {
                       {navLinks.map((link) => (
                         <NavLink key={link.href} {...link} onSelect={handleLinkClick} />
                       ))}
-                      {isFaculty && <NavLink href="/admin/users" label="User Management" icon={Users} onSelect={handleLinkClick} />}
+                      {isFaculty && (
+                        <>
+                          <div className="my-2 border-t border-border/50"></div>
+                          <p className="px-2 text-sm font-semibold text-muted-foreground">Faculty Tools</p>
+                          <NavLink href="/admin/users" label="User Management" icon={Users} onSelect={handleLinkClick} />
+                          <NavLink href="/profile" label="AI Controls" icon={BrainCircuit} onSelect={handleLinkClick} />
+                        </>
+                      )}
                       <div className="my-2 border-t border-border/50"></div>
                       {user && futureNavLinks.map((link) => (
                         <NavLink key={link.label} {...link} onSelect={handleLinkClick} />
