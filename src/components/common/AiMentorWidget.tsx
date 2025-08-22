@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquareHeart, Send, LoaderCircle } from "lucide-react";
+import { MessageSquareHeart, Send, LoaderCircle, BookDashed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
@@ -46,32 +46,90 @@ export default function AiMentorWidget() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const newMessages: Message[] = [...messages, { role: "user", content: input }];
-    setMessages(newMessages);
+    const userMessage: Message = { role: "user", content: input };
+    const systemMessage: Message = { role: "system", content: "BWS Buddy is checking the knowledge base..." };
+    
+    setMessages(prev => [...prev, userMessage, systemMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      const response = await askAiMentor(newMessages);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { role: "assistant", content: response },
-      ]);
+      // Pass all messages except the last system message to the backend
+      const response = await askAiMentor(messages.concat(userMessage));
+      
+      // Replace the system message with the actual AI response
+      setMessages((prevMessages) => {
+        const newMessages = [...prevMessages];
+        newMessages[newMessages.length - 1] = { role: "assistant", content: response };
+        return newMessages;
+      });
+
     } catch (error) {
       console.error("AI Mentor Error:", error);
+      const errorMessage = "Sorry, I'm having trouble connecting right now. Please try again in a bit.";
+       // Replace the system message with the error response
+      setMessages((prevMessages) => {
+        const newMessages = [...prevMessages];
+        newMessages[newMessages.length - 1] = { role: "assistant", content: errorMessage };
+        return newMessages;
+      });
       toast({
         variant: "destructive",
         title: "Oh no! Something went wrong.",
         description: "BWS Buddy is taking a short break. Please try again later.",
       });
-       setMessages((prevMessages) => [
-        ...prevMessages,
-        { role: "assistant", content: "Sorry, I'm having trouble connecting right now. Please try again in a bit." },
-      ]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const renderMessage = (message: Message, index: number) => {
+      if (message.role === 'system') {
+          return (
+             <div key={index} className="flex items-start gap-3">
+                 <Avatar className="w-8 h-8 border-2 border-primary">
+                    <AvatarFallback>AI</AvatarFallback>
+                  </Avatar>
+                <div className="bg-secondary rounded-2xl rounded-bl-none p-3 flex items-center gap-2">
+                    <BookDashed className="w-4 h-4 animate-pulse"/>
+                    <span className="text-sm text-muted-foreground">{message.content}</span>
+                </div>
+              </div>
+          )
+      }
+
+      return (
+        <div
+          key={index}
+          className={cn(
+            "flex items-start gap-3",
+            message.role === "user" ? "justify-end" : ""
+          )}
+        >
+          {message.role === "assistant" && (
+            <Avatar className="w-8 h-8 border-2 border-primary">
+              <AvatarFallback>AI</AvatarFallback>
+            </Avatar>
+          )}
+          <div
+            className={cn(
+              "max-w-xs md:max-w-md rounded-2xl p-3 text-sm",
+              message.role === "user"
+                ? "bg-primary text-primary-foreground rounded-br-none"
+                : "bg-secondary rounded-bl-none"
+            )}
+          >
+            {message.content}
+          </div>
+            {message.role === "user" && (
+            <Avatar className="w-8 h-8">
+                <AvatarImage src="https://placehold.co/100x100.png" />
+              <AvatarFallback>You</AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+      )
+  }
 
   return (
     <Sheet>
@@ -91,38 +149,8 @@ export default function AiMentorWidget() {
         </SheetHeader>
         <ScrollArea className="flex-grow p-6" ref={scrollAreaRef}>
           <div className="space-y-6">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "flex items-start gap-3",
-                  message.role === "user" ? "justify-end" : ""
-                )}
-              >
-                {message.role === "assistant" && (
-                  <Avatar className="w-8 h-8 border-2 border-primary">
-                    <AvatarFallback>AI</AvatarFallback>
-                  </Avatar>
-                )}
-                <div
-                  className={cn(
-                    "max-w-xs md:max-w-md rounded-2xl p-3 text-sm",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-none"
-                      : "bg-secondary rounded-bl-none"
-                  )}
-                >
-                  {message.content}
-                </div>
-                 {message.role === "user" && (
-                  <Avatar className="w-8 h-8">
-                     <AvatarImage src="https://placehold.co/100x100.png" />
-                    <AvatarFallback>You</AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
-            {isLoading && (
+            {messages.map(renderMessage)}
+            {isLoading && messages[messages.length-1].role !== 'system' && (
               <div className="flex items-start gap-3">
                  <Avatar className="w-8 h-8 border-2 border-primary">
                     <AvatarFallback>AI</AvatarFallback>

@@ -3,11 +3,11 @@
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat } from "@/ai/flows";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from "firebase/firestore";
 import type { UserProfile } from "@/types";
 
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
@@ -16,7 +16,9 @@ export async function askAiMentor(
   courseContext?: string
 ): Promise<string> {
   const lastUserMessage = messages.findLast((m) => m.role === 'user')?.content;
-  const history = messages.slice(0, -1); // Pass previous messages as history
+  
+  // Filter out system messages before sending to AI
+  const history = messages.filter(m => m.role !== 'system').slice(0, -1);
 
   if (!lastUserMessage) {
     return "I'm sorry, I didn't get your message. Could you please repeat it?";
@@ -63,7 +65,7 @@ export async function askAiMentor(
   try {
     const result = await genericChat({
       history: history.map(m => ({
-          role: m.role,
+          role: m.role as 'user' | 'assistant',
           content: [{ text: m.content }],
       })),
       message: lastUserMessage,
