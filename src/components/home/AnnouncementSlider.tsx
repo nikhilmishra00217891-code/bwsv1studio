@@ -9,52 +9,38 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Bell, Video, GraduationCap, Percent } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import Autoplay from "embla-carousel-autoplay";
 
 const announcements = [
     {
         id: 1,
-        type: 'live_class',
-        title: 'Live Class: Master Thermodynamics',
-        subtitle: 'With Rajesh Sir - Today @ 7 PM',
-        cta: 'Join Now',
-        link: '#',
-        icon: Video,
-        color: 'bg-blue-500',
+        src: 'https://placehold.co/1200x400.png',
+        alt: 'Special Offer Announcement',
+        href: '#',
+        "data-ai-hint": "special offer"
     },
     {
         id: 2,
-        type: 'new_course',
-        title: 'New Course Added: Organic Chemistry',
-        subtitle: 'Full course with notes and practice tests.',
-        cta: 'Explore Course',
-        link: '/courses',
-        icon: GraduationCap,
-        color: 'bg-green-500',
+        src: 'https://placehold.co/1200x400.png',
+        alt: 'New Course Announcement',
+        href: '/courses',
+        "data-ai-hint": "new course"
     },
     {
         id: 3,
-        type: 'offer',
-        title: 'Diwali Offer: 20% Off All Courses',
-        subtitle: 'Use code DIWALI20. Valid till Nov 15.',
-        cta: 'Claim Offer',
-        link: '/courses',
-        icon: Percent,
-        color: 'bg-orange-500',
+        src: 'https://placehold.co/1200x400.png',
+        alt: 'Live Class Announcement',
+        href: '#',
+        "data-ai-hint": "live class"
     },
     {
         id: 4,
-        type: 'announcement',
-        title: 'New Mock Test Series Launched',
-        subtitle: 'Prepare for your board exams with our new test series.',
-        cta: 'View Tests',
-        link: '#',
-        icon: Bell,
-        color: 'bg-purple-500',
+        src: 'https://placehold.co/1200x400.png',
+        alt: 'Mock Test Series Announcement',
+        href: '#',
+        "data-ai-hint": "mock test"
     }
 ]
 
@@ -75,34 +61,28 @@ export default function AnnouncementSlider() {
                 className="w-full max-w-5xl mx-auto"
             >
                 <CarouselContent>
-                    {announcements.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                             <CarouselItem key={item.id} className="md:basis-1/2">
-                                <div className="p-1">
-                                <Card className="overflow-hidden group">
-                                    <CardContent className="p-0 flex items-center">
-                                        <div className={`p-6 ${item.color} text-white`}>
-                                             <Icon className="w-8 h-8" />
-                                        </div>
-                                        <div className="p-4 flex-grow">
-                                            <h3 className="font-bold font-headline">{item.title}</h3>
-                                            <p className="text-sm text-muted-foreground">{item.subtitle}</p>
-                                        </div>
-                                        <div className="p-4">
-                                            <Button variant="ghost" size="icon" asChild>
-                                                <Link href={item.link}>
-                                                    <ArrowRight className="group-hover:translate-x-1 transition-transform" />
-                                                </Link>
-                                            </Button>
-                                        </div>
+                    {announcements.map((item) => (
+                         <CarouselItem key={item.id}>
+                            <div className="p-1">
+                               <Card className="overflow-hidden group">
+                                    <CardContent className="p-0 flex items-center justify-center aspect-[3/1] relative">
+                                        <Link href={item.href} className="w-full h-full">
+                                            <Image
+                                                src={item.src}
+                                                alt={item.alt}
+                                                fill
+                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                                data-ai-hint={item['data-ai-hint']}
+                                            />
+                                        </Link>
                                     </CardContent>
                                 </Card>
-                                </div>
-                            </CarouselItem>
-                        )
-                    })}
+                            </div>
+                        </CarouselItem>
+                    ))}
                 </CarouselContent>
+                 <CarouselPrevious className="absolute left-[-50px] top-1/2 -translate-y-1/2 hidden sm:flex" />
+                 <CarouselNext className="absolute right-[-50px] top-1/2 -translate-y-1/2 hidden sm:flex" />
             </Carousel>
         </section>
     );
