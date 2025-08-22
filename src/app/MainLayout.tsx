@@ -17,6 +17,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const pathname = usePathname();
     const { userProfile } = useAuth();
     const isOnboarding = pathname === '/onboarding';
+    const isHomepage = pathname === '/';
 
     if (userProfile?.suspension?.isSuspended) {
         return <SuspendedAccountFirewall reason={userProfile.suspension.reason} />;
@@ -27,7 +28,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="flex min-h-screen flex-col">
                 {!isOnboarding && <Header />}
                 <main className="flex-1">{children}</main>
-                {!isOnboarding && <Footer />}
+                {isHomepage && <Footer />}
             </div>
             {!isOnboarding && (
                  <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
