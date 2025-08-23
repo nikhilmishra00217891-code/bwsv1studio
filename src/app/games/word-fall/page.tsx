@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Undo, XCircle, Award, Star, BookOpen, Play } from 'lucide-react';
+import { LoaderCircle, Undo, XCircle, Award, Star, BookOpen, Play, CheckSquare } from 'lucide-react';
 import { loadDictionary, isWordValid } from '@/lib/dictionary';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -25,7 +25,7 @@ const WordFallGame = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [gameAreaSize, setGameAreaSize] = useState({ width: 0, height: 0 });
     
-    const [gameState, setGameState] = useState<'idle' | 'playing' | 'paused'>('idle');
+    const [gameState, setGameState] = useState<'idle' | 'playing' | 'gameover'>('idle');
     const [fallingLetters, setFallingLetters] = useState<FallingLetter[]>([]);
     const [selectedLetters, setSelectedLetters] = useState<{ id: number, text: string }[]>([]);
     const [foundWords, setFoundWords] = useState<string[]>([]);
@@ -107,6 +107,13 @@ const WordFallGame = () => {
 
     }, [dictionary, gameAreaSize.width, spawnLetter]);
 
+    const finishGame = () => {
+        setGameState('gameover');
+        if (letterIntervalRef.current) {
+            clearInterval(letterIntervalRef.current);
+        }
+    }
+
     const handleLetterClick = (letter: FallingLetter) => {
         if (gameState !== 'playing') return;
         setFallingLetters(prev => prev.filter(l => l.id !== letter.id));
@@ -160,10 +167,16 @@ const WordFallGame = () => {
             <div className="p-4 border-b text-center bg-background/80 backdrop-blur-sm sticky top-16 z-10 flex flex-col sm:flex-row justify-around items-center gap-4">
                 <div className="flex items-center gap-4">
                      <h1 className="text-2xl font-bold font-headline">Word Fall</h1>
-                    <Button onClick={startGame} size="sm">
-                        <Play className="mr-2 h-4 w-4" />
-                        {gameState === 'idle' ? 'Start Game' : 'Restart'}
-                    </Button>
+                     {gameState === 'playing' ? (
+                        <Button onClick={finishGame} size="sm" variant="destructive">
+                            <CheckSquare className="mr-2 h-4 w-4" /> Finish
+                        </Button>
+                     ) : (
+                        <Button onClick={startGame} size="sm">
+                            <Play className="mr-2 h-4 w-4" />
+                            {gameState === 'idle' ? 'Start Game' : 'Restart'}
+                        </Button>
+                     )}
                 </div>
                 <div className="flex items-center gap-4 text-center">
                     <div className="flex items-center gap-2 text-lg">
@@ -211,6 +224,22 @@ const WordFallGame = () => {
                         </Card>
                     </div>
                  )}
+                 {gameState === 'gameover' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <Card className="p-8 text-center bg-card/80 animate-pop-in">
+                            <h2 className="text-3xl font-bold font-headline">Game Over!</h2>
+                            <div className="grid grid-cols-2 gap-4 my-6 text-left">
+                                <div className="font-semibold">Final Score:</div><div className="text-right font-bold text-primary">{score}</div>
+                                <div className="font-semibold">Words Found:</div><div className="text-right font-bold text-primary">{foundWords.length}</div>
+                                <div className="font-semibold">Longest Word:</div><div className="text-right font-bold text-primary">{longestWord || 'N/A'}</div>
+                                <div className="font-semibold">Highest Streak:</div><div className="text-right font-bold text-primary">{streak}</div>
+                            </div>
+                            <Button onClick={startGame} size="lg">
+                                <Play className="mr-2 h-5 w-5" /> Play Again
+                            </Button>
+                        </Card>
+                    </div>
+                 )}
             </div>
              <div className="p-4 border-t bg-background/80 backdrop-blur-sm">
                  <div className="max-w-md mx-auto">
@@ -237,3 +266,5 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
+
+    
