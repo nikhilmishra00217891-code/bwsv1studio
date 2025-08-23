@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals = [...config.externals, 'canvas', 'konva/lib/index-node'];
+      config.externals.push('canvas', 'konva/lib/index-node');
     }
     return config;
   },
