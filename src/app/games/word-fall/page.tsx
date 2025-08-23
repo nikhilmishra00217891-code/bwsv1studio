@@ -141,6 +141,10 @@ const WordFallGame = () => {
                             initial={{ y: -100, x: letter.x, rotate: Math.random() * 90 - 45 }}
                             animate={{ y: gameAreaSize.height + 50 }}
                             transition={{ duration: letter.duration, ease: "linear" }}
+                            onAnimationComplete={() => {
+                                // Remove letter from state when it goes off-screen
+                                setFallingLetters(prev => prev.filter(l => l.id !== letter.id));
+                            }}
                             onClick={() => handleLetterClick(letter)}
                             className="absolute text-3xl font-bold text-primary-foreground bg-primary rounded-full w-14 h-14 flex items-center justify-center shadow-lg cursor-pointer"
                             style={{
@@ -187,3 +191,5 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
+
+    
