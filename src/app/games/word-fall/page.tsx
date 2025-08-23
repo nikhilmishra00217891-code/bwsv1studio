@@ -4,28 +4,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Undo, XCircle, Award, Star, BookOpen } from 'lucide-react';
+import { LoaderCircle, Undo, XCircle, Award, Star, BookOpen, Play } from 'lucide-react';
 import { loadDictionary, isWordValid } from '@/lib/dictionary';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
-const getRandomWord = (dictionary: Set<string>): string => {
-    const words = Array.from(dictionary);
-    const fiveLetterWords = words.filter(w => w.length >= 4 && w.length <= 7);
-    const randomIndex = Math.floor(Math.random() * fiveLetterWords.length);
-    return fiveLetterWords[randomIndex].toUpperCase();
-}
-
-const shuffle = (array: any[]) => {
-    let currentIndex = array.length, randomIndex;
-    while (currentIndex !== 0) {
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-    }
-    return array;
-}
+const LETTER_SIZE = 56; // Corresponds to w-14 h-14
+const LETTER_SPAWN_INTERVAL = 1500; // ms
 
 interface FallingLetter {
     id: number;
@@ -44,13 +30,12 @@ const WordFallGame = () => {
     const [selectedLetters, setSelectedLetters] = useState<{ id: number, text: string }[]>([]);
     const [foundWords, setFoundWords] = useState<string[]>([]);
 
-    // Phase 2 State
     const [score, setScore] = useState(0);
     const [streak, setStreak] = useState(0);
     const [longestWord, setLongestWord] = useState('');
 
-
     const gameAreaRef = useRef<HTMLDivElement>(null);
+    const letterIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -60,6 +45,12 @@ const WordFallGame = () => {
             setIsLoading(false);
         };
         init();
+
+        return () => {
+            if (letterIntervalRef.current) {
+                clearInterval(letterIntervalRef.current);
+            }
+        }
     }, []);
 
     useEffect(() => {
@@ -76,11 +67,30 @@ const WordFallGame = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, [isLoading]);
 
+    const spawnLetter = useCallback(() => {
+        if (gameState !== 'playing' || gameAreaSize.width === 0) return;
+
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const newChar = alphabet[Math.floor(Math.random() * alphabet.length)];
+        
+        const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10)); // +10 for padding
+        const laneIndex = Math.floor(Math.random() * numLanes);
+        const xPos = laneIndex * (LETTER_SIZE + 10) + (LETTER_SIZE / 2);
+
+        const newLetter: FallingLetter = {
+            id: Date.now(),
+            text: newChar,
+            x: xPos,
+            duration: Math.random() * 5 + 8, // 8-13 seconds to fall
+        };
+
+        setFallingLetters(prev => [...prev, newLetter]);
+
+    }, [gameState, gameAreaSize.width]);
+
+
     const startGame = useCallback(() => {
         if (!dictionary || gameAreaSize.width === 0) return;
-
-        const newWord = getRandomWord(dictionary);
-        const shuffledLetters = shuffle(newWord.split(''));
 
         setGameState('playing');
         setSelectedLetters([]);
@@ -88,16 +98,17 @@ const WordFallGame = () => {
         setScore(0);
         setStreak(0);
         setLongestWord('');
+        setFallingLetters([]);
         
-        setFallingLetters(shuffledLetters.map((char, index) => ({
-            id: Date.now() + index, // Use a more unique ID
-            text: char,
-            x: Math.random() * (gameAreaSize.width - 60) + 30, // Padding
-            duration: Math.random() * 5 + 8, // 8-13 seconds
-        })));
-    }, [dictionary, gameAreaSize.width]);
+        if (letterIntervalRef.current) {
+            clearInterval(letterIntervalRef.current);
+        }
+        letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
+
+    }, [dictionary, gameAreaSize.width, spawnLetter]);
 
     const handleLetterClick = (letter: FallingLetter) => {
+        if (gameState !== 'playing') return;
         setFallingLetters(prev => prev.filter(l => l.id !== letter.id));
         setSelectedLetters(prev => [...prev, { id: letter.id, text: letter.text }]);
     }
@@ -114,7 +125,7 @@ const WordFallGame = () => {
     const currentWord = selectedLetters.map(l => l.text).join('');
 
     useEffect(() => {
-        if (currentWord.length > 2 && dictionary && isWordValid(currentWord) && !foundWords.includes(currentWord)) {
+        if (currentWord.length > 2 && dictionary && isWordValid(currentWord.toLowerCase()) && !foundWords.includes(currentWord)) {
             setFoundWords(prev => [...prev, currentWord]);
             
             const points = currentWord.length * 10;
@@ -149,8 +160,9 @@ const WordFallGame = () => {
             <div className="p-4 border-b text-center bg-background/80 backdrop-blur-sm sticky top-16 z-10 flex flex-col sm:flex-row justify-around items-center gap-4">
                 <div className="flex items-center gap-4">
                      <h1 className="text-2xl font-bold font-headline">Word Fall</h1>
-                    <Button onClick={startGame} size="sm" disabled={gameState === 'playing' && fallingLetters.length > 0}>
-                        {gameState === 'idle' || fallingLetters.length === 0 ? 'Start Game' : 'New Word'}
+                    <Button onClick={startGame} size="sm">
+                        <Play className="mr-2 h-4 w-4" />
+                        {gameState === 'idle' ? 'Start Game' : 'Restart'}
                     </Button>
                 </div>
                 <div className="flex items-center gap-4 text-center">
