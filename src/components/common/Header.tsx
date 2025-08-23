@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -67,7 +67,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
   );
 };
 
-const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact"];
+const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games"];
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -251,6 +251,7 @@ const navLinks = [
   { href: "/", label: "Home", icon: Home },
   { href: "/courses", label: "Courses", icon: Compass },
   { href: "/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/games", label: "BWS Games", icon: Gamepad2 },
   { href: "/about", label: "About", icon: Info },
   { href: "/contact", label: "Contact", icon: Phone },
   { href: "/dashboard", label: "Dashboard", icon: UserCircle },
