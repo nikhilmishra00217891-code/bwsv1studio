@@ -85,7 +85,6 @@ const WordFallGame = () => {
         }
     }, [timer, gameState]);
 
-
     const startGame = useCallback(() => {
         if (!dictionary || gameAreaSize.width === 0) return;
 
@@ -106,7 +105,16 @@ const WordFallGame = () => {
             setTimer(prev => prev - 1);
         }, 1000);
 
-    }, [dictionary, gameAreaSize.width]);
+    }, [dictionary, gameAreaSize.width, spawnLetter]);
+
+    // This effect ensures startGame is called once the game area is measured
+    useEffect(() => {
+        if (gameState === 'playing' && gameAreaSize.width > 0) {
+            if (letterIntervalRef.current) clearInterval(letterIntervalRef.current);
+            letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
+        }
+    }, [gameState, gameAreaSize.width, spawnLetter]);
+
 
     const finishGame = () => {
         setGameState('gameover');
@@ -117,7 +125,7 @@ const WordFallGame = () => {
     // --- Letter and Word Logic ---
 
     const spawnLetter = useCallback(() => {
-        if (gameState !== 'playing' || gameAreaSize.width === 0) return;
+        if (gameAreaSize.width === 0) return;
 
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const newChar = alphabet[Math.floor(Math.random() * alphabet.length)];
@@ -135,16 +143,18 @@ const WordFallGame = () => {
 
         setFallingLetters(prev => [...prev, newLetter]);
 
-    }, [gameState, gameAreaSize.width]);
+    }, [gameAreaSize.width]);
     
     const handleLetterMiss = (id: number) => {
         setFallingLetters(prev => prev.filter(l => l.id !== id));
-        setLives(prev => prev - 1);
-        toast({
-            variant: "destructive",
-            title: "Life Lost!",
-            description: `A letter was missed. ${lives - 1} lives remaining.`,
-        });
+        if (gameState === 'playing') {
+            setLives(prev => prev - 1);
+            toast({
+                variant: "destructive",
+                title: "Life Lost!",
+                description: `A letter was missed. ${lives - 1} lives remaining.`,
+            });
+        }
     }
 
     const handleLetterClick = (letter: FallingLetter) => {
@@ -199,11 +209,13 @@ const WordFallGame = () => {
      const handleTimeUp = () => {
         setLives(prev => prev - 1);
         setTimer(INITIAL_TIME + TIME_BONUS_PER_LIFE);
-        toast({
-            variant: "destructive",
-            title: "Time's Up!",
-            description: `You lost a life. ${lives - 1} lives remaining.`,
-        });
+        if (lives -1 > 0) {
+            toast({
+                variant: "destructive",
+                title: "Time's Up!",
+                description: `You lost a life. ${lives - 1} lives remaining.`,
+            });
+        }
     };
     
     if (isLoading) {
@@ -317,3 +329,5 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
+
+    
