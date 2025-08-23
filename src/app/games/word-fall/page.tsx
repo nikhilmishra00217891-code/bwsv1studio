@@ -2,8 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Stage, Layer, Text, Rect } from 'react-konva';
-import Konva from 'konva';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { LoaderCircle } from 'lucide-react';
 import { loadDictionary } from '@/lib/dictionary';
@@ -11,8 +10,7 @@ import { Button } from '@/components/ui/button';
 
 const getRandomWord = (dictionary: Set<string>): string => {
     const words = Array.from(dictionary);
-    // For now, let's focus on 5-letter words for simplicity
-    const fiveLetterWords = words.filter(w => w.length === 5);
+    const fiveLetterWords = words.filter(w => w.length >= 4 && w.length <= 6);
     const randomIndex = Math.floor(Math.random() * fiveLetterWords.length);
     return fiveLetterWords[randomIndex];
 }
@@ -22,11 +20,11 @@ const shuffle = (word: string): string[] => {
 }
 
 interface FallingLetter {
-    id: number;
+    id: string;
     text: string;
     x: number;
     y: number;
-    vy: number; // velocity y
+    duration: number;
 }
 
 const WordFallGame = () => {
@@ -35,10 +33,9 @@ const WordFallGame = () => {
     const [letters, setLetters] = useState<FallingLetter[]>([]);
     const [word, setWord] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
+    const [gameAreaSize, setGameAreaSize] = useState({ width: 0, height: 0 });
 
-    const stageRef = useRef<Konva.Stage>(null);
-    const layerRef = useRef<Konva.Layer>(null);
+    const gameAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const init = async () => {
@@ -51,23 +48,20 @@ const WordFallGame = () => {
 
     useEffect(() => {
         const handleResize = () => {
-             const container = document.getElementById('game-container');
-             if (container) {
-                setStageSize({
-                    width: container.offsetWidth,
-                    height: container.offsetHeight
+             if (gameAreaRef.current) {
+                setGameAreaSize({
+                    width: gameAreaRef.current.offsetWidth,
+                    height: gameAreaRef.current.offsetHeight
                 });
              }
         };
-
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-
     }, []);
 
     const startGame = () => {
-        if (!dictionary) return;
+        if (!dictionary || gameAreaSize.width === 0) return;
 
         const newWord = getRandomWord(dictionary);
         const shuffledLetters = shuffle(newWord);
@@ -75,47 +69,20 @@ const WordFallGame = () => {
         setWord(newWord);
 
         const newLetters = shuffledLetters.map((char, index) => ({
-            id: index,
+            id: `${Date.now()}-${index}`,
             text: char.toUpperCase(),
-            x: Math.random() * (stageSize.width - 40) + 20,
-            y: - (Math.random() * 200 + 50),
-            vy: Math.random() * 1 + 0.5,
+            x: Math.random() * (gameAreaSize.width - 40),
+            y: -50,
+            duration: Math.random() * 5 + 5, // Fall duration between 5 and 10 seconds
         }));
         setLetters(newLetters);
     };
 
     useEffect(() => {
-        if (!isLoading && dictionary && stageSize.width > 0) {
+        if (!isLoading && dictionary && gameAreaSize.width > 0) {
             startGame();
         }
-    }, [isLoading, dictionary, stageSize.width]);
-
-    useEffect(() => {
-        const anim = new Konva.Animation(frame => {
-            if (!frame) return;
-
-            setLetters(prevLetters => 
-                prevLetters.map(letter => {
-                    const newY = letter.y + letter.vy;
-
-                    // Reset letter if it goes off screen
-                    if (newY > stageSize.height + 20) {
-                         return {
-                            ...letter,
-                            y: -50,
-                            x: Math.random() * (stageSize.width - 40) + 20
-                        };
-                    }
-                    
-                    return { ...letter, y: newY };
-                })
-            );
-
-        }, layerRef.current);
-
-        anim.start();
-        return () => anim.stop();
-    }, [stageSize.height, stageSize.width]);
+    }, [isLoading, dictionary, gameAreaSize.width]);
 
 
     if (isLoading) {
@@ -133,28 +100,26 @@ const WordFallGame = () => {
                 <h1 className="text-2xl font-bold font-headline">Word Fall</h1>
                  <Button onClick={startGame} size="sm" className="mt-2">New Word</Button>
             </div>
-            <div id="game-container" className="flex-grow w-full h-full">
-                <Stage width={stageSize.width} height={stageSize.height} ref={stageRef}>
-                    <Layer ref={layerRef}>
-                        {/* Background */}
-                        <Rect x={0} y={0} width={stageSize.width} height={stageSize.height} fill="hsl(var(--background))" />
-                        
-                        {letters.map(letter => (
-                            <Text
-                                key={letter.id}
-                                x={letter.x}
-                                y={letter.y}
-                                text={letter.text}
-                                fontSize={32}
-                                fontFamily='Poppins'
-                                fill="hsl(var(--primary))"
-                                shadowColor="black"
-                                shadowBlur={5}
-                                shadowOpacity={0.2}
-                            />
-                        ))}
-                    </Layer>
-                </Stage>
+            <div ref={gameAreaRef} className="flex-grow w-full h-full relative overflow-hidden">
+                <AnimatePresence>
+                    {letters.map(letter => (
+                        <motion.div
+                            key={letter.id}
+                            initial={{ x: letter.x, y: letter.y }}
+                            animate={{ y: gameAreaSize.height + 20 }}
+                            transition={{ duration: letter.duration, ease: "linear" }}
+                            onAnimationComplete={() => {
+                                setLetters(l => l.filter(item => item.id !== letter.id));
+                            }}
+                            className="absolute text-3xl font-bold text-primary"
+                            style={{
+                                textShadow: '2px 2px 4px rgba(0,0,0,0.2)'
+                            }}
+                        >
+                            {letter.text}
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
             </div>
              <div className="p-4 border-t bg-background/80 backdrop-blur-sm">
                  <div className="text-center">
