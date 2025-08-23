@@ -32,6 +32,7 @@ const WordFallGame = () => {
     const [fallingLetters, setFallingLetters] = useState<FallingLetter[]>([]);
     const [selectedLetters, setSelectedLetters] = useState<{ id: number, text: string }[]>([]);
     const [foundWords, setFoundWords] = useState<string[]>([]);
+    const [clickedLetterIds, setClickedLetterIds] = useState<Set<number>>(new Set());
 
     const [score, setScore] = useState(0);
     const [longestWord, setLongestWord] = useState('');
@@ -115,6 +116,7 @@ const WordFallGame = () => {
         setScore(0);
         setLongestWord('');
         setFallingLetters([]);
+        setClickedLetterIds(new Set());
         setLives(3);
         setTimer(INITIAL_TIME);
         
@@ -145,20 +147,30 @@ const WordFallGame = () => {
     // --- Letter and Word Logic ---
     
     const handleLetterMiss = (id: number) => {
-        setFallingLetters(prev => prev.filter(l => l.id !== id));
-        if (gameState === 'playing') {
-            setLives(prev => prev - 1);
-            toast({
-                variant: "destructive",
-                title: "Life Lost!",
-                description: `A letter was missed. ${lives - 1} lives remaining.`,
-            });
+        // Only lose a life if the letter wasn't clicked
+        if (!clickedLetterIds.has(id)) {
+            setFallingLetters(prev => prev.filter(l => l.id !== id));
+            if (gameState === 'playing') {
+                setLives(prev => prev - 1);
+                toast({
+                    variant: "destructive",
+                    title: "Life Lost!",
+                    description: `A letter was missed. ${lives - 1} lives remaining.`,
+                });
+            }
         }
     }
 
     const handleLetterClick = (letter: FallingLetter) => {
         if (gameState !== 'playing') return;
+        
+        // Add to clicked set to prevent life loss on animation complete
+        setClickedLetterIds(prev => new Set(prev).add(letter.id));
+
+        // Remove from falling letters on screen
         setFallingLetters(prev => prev.filter(l => l.id !== letter.id));
+        
+        // Add to the player's selected word
         setSelectedLetters(prev => [...prev, { id: letter.id, text: letter.text }]);
     }
     
@@ -328,3 +340,5 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
+
+    
