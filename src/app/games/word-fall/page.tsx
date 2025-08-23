@@ -23,6 +23,14 @@ interface FallingLetter {
     duration: number;
 }
 
+const easyWords = [
+    'apple', 'ball', 'cat', 'dog', 'fish', 'game', 'hand', 'idea', 'jump', 'kite',
+    'lion', 'moon', 'nest', 'orange', 'pen', 'quiz', 'rain', 'sun', 'tree', 'unit',
+    'voice', 'water', 'xenon', 'yarn', 'zebra', 'bird', 'book', 'duck', 'earth', 'fire',
+    'gold', 'house', 'ice', 'juice', 'love', 'milk', 'note', 'oven', 'pizza', 'ring'
+];
+
+
 const WordFallGame = () => {
     const [dictionary, setDictionary] = useState<Set<string> | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -49,6 +57,8 @@ const WordFallGame = () => {
     useEffect(() => {
         const init = async () => {
             const dict = await loadDictionary();
+            // Add easy words to the dictionary to ensure they are valid
+            easyWords.forEach(word => dict.add(word));
             setDictionary(dict);
             setIsLoading(false);
         };
@@ -89,6 +99,28 @@ const WordFallGame = () => {
     const spawnLetter = useCallback(() => {
         if (gameAreaSize.width === 0) return;
 
+        // For the very first spawn of a new game, use an easy word
+        if (fallingLetters.length === 0 && foundWords.length === 0) {
+             const word = easyWords[Math.floor(Math.random() * easyWords.length)].toUpperCase();
+             const letters = word.split('');
+             letters.forEach((char, index) => {
+                 setTimeout(() => {
+                    if (gameState !== 'playing') return;
+                    const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10));
+                    const laneIndex = Math.floor(Math.random() * numLanes);
+                    const xPos = laneIndex * (LETTER_SIZE + 10) + 5;
+                    const newLetter: FallingLetter = {
+                        id: Date.now() + Math.random(),
+                        text: char,
+                        x: xPos,
+                        duration: Math.random() * 5 + 8,
+                    };
+                    setFallingLetters(prev => [...prev, newLetter]);
+                 }, index * 300); // Stagger the drop
+             });
+             return;
+        }
+
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const newChar = alphabet[Math.floor(Math.random() * alphabet.length)];
         
@@ -105,7 +137,7 @@ const WordFallGame = () => {
 
         setFallingLetters(prev => [...prev, newLetter]);
 
-    }, [gameAreaSize.width]);
+    }, [gameAreaSize.width, gameState, fallingLetters.length, foundWords.length]);
 
     const startGame = useCallback(() => {
         if (!dictionary || gameAreaSize.width === 0) return;
@@ -125,17 +157,17 @@ const WordFallGame = () => {
 
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = setInterval(() => {
-            setTimer(prev => prev - 1);
+            setTimer(prev => prev > 0 ? prev - 1 : 0);
         }, 1000);
 
     }, [dictionary, gameAreaSize.width, spawnLetter]);
 
     // This effect ensures startGame is called once the game area is measured
     useEffect(() => {
-        if (gameState === 'playing' && gameAreaSize.width > 0 && !letterIntervalRef.current) {
-            letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
+        if (gameState === 'playing' && gameAreaSize.width > 0 && fallingLetters.length === 0) {
+           spawnLetter(); // Initial spawn
         }
-    }, [gameState, gameAreaSize.width, spawnLetter]);
+    }, [gameState, gameAreaSize.width, spawnLetter, fallingLetters.length]);
 
 
     const finishGame = () => {
@@ -340,5 +372,3 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
-
-    
