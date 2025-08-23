@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Undo, XCircle } from 'lucide-react';
+import { LoaderCircle, Undo, XCircle, Award, Star, BookOpen } from 'lucide-react';
 import { loadDictionary, isWordValid } from '@/lib/dictionary';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -42,6 +42,13 @@ const WordFallGame = () => {
     const [gameState, setGameState] = useState<'idle' | 'playing' | 'paused'>('idle');
     const [fallingLetters, setFallingLetters] = useState<FallingLetter[]>([]);
     const [selectedLetters, setSelectedLetters] = useState<{ id: number, text: string }[]>([]);
+    const [foundWords, setFoundWords] = useState<string[]>([]);
+
+    // Phase 2 State
+    const [score, setScore] = useState(0);
+    const [streak, setStreak] = useState(0);
+    const [longestWord, setLongestWord] = useState('');
+
 
     const gameAreaRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
@@ -77,9 +84,13 @@ const WordFallGame = () => {
 
         setGameState('playing');
         setSelectedLetters([]);
+        setFoundWords([]);
+        setScore(0);
+        setStreak(0);
+        setLongestWord('');
         
         setFallingLetters(shuffledLetters.map((char, index) => ({
-            id: index,
+            id: Date.now() + index, // Use a more unique ID
             text: char,
             x: Math.random() * (gameAreaSize.width - 60) + 30, // Padding
             duration: Math.random() * 5 + 8, // 8-13 seconds
@@ -103,17 +114,25 @@ const WordFallGame = () => {
     const currentWord = selectedLetters.map(l => l.text).join('');
 
     useEffect(() => {
-        if (currentWord.length > 1 && dictionary) {
-            if (isWordValid(currentWord)) {
-                 toast({
-                    title: `Correct! 🎉`,
-                    description: `"${currentWord}" is a valid word.`,
-                });
-                // In Phase 2, we will add points here.
-                handleClear();
+        if (currentWord.length > 2 && dictionary && isWordValid(currentWord) && !foundWords.includes(currentWord)) {
+            setFoundWords(prev => [...prev, currentWord]);
+            
+            const points = currentWord.length * 10;
+            setScore(prev => prev + points);
+            setStreak(prev => prev + 1);
+
+            if(currentWord.length > longestWord.length) {
+                setLongestWord(currentWord);
             }
+
+             toast({
+                title: `+${points} Points! 🎉`,
+                description: `"${currentWord}" is a valid word.`,
+            });
+
+            handleClear();
         }
-    }, [currentWord, dictionary, toast]);
+    }, [currentWord, dictionary, toast, foundWords, longestWord.length]);
 
 
     if (isLoading) {
@@ -127,11 +146,27 @@ const WordFallGame = () => {
     
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] bg-card/50">
-            <div className="p-4 border-b text-center bg-background/80 backdrop-blur-sm sticky top-16 z-10">
-                <h1 className="text-2xl font-bold font-headline">Word Fall</h1>
-                 <Button onClick={startGame} size="sm" className="mt-2" disabled={gameState === 'playing' && fallingLetters.length > 0}>
-                    {gameState === 'idle' || fallingLetters.length === 0 ? 'Start Game' : 'New Word'}
-                </Button>
+            <div className="p-4 border-b text-center bg-background/80 backdrop-blur-sm sticky top-16 z-10 flex flex-col sm:flex-row justify-around items-center gap-4">
+                <div className="flex items-center gap-4">
+                     <h1 className="text-2xl font-bold font-headline">Word Fall</h1>
+                    <Button onClick={startGame} size="sm" disabled={gameState === 'playing' && fallingLetters.length > 0}>
+                        {gameState === 'idle' || fallingLetters.length === 0 ? 'Start Game' : 'New Word'}
+                    </Button>
+                </div>
+                <div className="flex items-center gap-4 text-center">
+                    <div className="flex items-center gap-2 text-lg">
+                        <Award className="w-6 h-6 text-primary" /> 
+                        <span className="font-bold">{score}</span>
+                    </div>
+                     <div className="flex items-center gap-2 text-lg">
+                        <Star className="w-6 h-6 text-primary" /> 
+                        <span className="font-bold">{streak}</span>
+                    </div>
+                     <div className="flex items-center gap-2 text-lg">
+                        <BookOpen className="w-6 h-6 text-primary" /> 
+                        <span className="font-bold">{longestWord.length > 0 ? longestWord : '-'}</span>
+                    </div>
+                </div>
             </div>
             <div ref={gameAreaRef} className="flex-grow w-full h-full relative overflow-hidden bg-background">
                 <AnimatePresence>
@@ -142,7 +177,6 @@ const WordFallGame = () => {
                             animate={{ y: gameAreaSize.height + 50 }}
                             transition={{ duration: letter.duration, ease: "linear" }}
                             onAnimationComplete={() => {
-                                // Remove letter from state when it goes off-screen
                                 setFallingLetters(prev => prev.filter(l => l.id !== letter.id));
                             }}
                             onClick={() => handleLetterClick(letter)}
@@ -191,5 +225,3 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
-
-    
