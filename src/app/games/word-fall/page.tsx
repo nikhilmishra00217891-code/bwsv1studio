@@ -85,6 +85,27 @@ const WordFallGame = () => {
         }
     }, [timer, gameState]);
 
+    const spawnLetter = useCallback(() => {
+        if (gameAreaSize.width === 0) return;
+
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const newChar = alphabet[Math.floor(Math.random() * alphabet.length)];
+        
+        const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10)); // +10 for padding
+        const laneIndex = Math.floor(Math.random() * numLanes);
+        const xPos = laneIndex * (LETTER_SIZE + 10) + 5;
+
+        const newLetter: FallingLetter = {
+            id: Date.now() + Math.random(),
+            text: newChar,
+            x: xPos,
+            duration: Math.random() * 5 + 8, // 8-13 seconds to fall
+        };
+
+        setFallingLetters(prev => [...prev, newLetter]);
+
+    }, [gameAreaSize.width]);
+
     const startGame = useCallback(() => {
         if (!dictionary || gameAreaSize.width === 0) return;
 
@@ -109,8 +130,7 @@ const WordFallGame = () => {
 
     // This effect ensures startGame is called once the game area is measured
     useEffect(() => {
-        if (gameState === 'playing' && gameAreaSize.width > 0) {
-            if (letterIntervalRef.current) clearInterval(letterIntervalRef.current);
+        if (gameState === 'playing' && gameAreaSize.width > 0 && !letterIntervalRef.current) {
             letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
         }
     }, [gameState, gameAreaSize.width, spawnLetter]);
@@ -123,27 +143,6 @@ const WordFallGame = () => {
     }
     
     // --- Letter and Word Logic ---
-
-    const spawnLetter = useCallback(() => {
-        if (gameAreaSize.width === 0) return;
-
-        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        const newChar = alphabet[Math.floor(Math.random() * alphabet.length)];
-        
-        const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10)); // +10 for padding
-        const laneIndex = Math.floor(Math.random() * numLanes);
-        const xPos = laneIndex * (LETTER_SIZE + 10) + 5;
-
-        const newLetter: FallingLetter = {
-            id: Date.now() + Math.random(),
-            text: newChar,
-            x: xPos,
-            duration: Math.random() * 5 + 8, // 8-13 seconds to fall
-        };
-
-        setFallingLetters(prev => [...prev, newLetter]);
-
-    }, [gameAreaSize.width]);
     
     const handleLetterMiss = (id: number) => {
         setFallingLetters(prev => prev.filter(l => l.id !== id));
@@ -329,5 +328,3 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
-
-    
