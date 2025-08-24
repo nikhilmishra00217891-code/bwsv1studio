@@ -213,7 +213,7 @@ export default function Header() {
                         </>
                       )}
                       <div className="my-2 border-t border-border/50"></div>
-                      {user && futureNavLinks.filter(l => l.label !== 'Focus Zone').map((link) => (
+                      {user && futureNavLinks.map((link) => (
                         <NavLink key={link.label} {...link} onSelect={handleLinkClick} />
                       ))}
                     </nav>
