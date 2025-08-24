@@ -43,8 +43,7 @@ const FocusZonePage = () => {
     const handleSessionEnd = useCallback(() => {
         const newMode = mode === 'work' ? 'break' : 'work';
         setMode(newMode);
-        // This keeps the timer running for the next session
-        setIsActive(true); 
+        setIsActive(true); // Keep the timer running for the next session
         toast({
             title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
             description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
@@ -61,7 +60,7 @@ const FocusZonePage = () => {
             setTimeLeft(prev => {
                 if (prev <= 1) {
                     handleSessionEnd();
-                    return 0;
+                    return 0; // Reset to 0 before switching session
                 }
                 return prev - 1;
             });
@@ -86,7 +85,10 @@ const FocusZonePage = () => {
     };
 
     useEffect(() => {
-        setTimeLeft((mode === 'work' ? workMinutes : breakMinutes) * 60);
+        // This effect now correctly sets the time for the new session after `mode` changes
+        if (!isActive) { // Only reset if timer is not active
+             setTimeLeft((mode === 'work' ? workMinutes : breakMinutes) * 60);
+        }
     }, [mode, workMinutes, breakMinutes]);
 
 
@@ -175,7 +177,7 @@ const FocusZonePage = () => {
                         <motion.div 
                             className="absolute inset-0 rounded-full border-[10px]"
                             style={{ 
-                                borderColor: mode === 'work' ? 'hsl(var(--primary) / 0.2)' : 'hsl(var(--secondary))',
+                                borderColor: mode === 'work' ? 'hsl(var(--primary) / 0.2)' : 'hsl(var(--accent))',
                             }}
                         />
                         <motion.svg
@@ -190,7 +192,7 @@ const FocusZonePage = () => {
                                 r="45"
                                 strokeWidth="10"
                                 className={cn(
-                                    "stroke-current",
+                                    "stroke-current stroke-round",
                                     mode === 'work' ? 'text-primary' : 'text-accent'
                                 )}
                                 fill="transparent"
