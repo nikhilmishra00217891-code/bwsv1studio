@@ -20,11 +20,18 @@ import {
     Coffee,
     Shuffle,
     Repeat,
-    Timer
+    Timer,
+    Plus,
+    CheckSquare,
+    Square,
+    Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { incrementFocusStats } from '@/lib/data';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // --- IndexedDB Helper Functions ---
 const DB_NAME = 'FocusZoneDB';
@@ -81,6 +88,12 @@ const clearPlaylistFromDB = async () => {
     });
 }
 
+interface Task {
+    id: number;
+    text: string;
+    completed: boolean;
+}
+
 
 const FocusZonePage = () => {
     const [isMounted, setIsMounted] = useState(false);
@@ -98,9 +111,14 @@ const FocusZonePage = () => {
     const [isShuffle, setIsShuffle] = useState(false);
     const [isLoop, setIsLoop] = useState(false);
 
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [newTask, setNewTask] = useState('');
+
+
     const audioRef = useRef<HTMLAudioElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+    const { user } = useAuth();
     
     useEffect(() => {
         setIsMounted(true);
@@ -157,19 +175,22 @@ const FocusZonePage = () => {
         const newMode = mode === 'work' ? 'break' : 'work';
         if (mode === 'work') {
             setCycles(prev => prev + 1);
+            if (user) {
+                incrementFocusStats(user.uid, workMinutes).catch(err => console.error("Failed to update focus stats", err));
+            }
         }
         setMode(newMode);
         setTimeLeft((newMode === 'work' ? workMinutes : breakMinutes) * 60);
         setIsActive(true);
         
         const sessionEndAudio = document.getElementById('session-end-audio') as HTMLAudioElement;
-        if(sessionEndAudio) sessionEndAudio.play();
+        if(sessionEndAudio) sessionEndAudio.play().catch(e => console.log("Chime blocked"));
         
         toast({
             title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
             description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
         });
-    }, [mode, toast, workMinutes, breakMinutes]);
+    }, [mode, toast, workMinutes, breakMinutes, user]);
 
     // This effect runs the timer countdown
     useEffect(() => {
@@ -296,16 +317,31 @@ const FocusZonePage = () => {
         }
     }, [currentTrackIndex, playlist.length, playMusic]);
 
+    const handleAddTask = (e: React.FormEvent) => {
+        e.preventDefault();
+        if(newTask.trim() === '') return;
+        setTasks(prev => [...prev, { id: Date.now(), text: newTask, completed: false }]);
+        setNewTask('');
+    }
+
+    const toggleTask = (taskId: number) => {
+        setTasks(tasks.map(task => task.id === taskId ? { ...task, completed: !task.completed } : task));
+    }
+
+    const clearCompletedTasks = () => {
+        setTasks(tasks.filter(task => !task.completed));
+    }
+
     if (!isMounted) {
         return null;
     }
 
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-card/50 py-16 md:py-24 animate-fade-in">
-            <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+            <div className="container mx-auto px-6 grid lg:grid-cols-3 gap-12 items-start">
                 
                 {/* Timer Section */}
-                <div className="flex flex-col items-center gap-8">
+                <div className="lg:col-span-2 flex flex-col items-center gap-8">
                      <div className="text-center">
                         <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Focus Zone</h1>
                         <p className="text-lg text-muted-foreground mt-2">Your personal space for deep work.</p>
@@ -391,98 +427,141 @@ const FocusZonePage = () => {
                     </Card>
                 </div>
 
-                {/* Music Section */}
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <div className="flex items-center gap-3">
-                            <Music className="w-6 h-6 text-primary" />
-                            <div>
-                                <CardTitle>Your Musical Cosmos</CardTitle>
-                                <p className="text-sm text-muted-foreground">Load local music to aid your focus.</p>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center">
-                             <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
-                            <p className="font-semibold mb-2">Upload Your Focus Music</p>
-                            <p className="text-xs text-muted-foreground mb-4">Your playlist will be saved on this device.</p>
-                            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                Select Audio Files
-                            </Button>
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                multiple 
-                                accept="audio/*"
-                                className="hidden"
-                                onChange={handleFileChange}
-                            />
-                        </div>
-                        
-                        {playlist.length > 0 && (
-                            <>
-                                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                                    <p className="text-sm text-muted-foreground">Now Playing</p>
-                                    <p className="font-bold truncate">
-                                        {currentTrackIndex !== null ? playlist[currentTrackIndex].name : "No track selected"}
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center justify-center gap-2">
-                                     <Button variant="ghost" size="icon" onClick={playPrevTrack} disabled={playlist.length < 2}>
-                                        <SkipBack className="w-6 h-6" />
-                                     </Button>
-                                     <Button size="icon" className="w-16 h-16 rounded-full" onClick={toggleMusicPlay}>
-                                        {isPlayingMusic ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
-                                     </Button>
-                                      <Button variant="ghost" size="icon" onClick={playNextTrack} disabled={playlist.length < 2}>
-                                        <SkipForward className="w-6 h-6" />
-                                     </Button>
-                                </div>
-
-                                <div className="flex items-center justify-center gap-2">
-                                    <Button 
-                                        variant={isShuffle ? 'secondary' : 'ghost'} 
-                                        size="icon" 
-                                        onClick={() => setIsShuffle(!isShuffle)}
-                                        aria-label="Shuffle"
-                                    >
-                                        <Shuffle className="w-5 h-5" />
-                                    </Button>
-                                    <Button 
-                                        variant={isLoop ? 'secondary' : 'ghost'} 
-                                        size="icon" 
-                                        onClick={() => setIsLoop(!isLoop)}
-                                        aria-label="Loop"
-                                    >
-                                        <Repeat className="w-5 h-5" />
-                                    </Button>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-semibold mb-2 flex items-center gap-2"><ListMusic className="w-5 h-5"/> Playlist</h4>
-                                    <ScrollArea className="h-48 border rounded-md">
-                                        <div className="p-2 space-y-1">
-                                            {playlist.map((file, index) => (
-                                                <button
-                                                    key={index}
-                                                    onClick={() => playMusic(index)}
-                                                    className={cn(
-                                                        "w-full text-left p-2 rounded-md text-sm transition-colors",
-                                                        currentTrackIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
-                                                    )}
-                                                >
-                                                   <span className="truncate">{index + 1}. {file.name}</span>
-                                                </button>
-                                            ))}
+                <div className="space-y-6">
+                    {/* To-Do List Section */}
+                    <Card className="shadow-lg">
+                        <CardHeader>
+                            <CardTitle>Session Goals</CardTitle>
+                             <p className="text-sm text-muted-foreground">What will you accomplish now?</p>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
+                                <Input 
+                                    placeholder="Add a new task..."
+                                    value={newTask}
+                                    onChange={e => setNewTask(e.target.value)}
+                                />
+                                <Button type="submit" size="icon"><Plus/></Button>
+                            </form>
+                            <ScrollArea className="h-40">
+                                <div className="space-y-2 pr-4">
+                                    {tasks.length > 0 ? tasks.map(task => (
+                                        <div key={task.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                                            <Checkbox
+                                                id={`task-${task.id}`}
+                                                checked={task.completed}
+                                                onCheckedChange={() => toggleTask(task.id)}
+                                            />
+                                            <Label htmlFor={`task-${task.id}`} className={cn("flex-grow", task.completed && "line-through text-muted-foreground")}>
+                                                {task.text}
+                                            </Label>
                                         </div>
-                                    </ScrollArea>
+                                    )) : <p className="text-sm text-muted-foreground text-center py-4">No tasks yet. Add one!</p>}
                                 </div>
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
+                            </ScrollArea>
+                            {tasks.some(t => t.completed) && (
+                                <Button variant="outline" size="sm" className="mt-4 w-full" onClick={clearCompletedTasks}>
+                                    <Trash2 className="mr-2 h-4 w-4"/>
+                                    Clear Completed
+                                </Button>
+                            )}
+                        </CardContent>
+                    </Card>
+
+
+                    {/* Music Section */}
+                    <Card className="shadow-lg">
+                        <CardHeader>
+                            <div className="flex items-center gap-3">
+                                <Music className="w-6 h-6 text-primary" />
+                                <div>
+                                    <CardTitle>Your Musical Cosmos</CardTitle>
+                                    <p className="text-sm text-muted-foreground">Load local music to aid your focus.</p>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center">
+                                <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
+                                <p className="font-semibold mb-2">Upload Your Focus Music</p>
+                                <p className="text-xs text-muted-foreground mb-4">Your playlist will be saved on this device.</p>
+                                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                    Select Audio Files
+                                </Button>
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    multiple 
+                                    accept="audio/*"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+                            </div>
+                            
+                            {playlist.length > 0 && (
+                                <>
+                                    <div className="p-4 bg-muted/50 rounded-lg text-center">
+                                        <p className="text-sm text-muted-foreground">Now Playing</p>
+                                        <p className="font-bold truncate">
+                                            {currentTrackIndex !== null ? playlist[currentTrackIndex].name : "No track selected"}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Button variant="ghost" size="icon" onClick={playPrevTrack} disabled={playlist.length < 2}>
+                                            <SkipBack className="w-6 h-6" />
+                                        </Button>
+                                        <Button size="icon" className="w-16 h-16 rounded-full" onClick={toggleMusicPlay}>
+                                            {isPlayingMusic ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={playNextTrack} disabled={playlist.length < 2}>
+                                            <SkipForward className="w-6 h-6" />
+                                        </Button>
+                                    </div>
+
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Button 
+                                            variant={isShuffle ? 'secondary' : 'ghost'} 
+                                            size="icon" 
+                                            onClick={() => setIsShuffle(!isShuffle)}
+                                            aria-label="Shuffle"
+                                        >
+                                            <Shuffle className="w-5 h-5" />
+                                        </Button>
+                                        <Button 
+                                            variant={isLoop ? 'secondary' : 'ghost'} 
+                                            size="icon" 
+                                            onClick={() => setIsLoop(!isLoop)}
+                                            aria-label="Loop"
+                                        >
+                                            <Repeat className="w-5 h-5" />
+                                        </Button>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-semibold mb-2 flex items-center gap-2"><ListMusic className="w-5 h-5"/> Playlist</h4>
+                                        <ScrollArea className="h-48 border rounded-md">
+                                            <div className="p-2 space-y-1">
+                                                {playlist.map((file, index) => (
+                                                    <button
+                                                        key={index}
+                                                        onClick={() => playMusic(index)}
+                                                        className={cn(
+                                                            "w-full text-left p-2 rounded-md text-sm transition-colors",
+                                                            currentTrackIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
+                                                        )}
+                                                    >
+                                                    <span className="truncate">{index + 1}. {file.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </ScrollArea>
+                                    </div>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
             <audio ref={audioRef} onEnded={playNextTrack} />
             <audio id="session-end-audio" src="/chime.mp3" preload="auto" />
@@ -491,5 +570,3 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
-
-    

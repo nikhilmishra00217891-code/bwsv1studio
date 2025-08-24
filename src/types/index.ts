@@ -84,6 +84,10 @@ export interface UserProfile {
     };
     enrolledCourses?: string[];
     progress?: { [courseId: string]: number };
+    focusStats?: {
+        totalMinutes: number;
+        totalSessions: number;
+    };
 }
 
 export interface Announcement {

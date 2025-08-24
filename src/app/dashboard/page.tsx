@@ -9,15 +9,48 @@ import type { EnrolledCourse } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { MessageSquareHeart, Play, LogOut, ArrowRight, LoaderCircle, Edit } from "lucide-react";
+import { MessageSquareHeart, Play, LogOut, ArrowRight, LoaderCircle, Edit, Target, Clock, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
+const FocusStatsCard = () => {
+    const { userProfile } = useAuth();
+    const focusStats = userProfile?.focusStats || { totalMinutes: 0, totalSessions: 0 };
+    const hours = Math.floor(focusStats.totalMinutes / 60);
+    const minutes = focusStats.totalMinutes % 60;
+  
+    return (
+      <Card>
+        <CardHeader>
+            <div className="flex items-center gap-3">
+                <Target className="w-6 h-6 text-primary"/>
+                <CardTitle className="text-xl font-headline">Focus Zone Stats</CardTitle>
+            </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground flex items-center gap-2"><Clock className="w-4 h-4"/> Total Focus Time</span>
+                <span className="font-bold">{hours}h {minutes}m</span>
+            </div>
+             <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground flex items-center gap-2"><Trophy className="w-4 h-4"/> Sessions Completed</span>
+                <span className="font-bold">{focusStats.totalSessions}</span>
+            </div>
+            <Button variant="outline" className="w-full" asChild>
+                <Link href="/focus-zone">
+                    Start a New Session
+                </Link>
+            </Button>
+        </CardContent>
+      </Card>
+    );
+};
+
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [userIsFaculty, setUserIsFaculty] = useState(false);
@@ -53,7 +86,7 @@ export default function DashboardPage() {
       <div className="container mx-auto px-6 py-16 md:py-24 animate-fade-in">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold font-headline">Welcome back, {user.displayName || 'Chintu'}!</h1>
+            <h1 className="text-4xl md:text-5xl font-bold font-headline">Welcome back, {userProfile?.displayName || 'Chintu'}!</h1>
             <p className="text-lg text-muted-foreground mt-2">Ready to continue your learning journey?</p>
           </div>
           <div className="flex items-center gap-4">
@@ -127,6 +160,7 @@ export default function DashboardPage() {
                         </Button>
                     </CardContent>
                 </Card>
+                 <FocusStatsCard />
                  <Card>
                     <CardHeader>
                         <CardTitle className="text-xl font-headline">Discover New Courses</CardTitle>

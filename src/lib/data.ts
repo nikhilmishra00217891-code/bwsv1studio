@@ -1,7 +1,7 @@
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 
@@ -191,6 +191,7 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
                 onboardingComplete: false,
                 enrolledCourses: [],
                 progress: {},
+                focusStats: { totalMinutes: 0, totalSessions: 0 }
             });
         } catch (error) {
             console.error("Error creating user document:", error);
@@ -201,6 +202,14 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
 export const updateUserProfile = async (userId: string, data: Partial<UserProfile>) => {
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, data);
+};
+
+export const incrementFocusStats = async (userId: string, minutes: number) => {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+        'focusStats.totalMinutes': increment(minutes),
+        'focusStats.totalSessions': increment(1)
+    });
 };
 
 
