@@ -23,10 +23,10 @@ interface FallingLetter {
 }
 
 const easyWords = [
-    'apple', 'ball', 'cat', 'dog', 'fish', 'game', 'hand', 'idea', 'jump', 'kite',
-    'lion', 'moon', 'nest', 'orange', 'pen', 'quiz', 'rain', 'sun', 'tree', 'unit',
-    'voice', 'water', 'xenon', 'yarn', 'zebra', 'bird', 'book', 'duck', 'earth', 'fire',
-    'gold', 'house', 'ice', 'juice', 'love', 'milk', 'note', 'oven', 'pizza', 'ring'
+    'APPLE', 'BALL', 'CAT', 'DOG', 'FISH', 'GAME', 'HAND', 'IDEA', 'JUMP', 'KITE',
+    'LION', 'MOON', 'NEST', 'ORANGE', 'PEN', 'QUIZ', 'RAIN', 'SUN', 'TREE', 'UNIT',
+    'VOICE', 'WATER', 'YARN', 'ZEBRA', 'BIRD', 'BOOK', 'DUCK', 'EARTH', 'FIRE',
+    'GOLD', 'HOUSE', 'ICE', 'JUICE', 'LOVE', 'MILK', 'NOTE', 'OVEN', 'PIZZA', 'RING'
 ];
 
 
@@ -51,21 +51,30 @@ const WordFallGame = () => {
     
     const { toast } = useToast();
 
+    // --- Game Cleanup ---
+    const cleanupIntervals = () => {
+        if (letterIntervalRef.current) {
+            clearInterval(letterIntervalRef.current);
+            letterIntervalRef.current = null;
+        }
+        if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+        }
+    };
+    
     // --- Game Setup and Lifecycle ---
 
     useEffect(() => {
         const init = async () => {
             const dict = await loadDictionary();
-            easyWords.forEach(word => dict.add(word));
+            easyWords.forEach(word => dict.add(word.toLowerCase()));
             setDictionary(dict);
             setIsLoading(false);
         };
         init();
 
-        return () => {
-           if (letterIntervalRef.current) clearInterval(letterIntervalRef.current);
-           if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-        }
+        return cleanupIntervals;
     }, []);
 
     useEffect(() => {
@@ -94,35 +103,20 @@ const WordFallGame = () => {
                 });
             } else {
                 setLives(0);
-                finishGame();
+                setGameState('gameover');
             }
         }
     }, [timer, lives, gameState, toast]);
 
+    useEffect(() => {
+        if (gameState !== 'playing') {
+            cleanupIntervals();
+        }
+    }, [gameState]);
+
 
     const spawnLetter = useCallback(() => {
         if (gameAreaSize.width === 0 || gameState !== 'playing') return;
-
-        if (fallingLetters.length === 0 && foundWords.length === 0) {
-             const word = easyWords[Math.floor(Math.random() * easyWords.length)].toUpperCase();
-             const letters = word.split('');
-             letters.forEach((char, index) => {
-                 setTimeout(() => {
-                    if (gameState !== 'playing') return;
-                    const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10));
-                    const laneIndex = Math.floor(Math.random() * numLanes);
-                    const xPos = laneIndex * (LETTER_SIZE + 10) + 5;
-                    const newLetter: FallingLetter = {
-                        id: Date.now() + Math.random(),
-                        text: char,
-                        x: xPos,
-                        duration: Math.random() * 5 + 8,
-                    };
-                    setFallingLetters(prev => [...prev, newLetter]);
-                 }, index * 300);
-             });
-             return;
-        }
 
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const newChar = alphabet[Math.floor(Math.random() * alphabet.length)];
@@ -140,10 +134,12 @@ const WordFallGame = () => {
 
         setFallingLetters(prev => [...prev, newLetter]);
 
-    }, [gameAreaSize.width, gameState, fallingLetters.length, foundWords.length]);
+    }, [gameAreaSize.width, gameState]);
     
     const startGame = () => {
         if (!dictionary || gameAreaSize.width === 0) return;
+
+        cleanupIntervals();
 
         setGameState('playing');
         setSelectedLetters([]);
@@ -156,29 +152,38 @@ const WordFallGame = () => {
         
         // Use a timeout to ensure the state update has propagated before spawning letters
         setTimeout(() => {
-            spawnLetter();
-            if (letterIntervalRef.current) clearInterval(letterIntervalRef.current);
-            letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
-        }, 100);
+            const word = easyWords[Math.floor(Math.random() * easyWords.length)];
+            const letters = word.split('');
+            letters.forEach((char, index) => {
+                 setTimeout(() => {
+                    const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10));
+                    const laneIndex = Math.floor(Math.random() * numLanes);
+                    const xPos = laneIndex * (LETTER_SIZE + 10) + 5;
+                    const newLetter: FallingLetter = {
+                        id: Date.now() + Math.random(),
+                        text: char,
+                        x: xPos,
+                        duration: Math.random() * 5 + 8,
+                    };
+                    setFallingLetters(prev => [...prev, newLetter]);
+                 }, index * 300);
+            });
 
-        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-        timerIntervalRef.current = setInterval(() => {
-            setTimer(prev => prev > 0 ? prev - 1 : 0);
-        }, 1000);
+            letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
+
+            timerIntervalRef.current = setInterval(() => {
+                setTimer(prev => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+        }, 100);
 
     };
 
-    const finishGame = () => {
-        setGameState('gameover');
-        if (letterIntervalRef.current) clearInterval(letterIntervalRef.current);
-        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    }
-    
     // --- Letter and Word Logic ---
     
-    const handleLetterMiss = useCallback((id: number) => {
+    const handleAnimationComplete = (id: number) => {
+        // This function is only for when letters fall off screen, not for clicks
         setFallingLetters(prev => prev.filter(l => l.id !== id));
-    }, []);
+    };
 
 
     const handleLetterClick = (letter: FallingLetter) => {
@@ -197,6 +202,8 @@ const WordFallGame = () => {
     }
     
     const handleSubmitWord = () => {
+        if (gameState !== 'playing') return;
+
         const word = selectedLetters.map(l => l.text).join('');
         if (word.length <= 3) {
             toast({ variant: "destructive", title: "Too Short", description: "Words must be 4 letters or longer." });
@@ -277,7 +284,7 @@ const WordFallGame = () => {
                                 initial={{ y: -LETTER_SIZE, x: letter.x, rotate: Math.random() * 60 - 30 }}
                                 animate={{ y: gameAreaSize.height + LETTER_SIZE }}
                                 transition={{ duration: letter.duration, ease: "linear" }}
-                                onAnimationComplete={() => handleLetterMiss(letter.id)}
+                                onAnimationComplete={() => handleAnimationComplete(letter.id)}
                                 onClick={() => handleLetterClick(letter)}
                                 className="absolute text-3xl font-bold text-primary-foreground bg-primary rounded-full w-14 h-14 flex items-center justify-center shadow-lg cursor-pointer"
                                 style={{
@@ -343,5 +350,3 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
-
-    
