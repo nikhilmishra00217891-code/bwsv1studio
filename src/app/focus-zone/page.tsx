@@ -108,6 +108,7 @@ const FocusZonePage = () => {
                 }
             }
         }).catch(err => console.error("Could not load playlist from IndexedDB", err));
+         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -125,7 +126,7 @@ const FocusZonePage = () => {
         } catch (error) {
             console.error("Could not load settings from localStorage", error);
         }
-    }, [isMounted]);
+    }, [isMounted, isActive]);
 
     useEffect(() => {
         if (!isMounted) return;
@@ -222,7 +223,12 @@ const FocusZonePage = () => {
 
             if (currentTrackIndex === null && audioFiles.length > 0) {
                 setCurrentTrackIndex(0);
+            } else if (audioFiles.length > 0) {
+                setCurrentTrackIndex(0);
+            } else {
+                setCurrentTrackIndex(null);
             }
+
             toast({
                 title: "Music playlist updated!",
                 description: `${audioFiles.length} song(s) added to your cosmos.`,
@@ -439,7 +445,3 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
-
-    
-
-    
