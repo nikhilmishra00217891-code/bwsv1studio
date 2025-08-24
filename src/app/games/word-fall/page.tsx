@@ -141,7 +141,7 @@ const WordFallGame = () => {
         setFallingLetters(prev => [...prev, newLetter]);
 
     }, [gameAreaSize.width, gameState, fallingLetters.length, foundWords.length]);
-
+    
     const startGame = useCallback(() => {
         if (!dictionary || gameAreaSize.width === 0) return;
 
@@ -154,10 +154,12 @@ const WordFallGame = () => {
         setLives(3);
         setTimer(INITIAL_TIME);
         
-        spawnLetter();
-        
-        if (letterIntervalRef.current) clearInterval(letterIntervalRef.current);
-        letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
+        // Use a timeout to ensure the state update has propagated before spawning letters
+        setTimeout(() => {
+            spawnLetter();
+            if (letterIntervalRef.current) clearInterval(letterIntervalRef.current);
+            letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
+        }, 100);
 
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = setInterval(() => {
@@ -165,7 +167,6 @@ const WordFallGame = () => {
         }, 1000);
 
     }, [dictionary, gameAreaSize.width, spawnLetter]);
-
 
     const finishGame = () => {
         setGameState('gameover');
@@ -342,5 +343,3 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
-
-    
