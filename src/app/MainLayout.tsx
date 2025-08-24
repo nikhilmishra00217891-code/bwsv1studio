@@ -23,6 +23,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setIsMounted(true);
     }, []);
 
+    const isFocusZone = pathname === '/focus-zone';
+
     if (!isMounted) {
         return (
              <div className="flex min-h-screen flex-col">
@@ -53,12 +55,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return (
         <>
             <div className="flex min-h-screen flex-col">
-                {!isOnboarding && <Header />}
+                {!isOnboarding && !isFocusZone && <Header />}
                 <main className="flex-1">{children}</main>
-                {!isGamePage && !isAdminPage && <Footer />}
+                {!isGamePage && !isAdminPage && !isFocusZone && <Footer />}
             </div>
              {isHomepage && user && <FloatingCTA />}
-            {!isOnboarding && !isGamePage && (
+            {!isOnboarding && !isGamePage && !isFocusZone && (
                  <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
                     <FeedbackWidget />
                     <Button

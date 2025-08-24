@@ -22,16 +22,17 @@ import {
     Repeat,
     Timer,
     Plus,
-    CheckSquare,
-    Square,
-    Trash2
+    Trash2,
+    ArrowLeft
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { incrementFocusStats } from '@/lib/data';
+import { updateUserProfile } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useRouter } from 'next/navigation';
 
 // --- IndexedDB Helper Functions ---
 const DB_NAME = 'FocusZoneDB';
@@ -113,12 +114,14 @@ const FocusZonePage = () => {
 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [newTask, setNewTask] = useState('');
-
+    
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
-    const { user } = useAuth();
+    const { user, userProfile, setUserProfile } = useAuth();
+    const router = useRouter();
     
     useEffect(() => {
         setIsMounted(true);
@@ -163,20 +166,44 @@ const FocusZonePage = () => {
     }, [workMinutes, isMounted]);
 
     useEffect(() => {
-        setBreakMinutes(Math.ceil(workMinutes / 5));
         if (!isActive) {
-            setTimeLeft(workMinutes * 60);
-            setCycles(0); // Reset cycles if duration changes
+          setTimeLeft(workMinutes * 60);
         }
+        setBreakMinutes(Math.ceil(workMinutes / 5));
     }, [workMinutes, isActive]);
 
 
-    const handleSessionEnd = useCallback(() => {
+    const handleSessionEnd = useCallback(async () => {
         const newMode = mode === 'work' ? 'break' : 'work';
         if (mode === 'work') {
             setCycles(prev => prev + 1);
-            if (user) {
-                incrementFocusStats(user.uid, workMinutes).catch(err => console.error("Failed to update focus stats", err));
+            if (user && userProfile) {
+                const newTotalMinutes = (userProfile.focusStats?.totalMinutes || 0) + workMinutes;
+                const newTotalSessions = (userProfile.focusStats?.totalSessions || 0) + 1;
+                
+                const updatedProfile = {
+                    ...userProfile,
+                    focusStats: {
+                        totalMinutes: newTotalMinutes,
+                        totalSessions: newTotalSessions
+                    }
+                };
+
+                // Optimistically update local state
+                setUserProfile(updatedProfile);
+
+                try {
+                    await updateUserProfile(user.uid, {
+                        focusStats: {
+                            totalMinutes: newTotalMinutes,
+                            totalSessions: newTotalSessions
+                        }
+                    });
+                } catch(err) {
+                    console.error("Failed to update focus stats", err);
+                    // Optionally revert optimistic update on error
+                    setUserProfile(userProfile);
+                }
             }
         }
         setMode(newMode);
@@ -190,7 +217,7 @@ const FocusZonePage = () => {
             title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
             description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
         });
-    }, [mode, toast, workMinutes, breakMinutes, user]);
+    }, [mode, toast, workMinutes, breakMinutes, user, userProfile, setUserProfile]);
 
     // This effect runs the timer countdown
     useEffect(() => {
@@ -331,13 +358,26 @@ const FocusZonePage = () => {
     const clearCompletedTasks = () => {
         setTasks(tasks.filter(task => !task.completed));
     }
+    
+    const handleBackNavigation = () => {
+        if (isActive) {
+            setShowExitConfirm(true);
+        } else {
+            router.back();
+        }
+    };
 
     if (!isMounted) {
         return null;
     }
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-card/50 py-16 md:py-24 animate-fade-in">
+        <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in">
+            <div className="absolute top-6 left-6">
+                <Button variant="outline" size="icon" onClick={handleBackNavigation}>
+                    <ArrowLeft />
+                </Button>
+            </div>
             <div className="container mx-auto px-6 grid lg:grid-cols-3 gap-12 items-start">
                 
                 {/* Timer Section */}
@@ -565,6 +605,20 @@ const FocusZonePage = () => {
             </div>
             <audio ref={audioRef} onEnded={playNextTrack} />
             <audio id="session-end-audio" src="/chime.mp3" preload="auto" />
+            <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your current focus session is still active. Leaving now will reset your progress for this session.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Stay in Focus</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => router.back()}>Leave Anyway</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };
