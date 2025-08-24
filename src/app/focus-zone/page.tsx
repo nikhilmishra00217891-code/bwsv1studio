@@ -268,11 +268,11 @@ const FocusZonePage = () => {
             const newFiles = Array.from(event.target.files);
             const audioFiles = newFiles.filter(file => file.type.startsWith('audio/'));
 
-            if (audioFiles.length > 1) {
+            if (audioFiles.length > 10) {
                 toast({
                     variant: "destructive",
                     title: "Playlist Limit Reached",
-                    description: "You can only upload a maximum of 1 song.",
+                    description: "You can only upload a maximum of 10 songs.",
                 });
                 // Clear the file input so the user can try again
                 if(fileInputRef.current) {
@@ -298,7 +298,7 @@ const FocusZonePage = () => {
 
             toast({
                 title: "Music updated!",
-                description: `${audioFiles.length} song added to your cosmos.`,
+                description: `${audioFiles.length} song(s) added to your cosmos.`,
             })
         }
     };
@@ -358,13 +358,6 @@ const FocusZonePage = () => {
         }
     }, [currentTrackIndex, playlist.length, playMusic]);
 
-    const handleAddTask = (e: React.FormEvent) => {
-        e.preventDefault();
-        if(newTask.trim() === '') return;
-        setTasks(prev => [...prev, { id: Date.now(), text: newTask, completed: false }]);
-        setNewTask('');
-    }
-
     const toggleTask = useCallback((taskId: number) => {
         setTasks(prevTasks => 
             prevTasks.map(task => 
@@ -372,6 +365,13 @@ const FocusZonePage = () => {
             )
         );
     }, []);
+
+    const handleAddTask = (e: React.FormEvent) => {
+        e.preventDefault();
+        if(newTask.trim() === '') return;
+        setTasks(prev => [...prev, { id: Date.now(), text: newTask, completed: false }]);
+        setNewTask('');
+    }
 
     const clearCompletedTasks = () => {
         setTasks(tasks.filter(task => !task.completed));
@@ -381,7 +381,7 @@ const FocusZonePage = () => {
         if (isActive) {
             setShowExitConfirm(true);
         } else {
-            router.back();
+            router.push('/');
         }
     };
 
@@ -542,9 +542,11 @@ const FocusZonePage = () => {
                             <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center">
                                 <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
                                 <p className="font-semibold mb-2">Upload Your Focus Music</p>
-                                <p className="text-xs text-muted-foreground mb-4">Your file will be saved on this device. (Max 1 song)</p>
+                                <p className="text-xs text-muted-foreground mb-4">
+                                    Your files will be saved on this device. ({playlist.length}/10 songs)
+                                </p>
                                 <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                    Select Audio File
+                                    Select Audio Files
                                 </Button>
                                 <input 
                                     type="file" 
@@ -632,8 +634,8 @@ const FocusZonePage = () => {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Stay in Focus</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => router.back()}>Leave Anyway</AlertDialogAction>
+                        <AlertDialogCancel>Nope</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => router.push('/')}>Confirm</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
