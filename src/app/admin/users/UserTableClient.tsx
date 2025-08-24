@@ -266,7 +266,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
         </div>
 
       <div className="border rounded-lg">
-        <ScrollArea className="h-[calc(100vh-22rem)]">
+        <ScrollArea>
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
