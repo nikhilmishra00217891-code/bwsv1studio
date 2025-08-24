@@ -209,8 +209,8 @@ const WordFallGame = () => {
         if (gameState !== 'playing') return;
 
         const word = selectedLetters.map(l => l.text).join('');
-        if (word.length <= 3) {
-            toast({ variant: "destructive", title: "Too Short", description: "Words must be 4 letters or longer." });
+        if (word.length < 2) {
+            toast({ variant: "destructive", title: "Too Short", description: "Words must be at least 2 letters long." });
             return;
         }
 
@@ -342,7 +342,7 @@ const WordFallGame = () => {
                                     <XCircle className="h-4 w-4" /><span className="sr-only">Clear</span>
                                 </Button>
                             </div>
-                             <Button onClick={handleSubmitWord} size="lg" className="h-16" disabled={currentWord.length <= 3 || gameState !== 'playing'}>
+                             <Button onClick={handleSubmitWord} size="lg" className="h-16" disabled={currentWord.length === 0 || gameState !== 'playing'}>
                                 <Send className="h-6 w-6" />
                             </Button>
                          </div>
@@ -354,5 +354,7 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
+
+    
 
     
