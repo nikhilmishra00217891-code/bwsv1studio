@@ -112,7 +112,6 @@ const FocusZonePage = () => {
 
     useEffect(() => {
         if (!isMounted) return;
-        // Load settings from localStorage
         try {
             const savedDuration = localStorage.getItem('focusZoneWorkMinutes');
             if (savedDuration) {
@@ -211,14 +210,13 @@ const FocusZonePage = () => {
             
             // Clear existing playlist and DB
             await clearPlaylistFromDB();
-            setPlaylist([]);
             
             // Save new files to DB
             for (const file of audioFiles) {
                 await saveTrackToDB(file);
             }
 
-            // Reload playlist from DB
+            // Reload playlist from DB and update state once
             const updatedPlaylist = await getPlaylistFromDB();
             setPlaylist(updatedPlaylist);
 
@@ -441,5 +439,7 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
+
+    
 
     
