@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
 const LETTER_SIZE = 56; // Corresponds to w-14 h-14
-const LETTER_SPAWN_INTERVAL = 1800; // ms
+const WORD_SPAWN_INTERVAL = 5000; // ms between new words
 const INITIAL_TIME = 10;
 const TIME_BONUS_PER_LIFE = 10;
 const TIME_BONUS_FACTOR = 1.5;
@@ -29,9 +29,19 @@ const easyWords = [
     'GOLD', 'HOUSE', 'ICE', 'JUICE', 'LOVE', 'MILK', 'NOTE', 'OVEN', 'PIZZA', 'RING'
 ];
 
+// Fisher-Yates shuffle algorithm
+const shuffleArray = (array: any[]) => {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 
 const WordFallGame = () => {
     const [dictionary, setDictionary] = useState<Set<string> | null>(null);
+    const [wordList, setWordList] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [gameAreaSize, setGameAreaSize] = useState({ width: 0, height: 0 });
     
@@ -46,16 +56,16 @@ const WordFallGame = () => {
     const [timer, setTimer] = useState(INITIAL_TIME);
 
     const gameAreaRef = useRef<HTMLDivElement>(null);
-    const letterIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const wordIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
     
     const { toast } = useToast();
 
     // --- Game Cleanup ---
     const cleanupIntervals = () => {
-        if (letterIntervalRef.current) {
-            clearInterval(letterIntervalRef.current);
-            letterIntervalRef.current = null;
+        if (wordIntervalRef.current) {
+            clearInterval(wordIntervalRef.current);
+            wordIntervalRef.current = null;
         }
         if (timerIntervalRef.current) {
             clearInterval(timerIntervalRef.current);
@@ -68,8 +78,11 @@ const WordFallGame = () => {
     useEffect(() => {
         const init = async () => {
             const dict = await loadDictionary();
-            easyWords.forEach(word => dict.add(word.toLowerCase()));
             setDictionary(dict);
+            // Create a word list for picking random words from
+            const validWords = Array.from(dict).filter(word => word.length >= 4 && word.length <= 8);
+            easyWords.forEach(word => validWords.push(word.toLowerCase()));
+            setWordList(validWords);
             setIsLoading(false);
         };
         init();
@@ -108,31 +121,37 @@ const WordFallGame = () => {
         }
     }, [timer, lives, gameState, toast]);
 
-    const spawnLetter = useCallback(() => {
-        if (gameAreaSize.width === 0) return;
 
-        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        const newChar = alphabet[Math.floor(Math.random() * alphabet.length)];
-        
-        const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10));
-        const laneIndex = Math.floor(Math.random() * numLanes);
-        const xPos = laneIndex * (LETTER_SIZE + 10) + 5;
+    const spawnWord = useCallback(() => {
+        if (gameAreaSize.width === 0 || wordList.length === 0) return;
+    
+        const word = wordList[Math.floor(Math.random() * wordList.length)].toUpperCase();
+        const shuffledLetters = shuffleArray(word.split(''));
+    
+        shuffledLetters.forEach((char, index) => {
+            setTimeout(() => {
+                const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10));
+                const laneIndex = Math.floor(Math.random() * numLanes);
+                const xPos = laneIndex * (LETTER_SIZE + 10) + 5;
+    
+                const newLetter: FallingLetter = {
+                    id: Date.now() + Math.random(),
+                    text: char,
+                    x: xPos,
+                    duration: Math.random() * 5 + 8,
+                };
+    
+                setFallingLetters(prev => [...prev, newLetter]);
+            }, index * 400); // Stagger the letter drops
+        });
+    
+    }, [gameAreaSize.width, wordList]);
 
-        const newLetter: FallingLetter = {
-            id: Date.now() + Math.random(),
-            text: newChar,
-            x: xPos,
-            duration: Math.random() * 5 + 8,
-        };
-
-        setFallingLetters(prev => [...prev, newLetter]);
-
-    }, [gameAreaSize.width]);
 
     // This effect starts the letter spawning interval when the game starts
     useEffect(() => {
         if (gameState === 'playing') {
-            letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
+            wordIntervalRef.current = setInterval(spawnWord, WORD_SPAWN_INTERVAL);
             timerIntervalRef.current = setInterval(() => {
                 setTimer(prev => (prev > 0 ? prev - 1 : 0));
             }, 1000);
@@ -141,15 +160,14 @@ const WordFallGame = () => {
         }
         
         return cleanupIntervals;
-    }, [gameState, spawnLetter]);
+    }, [gameState, spawnWord]);
 
 
     const startGame = () => {
         if (!dictionary || gameAreaSize.width === 0) return;
 
-        setGameState('idle'); // Temporarily set to idle to stop intervals via useEffect
+        setGameState('idle'); 
 
-        // Use a timeout to ensure state is processed before restarting
         setTimeout(() => {
             setGameState('playing');
             setSelectedLetters([]);
@@ -160,30 +178,14 @@ const WordFallGame = () => {
             setLives(3);
             setTimer(INITIAL_TIME);
             
-            const word = easyWords[Math.floor(Math.random() * easyWords.length)];
-            const letters = word.split('');
-            
-            letters.forEach((char, index) => {
-                 setTimeout(() => {
-                    const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10));
-                    const laneIndex = Math.floor(Math.random() * numLanes);
-                    const xPos = laneIndex * (LETTER_SIZE + 10) + 5;
-                    const newLetter: FallingLetter = {
-                        id: Date.now() + Math.random(),
-                        text: char,
-                        x: xPos,
-                        duration: Math.random() * 5 + 8,
-                    };
-                    setFallingLetters(prev => [...prev, newLetter]);
-                 }, index * 300);
-            });
+            // Spawn the very first word immediately
+            spawnWord();
         }, 50);
     };
 
     // --- Letter and Word Logic ---
     
     const handleAnimationComplete = (id: number) => {
-        // This function is only for when letters fall off screen, not for clicks
         setFallingLetters(prev => prev.filter(l => l.id !== id));
     };
 
@@ -352,3 +354,5 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
+
+    
