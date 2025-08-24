@@ -68,7 +68,7 @@ const getPlaylistFromDB = async (): Promise<File[]> => {
     const db = await openDB();
     return new Promise((resolve, reject) => {
         const transaction = db.transaction(STORE_NAME, 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
+        const store = transaction.objectStore( STORE_NAME );
         const request = store.getAll();
         request.onsuccess = () => {
             const tracks = request.result.map(item => item.file);
@@ -149,6 +149,7 @@ const FocusZonePage = () => {
                 const parsedDuration = parseInt(savedDuration, 10);
                 if(!isNaN(parsedDuration) && parsedDuration > 0) {
                     setWorkMinutes(parsedDuration);
+                    setTimeLeft(parsedDuration * 60);
                 }
             }
         } catch (error) {
@@ -167,7 +168,7 @@ const FocusZonePage = () => {
 
     useEffect(() => {
         if (!isActive) {
-          setTimeLeft(workMinutes * 60);
+            setTimeLeft(workMinutes * 60);
         }
         setBreakMinutes(Math.ceil(workMinutes / 5));
     }, [workMinutes, isActive]);
@@ -351,9 +352,13 @@ const FocusZonePage = () => {
         setNewTask('');
     }
 
-    const toggleTask = (taskId: number) => {
-        setTasks(tasks.map(task => task.id === taskId ? { ...task, completed: !task.completed } : task));
-    }
+    const toggleTask = useCallback((taskId: number) => {
+        setTasks(prevTasks => 
+            prevTasks.map(task => 
+                task.id === taskId ? { ...task, completed: !task.completed } : task
+            )
+        );
+    }, []);
 
     const clearCompletedTasks = () => {
         setTasks(tasks.filter(task => !task.completed));
@@ -624,3 +629,6 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
+
+
+    
