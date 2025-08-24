@@ -43,34 +43,41 @@ const FocusZonePage = () => {
     const handleSessionEnd = useCallback(() => {
         const newMode = mode === 'work' ? 'break' : 'work';
         setMode(newMode);
+        setTimeLeft((newMode === 'work' ? workMinutes : breakMinutes) * 60);
         setIsActive(true); // Keep the timer running for the next session
+        
+        const sessionEndAudio = document.getElementById('session-end-audio') as HTMLAudioElement;
+        if(sessionEndAudio) sessionEndAudio.play();
+        
         toast({
             title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
             description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
         });
-        const sessionEndAudio = document.getElementById('session-end-audio') as HTMLAudioElement;
-        if(sessionEndAudio) sessionEndAudio.play();
-    }, [mode, toast]);
+    }, [mode, workMinutes, breakMinutes, toast]);
 
-
+    // This effect runs the timer countdown
     useEffect(() => {
         if (!isActive) return;
 
         const interval = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    handleSessionEnd();
-                    return 0; // Reset to 0 before switching session
-                }
-                return prev - 1;
-            });
+            setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isActive, handleSessionEnd]);
+    }, [isActive]);
+    
+    // This effect handles the session change when time runs out
+    useEffect(() => {
+        if (timeLeft === 0 && isActive) {
+            handleSessionEnd();
+        }
+    }, [timeLeft, isActive, handleSessionEnd]);
     
     useEffect(() => {
-        resetTimer();
+        if (!isActive) {
+            setTimeLeft(workMinutes * 60);
+            setMode('work');
+        }
     }, [workMinutes]);
 
     const handleWorkMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +130,7 @@ const FocusZonePage = () => {
         }
     };
     
-    const playMusic = (index: number) => {
+    const playMusic = useCallback((index: number) => {
         if (index >= 0 && index < playlist.length && audioRef.current) {
             setCurrentTrackIndex(index);
             const trackUrl = URL.createObjectURL(playlist[index]);
@@ -132,7 +139,7 @@ const FocusZonePage = () => {
                 setIsPlayingMusic(true);
             }).catch(e => console.error("Playback failed", e));
         }
-    }
+    }, [playlist]);
     
     const toggleMusicPlay = () => {
         if (!audioRef.current) return;
@@ -149,14 +156,14 @@ const FocusZonePage = () => {
     };
     
     const playNextTrack = useCallback(() => {
-        if (currentTrackIndex !== null) {
+        if (currentTrackIndex !== null && playlist.length > 0) {
             const nextIndex = (currentTrackIndex + 1) % playlist.length;
             playMusic(nextIndex);
         }
     }, [currentTrackIndex, playlist.length, playMusic]);
     
     const playPrevTrack = useCallback(() => {
-         if (currentTrackIndex !== null) {
+         if (currentTrackIndex !== null && playlist.length > 0) {
             const prevIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
             playMusic(prevIndex);
         }
@@ -233,6 +240,7 @@ const FocusZonePage = () => {
                                     value={workMinutes}
                                     onChange={handleWorkMinutesChange}
                                     min={1}
+                                    disabled={isActive}
                                 />
                             </div>
                             <div className="text-2xl text-muted-foreground pb-2">:</div>
@@ -327,3 +335,5 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
+
+    
