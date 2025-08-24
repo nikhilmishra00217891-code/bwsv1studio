@@ -39,6 +39,20 @@ const FocusZonePage = () => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+    
+    const handleSessionEnd = useCallback(() => {
+        const newMode = mode === 'work' ? 'break' : 'work';
+        setMode(newMode);
+        // This keeps the timer running for the next session
+        setIsActive(true); 
+        toast({
+            title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
+            description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
+        });
+        const sessionEndAudio = document.getElementById('session-end-audio') as HTMLAudioElement;
+        if(sessionEndAudio) sessionEndAudio.play();
+    }, [mode, toast]);
+
 
     useEffect(() => {
         if (!isActive) return;
@@ -54,7 +68,7 @@ const FocusZonePage = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isActive, mode]);
+    }, [isActive, handleSessionEnd]);
     
     useEffect(() => {
         resetTimer();
@@ -69,17 +83,6 @@ const FocusZonePage = () => {
             setWorkMinutes(minutes);
             setBreakMinutes(Math.ceil(minutes / 5));
         }
-    };
-
-    const handleSessionEnd = () => {
-        const newMode = mode === 'work' ? 'break' : 'work';
-        setMode(newMode);
-        setIsActive(false);
-        toast({
-            title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
-            description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
-        });
-        document.getElementById('session-end-audio')?.play();
     };
 
     useEffect(() => {
@@ -322,5 +325,7 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
+
+    
 
     
