@@ -267,6 +267,19 @@ const FocusZonePage = () => {
         if (event.target.files) {
             const newFiles = Array.from(event.target.files);
             const audioFiles = newFiles.filter(file => file.type.startsWith('audio/'));
+
+            if (audioFiles.length > 10) {
+                toast({
+                    variant: "destructive",
+                    title: "Playlist Limit Reached",
+                    description: "You can only upload a maximum of 10 songs.",
+                });
+                // Clear the file input so the user can try again
+                if(fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                }
+                return;
+            }
             
             await clearPlaylistFromDB();
             
@@ -529,7 +542,7 @@ const FocusZonePage = () => {
                             <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center">
                                 <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
                                 <p className="font-semibold mb-2">Upload Your Focus Music</p>
-                                <p className="text-xs text-muted-foreground mb-4">Your playlist will be saved on this device.</p>
+                                <p className="text-xs text-muted-foreground mb-4">Your playlist will be saved on this device. (Max 10)</p>
                                 <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                                     Select Audio Files
                                 </Button>
@@ -630,5 +643,7 @@ const FocusZonePage = () => {
 
 export default FocusZonePage;
 
+
+    
 
     
