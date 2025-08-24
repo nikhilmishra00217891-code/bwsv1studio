@@ -11,11 +11,26 @@ import Link from "next/link";
 import FeedbackWidget from "@/components/common/FeedbackWidget";
 import { useAuth } from "@/components/auth/AuthProvider";
 import SuspendedAccountFirewall from "@/components/auth/SuspendedAccountFirewall";
+import { useState, useEffect } from "react";
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { user, userProfile } = useAuth();
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    if (!isMounted) {
+        return (
+             <div className="flex min-h-screen flex-col">
+                <main className="flex-1">{children}</main>
+            </div>
+        )
+    }
+
     const isOnboarding = pathname === '/onboarding';
     const isHomepage = pathname === '/';
     const isGamePage = pathname.startsWith('/games/');
