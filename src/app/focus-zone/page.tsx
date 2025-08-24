@@ -12,13 +12,15 @@ import {
     Pause, 
     RotateCcw, 
     Music, 
-    Volume2, 
     SkipForward, 
     SkipBack, 
     ListMusic, 
     UploadCloud,
     Brain,
-    Coffee
+    Coffee,
+    Shuffle,
+    Repeat,
+    Timer
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -88,10 +90,13 @@ const FocusZonePage = () => {
     const [mode, setMode] = useState<'work' | 'break'>('work');
     const [timeLeft, setTimeLeft] = useState(25 * 60);
     const [isActive, setIsActive] = useState(false);
+    const [cycles, setCycles] = useState(0);
 
     const [playlist, setPlaylist] = useState<File[]>([]);
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
     const [isPlayingMusic, setIsPlayingMusic] = useState(false);
+    const [isShuffle, setIsShuffle] = useState(false);
+    const [isLoop, setIsLoop] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -143,12 +148,16 @@ const FocusZonePage = () => {
         setBreakMinutes(Math.ceil(workMinutes / 5));
         if (!isActive) {
             setTimeLeft(workMinutes * 60);
+            setCycles(0); // Reset cycles if duration changes
         }
     }, [workMinutes, isActive]);
 
 
     const handleSessionEnd = useCallback(() => {
         const newMode = mode === 'work' ? 'break' : 'work';
+        if (mode === 'work') {
+            setCycles(prev => prev + 1);
+        }
         setMode(newMode);
         setTimeLeft((newMode === 'work' ? workMinutes : breakMinutes) * 60);
         setIsActive(true);
@@ -194,6 +203,7 @@ const FocusZonePage = () => {
         setIsActive(false);
         setMode('work');
         setTimeLeft(workMinutes * 60);
+        setCycles(0);
     };
 
     const formatTime = (seconds: number) => {
@@ -257,11 +267,27 @@ const FocusZonePage = () => {
     };
     
     const playNextTrack = useCallback(() => {
-        if (currentTrackIndex !== null && playlist.length > 0) {
-            const nextIndex = (currentTrackIndex + 1) % playlist.length;
-            playMusic(nextIndex);
+        if (isLoop && currentTrackIndex !== null) {
+            if (audioRef.current) {
+                audioRef.current.currentTime = 0;
+                audioRef.current.play();
+            }
+            return;
         }
-    }, [currentTrackIndex, playlist.length, playMusic]);
+
+        if (currentTrackIndex !== null && playlist.length > 0) {
+            if(isShuffle) {
+                let randomIndex;
+                do {
+                    randomIndex = Math.floor(Math.random() * playlist.length);
+                } while (playlist.length > 1 && randomIndex === currentTrackIndex);
+                playMusic(randomIndex);
+            } else {
+                const nextIndex = (currentTrackIndex + 1) % playlist.length;
+                playMusic(nextIndex);
+            }
+        }
+    }, [currentTrackIndex, playlist, playMusic, isShuffle, isLoop]);
     
     const playPrevTrack = useCallback(() => {
          if (currentTrackIndex !== null && playlist.length > 0) {
@@ -315,12 +341,15 @@ const FocusZonePage = () => {
                             />
                         </motion.svg>
                         <div className="relative text-center">
-                            <div className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                            <div className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center justify-center gap-2">
                                 {mode === 'work' ? <Brain className="w-5 h-5"/> : <Coffee className="w-5 h-5"/>}
                                 {mode === 'work' ? 'Focus Session' : 'Break Time'}
                             </div>
                             <div className="text-6xl md:text-7xl font-bold font-mono tracking-tighter my-2">
                                 {formatTime(timeLeft)}
+                            </div>
+                            <div className="font-semibold text-muted-foreground">
+                                Cycle: {cycles}
                             </div>
                         </div>
                     </div>
@@ -349,7 +378,9 @@ const FocusZonePage = () => {
                                     disabled={isActive}
                                 />
                             </div>
-                            <div className="text-2xl text-muted-foreground pb-2">:</div>
+                             <div className="pb-2 text-muted-foreground">
+                                <Timer className="w-6 h-6"/>
+                            </div>
                              <div>
                                 <Label>Break (mins)</Label>
                                 <div className="h-10 flex items-center justify-center rounded-md border bg-muted px-3 font-bold text-muted-foreground">
@@ -398,7 +429,7 @@ const FocusZonePage = () => {
                                     </p>
                                 </div>
 
-                                <div className="flex items-center justify-center gap-4">
+                                <div className="flex items-center justify-center gap-2">
                                      <Button variant="ghost" size="icon" onClick={playPrevTrack} disabled={playlist.length < 2}>
                                         <SkipBack className="w-6 h-6" />
                                      </Button>
@@ -408,6 +439,25 @@ const FocusZonePage = () => {
                                       <Button variant="ghost" size="icon" onClick={playNextTrack} disabled={playlist.length < 2}>
                                         <SkipForward className="w-6 h-6" />
                                      </Button>
+                                </div>
+
+                                <div className="flex items-center justify-center gap-2">
+                                    <Button 
+                                        variant={isShuffle ? 'secondary' : 'ghost'} 
+                                        size="icon" 
+                                        onClick={() => setIsShuffle(!isShuffle)}
+                                        aria-label="Shuffle"
+                                    >
+                                        <Shuffle className="w-5 h-5" />
+                                    </Button>
+                                    <Button 
+                                        variant={isLoop ? 'secondary' : 'ghost'} 
+                                        size="icon" 
+                                        onClick={() => setIsLoop(!isLoop)}
+                                        aria-label="Loop"
+                                    >
+                                        <Repeat className="w-5 h-5" />
+                                    </Button>
                                 </div>
 
                                 <div>
@@ -441,3 +491,5 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
+
+    
