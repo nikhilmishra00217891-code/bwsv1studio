@@ -3,8 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Undo, XCircle, Award, Star, BookOpen, Play, CheckSquare, Heart, TimerIcon, Send } from 'lucide-react';
+import { LoaderCircle, Undo, XCircle, Award, Play, Send, Heart, TimerIcon } from 'lucide-react';
 import { loadDictionary, isWordValid } from '@/lib/dictionary';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -50,8 +49,6 @@ const WordFallGame = () => {
     const letterIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
     
-    const clickedLetterIdsRef = useRef<Set<number>>(new Set());
-
     const { toast } = useToast();
 
     // --- Game Setup and Lifecycle ---
@@ -154,7 +151,6 @@ const WordFallGame = () => {
         setScore(0);
         setLongestWord('');
         setFallingLetters([]);
-        clickedLetterIdsRef.current.clear();
         setLives(3);
         setTimer(INITIAL_TIME);
         
@@ -180,20 +176,13 @@ const WordFallGame = () => {
     // --- Letter and Word Logic ---
     
     const handleLetterMiss = useCallback((id: number) => {
-        if (clickedLetterIdsRef.current.has(id)) {
-            return;
-        }
         setFallingLetters(prev => prev.filter(l => l.id !== id));
     }, []);
 
 
     const handleLetterClick = (letter: FallingLetter) => {
         if (gameState !== 'playing') return;
-        
-        clickedLetterIdsRef.current.add(letter.id);
-        
         setFallingLetters(prev => prev.filter(l => l.id !== letter.id));
-        
         setSelectedLetters(prev => [...prev, { id: letter.id, text: letter.text }]);
     }
     
@@ -278,76 +267,80 @@ const WordFallGame = () => {
                     </div>
                 </div>
             </div>
-            <div ref={gameAreaRef} className="flex-grow w-full h-full relative overflow-hidden bg-background">
-                <AnimatePresence>
-                    {fallingLetters.map(letter => (
-                        <motion.button
-                            key={letter.id}
-                            initial={{ y: -LETTER_SIZE, x: letter.x, rotate: Math.random() * 60 - 30 }}
-                            animate={{ y: gameAreaSize.height + LETTER_SIZE }}
-                            transition={{ duration: letter.duration, ease: "linear" }}
-                            onAnimationComplete={() => handleLetterMiss(letter.id)}
-                            onClick={() => handleLetterClick(letter)}
-                            className="absolute text-3xl font-bold text-primary-foreground bg-primary rounded-full w-14 h-14 flex items-center justify-center shadow-lg cursor-pointer"
-                            style={{
-                                textShadow: '2px 2px 4px rgba(0,0,0,0.2)'
-                            }}
-                            whileHover={{ scale: 1.1, y: -10, transition: { duration: 0.1 } }}
-                            whileTap={{ scale: 0.9 }}
-                        >
-                            {letter.text}
-                        </motion.button>
-                    ))}
-                </AnimatePresence>
-                 {gameState === 'idle' && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <Card className="p-8 text-center bg-card/80">
-                            <h2 className="text-2xl font-bold">Ready to Play?</h2>
-                            <p className="text-muted-foreground mt-2">Click "Start Game" to begin!</p>
-                        </Card>
-                    </div>
-                 )}
-                 {gameState === 'gameover' && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                        <Card className="p-8 text-center bg-card/80 animate-pop-in">
-                            <h2 className="text-3xl font-bold font-headline">Game Over!</h2>
-                            <div className="grid grid-cols-2 gap-4 my-6 text-left">
-                                <div className="font-semibold">Final Score:</div><div className="text-right font-bold text-primary">{score}</div>
-                                <div className="font-semibold">Words Found:</div><div className="text-right font-bold text-primary">{foundWords.length}</div>
-                                <div className="font-semibold">Longest Word:</div><div className="text-right font-bold text-primary">{longestWord || 'N/A'}</div>
-                            </div>
-                            <Button onClick={startGame} size="lg">
-                                <Play className="mr-2 h-5 w-5" /> Play Again
-                            </Button>
-                        </Card>
-                    </div>
-                 )}
-            </div>
-             <div className="p-4 border-t bg-background/80 backdrop-blur-sm">
-                 <div className="max-w-md mx-auto">
-                    <p className="text-sm text-muted-foreground text-center mb-1">Your Word</p>
-                     <div className="flex items-center gap-2">
-                        <Card className="flex-grow h-16 bg-muted">
-                             <div className="flex items-center justify-center h-full text-3xl font-bold tracking-widest uppercase">
-                                 {currentWord || <span className="text-muted-foreground/50 text-base normal-case">...</span>}
-                             </div>
-                        </Card>
-                        <div className="flex flex-col gap-1">
-                             <Button onClick={handleUndo} variant="outline" size="icon" className="h-8 w-8" disabled={selectedLetters.length === 0 || gameState !== 'playing'}>
-                                <Undo className="h-4 w-4" /><span className="sr-only">Undo</span>
-                            </Button>
-                             <Button onClick={handleClear} variant="destructive" size="icon" className="h-8 w-8" disabled={selectedLetters.length === 0 || gameState !== 'playing'}>
-                                <XCircle className="h-4 w-4" /><span className="sr-only">Clear</span>
-                            </Button>
+            <div className="flex-grow w-full relative bg-background flex flex-col">
+                <div ref={gameAreaRef} className="w-full flex-grow relative overflow-hidden">
+                    <AnimatePresence>
+                        {fallingLetters.map(letter => (
+                            <motion.button
+                                key={letter.id}
+                                initial={{ y: -LETTER_SIZE, x: letter.x, rotate: Math.random() * 60 - 30 }}
+                                animate={{ y: gameAreaSize.height + LETTER_SIZE }}
+                                transition={{ duration: letter.duration, ease: "linear" }}
+                                onAnimationComplete={() => handleLetterMiss(letter.id)}
+                                onClick={() => handleLetterClick(letter)}
+                                className="absolute text-3xl font-bold text-primary-foreground bg-primary rounded-full w-14 h-14 flex items-center justify-center shadow-lg cursor-pointer"
+                                style={{
+                                    textShadow: '2px 2px 4px rgba(0,0,0,0.2)'
+                                }}
+                                whileHover={{ scale: 1.1, y: -10, transition: { duration: 0.1 } }}
+                                whileTap={{ scale: 0.9 }}
+                            >
+                                {letter.text}
+                            </motion.button>
+                        ))}
+                    </AnimatePresence>
+                    {gameState === 'idle' && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Card className="p-8 text-center bg-card/80">
+                                <h2 className="text-2xl font-bold">Ready to Play?</h2>
+                                <p className="text-muted-foreground mt-2">Click "Start Game" to begin!</p>
+                            </Card>
                         </div>
-                         <Button onClick={handleSubmitWord} size="lg" className="h-16" disabled={currentWord.length <= 3 || gameState !== 'playing'}>
-                            <Send className="h-6 w-6" />
-                        </Button>
+                    )}
+                    {gameState === 'gameover' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                            <Card className="p-8 text-center bg-card/80 animate-pop-in">
+                                <h2 className="text-3xl font-bold font-headline">Game Over!</h2>
+                                <div className="grid grid-cols-2 gap-4 my-6 text-left">
+                                    <div className="font-semibold">Final Score:</div><div className="text-right font-bold text-primary">{score}</div>
+                                    <div className="font-semibold">Words Found:</div><div className="text-right font-bold text-primary">{foundWords.length}</div>
+                                    <div className="font-semibold">Longest Word:</div><div className="text-right font-bold text-primary">{longestWord || 'N/A'}</div>
+                                </div>
+                                <Button onClick={startGame} size="lg">
+                                    <Play className="mr-2 h-5 w-5" /> Play Again
+                                </Button>
+                            </Card>
+                        </div>
+                    )}
+                </div>
+                 <div className="p-4 border-t bg-background/80 backdrop-blur-sm">
+                     <div className="max-w-md mx-auto">
+                        <p className="text-sm text-muted-foreground text-center mb-1">Your Word</p>
+                         <div className="flex items-center gap-2">
+                            <Card className="flex-grow h-16 bg-muted">
+                                 <div className="flex items-center justify-center h-full text-3xl font-bold tracking-widest uppercase">
+                                     {currentWord || <span className="text-muted-foreground/50 text-base normal-case">...</span>}
+                                 </div>
+                            </Card>
+                            <div className="flex flex-col gap-1">
+                                 <Button onClick={handleUndo} variant="outline" size="icon" className="h-8 w-8" disabled={selectedLetters.length === 0 || gameState !== 'playing'}>
+                                    <Undo className="h-4 w-4" /><span className="sr-only">Undo</span>
+                                </Button>
+                                 <Button onClick={handleClear} variant="destructive" size="icon" className="h-8 w-8" disabled={selectedLetters.length === 0 || gameState !== 'playing'}>
+                                    <XCircle className="h-4 w-4" /><span className="sr-only">Clear</span>
+                                </Button>
+                            </div>
+                             <Button onClick={handleSubmitWord} size="lg" className="h-16" disabled={currentWord.length <= 3 || gameState !== 'playing'}>
+                                <Send className="h-6 w-6" />
+                            </Button>
+                         </div>
                      </div>
                  </div>
-             </div>
+            </div>
         </div>
     );
 };
 
 export default WordFallGame;
+
+    
