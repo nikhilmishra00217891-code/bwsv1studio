@@ -142,7 +142,7 @@ const WordFallGame = () => {
 
     }, [gameAreaSize.width, gameState, fallingLetters.length, foundWords.length]);
     
-    const startGame = useCallback(() => {
+    const startGame = () => {
         if (!dictionary || gameAreaSize.width === 0) return;
 
         setGameState('playing');
@@ -166,7 +166,7 @@ const WordFallGame = () => {
             setTimer(prev => prev > 0 ? prev - 1 : 0);
         }, 1000);
 
-    }, [dictionary, gameAreaSize.width, spawnLetter]);
+    };
 
     const finishGame = () => {
         setGameState('gameover');
@@ -232,7 +232,7 @@ const WordFallGame = () => {
     
     if (isLoading) {
         return (
-            <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+            <div className="flex h-screen items-center justify-center">
                 <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
                 <p className="ml-4">Loading Word Engine...</p>
             </div>
@@ -242,12 +242,12 @@ const WordFallGame = () => {
     const currentWord = selectedLetters.map(l => l.text).join('');
     
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] bg-card/50">
-            <div className="p-4 border-b text-center bg-background/80 backdrop-blur-sm sticky top-16 z-10 flex flex-col sm:flex-row justify-around items-center gap-4">
+        <div className="flex flex-col h-screen bg-card/50">
+            <div className="p-4 border-b text-center bg-background/80 backdrop-blur-sm sticky top-0 z-10 flex flex-col sm:flex-row justify-around items-center gap-4">
                 <div className="flex items-center gap-4">
                      <h1 className="text-2xl font-bold font-headline">Word Fall</h1>
                      {gameState !== 'playing' && (
-                        <Button onClick={startGame} size="sm">
+                        <Button onClick={startGame} size="sm" disabled={isLoading || gameAreaSize.width === 0}>
                             <Play className="mr-2 h-4 w-4" />
                             {gameState === 'idle' ? 'Start Game' : 'Restart'}
                         </Button>
@@ -343,3 +343,5 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
+
+    
