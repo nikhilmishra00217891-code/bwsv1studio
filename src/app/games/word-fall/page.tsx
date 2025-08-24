@@ -108,15 +108,8 @@ const WordFallGame = () => {
         }
     }, [timer, lives, gameState, toast]);
 
-    useEffect(() => {
-        if (gameState !== 'playing') {
-            cleanupIntervals();
-        }
-    }, [gameState]);
-
-
     const spawnLetter = useCallback(() => {
-        if (gameAreaSize.width === 0 || gameState !== 'playing') return;
+        if (gameAreaSize.width === 0) return;
 
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const newChar = alphabet[Math.floor(Math.random() * alphabet.length)];
@@ -134,26 +127,42 @@ const WordFallGame = () => {
 
         setFallingLetters(prev => [...prev, newLetter]);
 
-    }, [gameAreaSize.width, gameState]);
-    
+    }, [gameAreaSize.width]);
+
+    // This effect starts the letter spawning interval when the game starts
+    useEffect(() => {
+        if (gameState === 'playing') {
+            letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
+            timerIntervalRef.current = setInterval(() => {
+                setTimer(prev => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+        } else {
+            cleanupIntervals();
+        }
+        
+        return cleanupIntervals;
+    }, [gameState, spawnLetter]);
+
+
     const startGame = () => {
         if (!dictionary || gameAreaSize.width === 0) return;
 
-        cleanupIntervals();
+        setGameState('idle'); // Temporarily set to idle to stop intervals via useEffect
 
-        setGameState('playing');
-        setSelectedLetters([]);
-        setFoundWords([]);
-        setScore(0);
-        setLongestWord('');
-        setFallingLetters([]);
-        setLives(3);
-        setTimer(INITIAL_TIME);
-        
-        // Use a timeout to ensure the state update has propagated before spawning letters
+        // Use a timeout to ensure state is processed before restarting
         setTimeout(() => {
+            setGameState('playing');
+            setSelectedLetters([]);
+            setFoundWords([]);
+            setScore(0);
+            setLongestWord('');
+            setFallingLetters([]);
+            setLives(3);
+            setTimer(INITIAL_TIME);
+            
             const word = easyWords[Math.floor(Math.random() * easyWords.length)];
             const letters = word.split('');
+            
             letters.forEach((char, index) => {
                  setTimeout(() => {
                     const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10));
@@ -168,14 +177,7 @@ const WordFallGame = () => {
                     setFallingLetters(prev => [...prev, newLetter]);
                  }, index * 300);
             });
-
-            letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
-
-            timerIntervalRef.current = setInterval(() => {
-                setTimer(prev => (prev > 0 ? prev - 1 : 0));
-            }, 1000);
-        }, 100);
-
+        }, 50);
     };
 
     // --- Letter and Word Logic ---
