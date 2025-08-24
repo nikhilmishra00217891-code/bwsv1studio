@@ -213,7 +213,7 @@ export default function Header() {
                         </>
                       )}
                       <div className="my-2 border-t border-border/50"></div>
-                      {user && futureNavLinks.map((link) => (
+                      {user && futureNavLinks.filter(l => l.label !== 'Focus Zone').map((link) => (
                         <NavLink key={link.label} {...link} onSelect={handleLinkClick} />
                       ))}
                     </nav>
@@ -259,7 +259,7 @@ const navLinks = [
 
 const futureNavLinks = [
   { href: "/profile", label: "My Profile", icon: UserCircle },
-  { href: "#", label: "Focus Zone", icon: Target },
+  { href: "/focus-zone", label: "Focus Zone", icon: Target },
   { href: "#", label: "Warzone", icon: Swords },
   { href: "#", label: "Parivartan Chamber", icon: BrainCircuit },
 ];
