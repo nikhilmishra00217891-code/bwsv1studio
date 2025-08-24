@@ -21,7 +21,6 @@ import {
     DropdownMenu, 
     DropdownMenuContent, 
     DropdownMenuItem, 
-    DropdownMenuTrigger, 
     DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu';
 import {
@@ -266,7 +265,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
         </div>
 
       <div className="border rounded-lg">
-        <ScrollArea className="h-[calc(100vh-22rem)]">
+        <ScrollArea className="h-[calc(100vh-18rem)]">
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
@@ -353,3 +352,5 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
     </>
   );
 }
+
+    
