@@ -153,14 +153,14 @@ const FocusZonePage = () => {
             const nextIndex = (currentTrackIndex + 1) % playlist.length;
             playMusic(nextIndex);
         }
-    }, [currentTrackIndex, playlist.length]);
+    }, [currentTrackIndex, playlist.length, playMusic]);
     
     const playPrevTrack = useCallback(() => {
          if (currentTrackIndex !== null) {
             const prevIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
             playMusic(prevIndex);
         }
-    }, [currentTrackIndex, playlist.length]);
+    }, [currentTrackIndex, playlist.length, playMusic]);
 
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-card/50 py-16 md:py-24 animate-fade-in">
@@ -327,7 +327,3 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
-
-    
-
-    
