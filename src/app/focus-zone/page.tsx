@@ -99,6 +99,19 @@ const FocusZonePage = () => {
     
      useEffect(() => {
         setIsMounted(true);
+        // Load playlist from IndexedDB once on mount
+        getPlaylistFromDB().then(tracks => {
+            if (tracks.length > 0) {
+                setPlaylist(tracks);
+                if(currentTrackIndex === null) {
+                    setCurrentTrackIndex(0);
+                }
+            }
+        }).catch(err => console.error("Could not load playlist from IndexedDB", err));
+    }, []);
+
+    useEffect(() => {
+        if (!isMounted) return;
         // Load settings from localStorage
         try {
             const savedDuration = localStorage.getItem('focusZoneWorkMinutes');
@@ -113,17 +126,7 @@ const FocusZonePage = () => {
         } catch (error) {
             console.error("Could not load settings from localStorage", error);
         }
-
-        // Load playlist from IndexedDB
-        getPlaylistFromDB().then(tracks => {
-            if (tracks.length > 0) {
-                setPlaylist(tracks);
-                if(currentTrackIndex === null) {
-                    setCurrentTrackIndex(0);
-                }
-            }
-        }).catch(err => console.error("Could not load playlist from IndexedDB", err));
-    }, []);
+    }, [isMounted]);
 
     useEffect(() => {
         if (!isMounted) return;
