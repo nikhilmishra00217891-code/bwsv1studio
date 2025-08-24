@@ -21,7 +21,8 @@ import {
     DropdownMenu, 
     DropdownMenuContent, 
     DropdownMenuItem, 
-    DropdownMenuSeparator 
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
     Dialog,
@@ -352,5 +353,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
     </>
   );
 }
+
+    
 
     
