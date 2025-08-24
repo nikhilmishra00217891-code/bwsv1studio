@@ -50,7 +50,6 @@ const WordFallGame = () => {
     const letterIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
     
-    // This ref will hold the clicked letter IDs to avoid race conditions with state updates.
     const clickedLetterIdsRef = useRef<Set<number>>(new Set());
 
     const { toast } = useToast();
@@ -60,7 +59,6 @@ const WordFallGame = () => {
     useEffect(() => {
         const init = async () => {
             const dict = await loadDictionary();
-            // Add easy words to the dictionary to ensure they are valid
             easyWords.forEach(word => dict.add(word));
             setDictionary(dict);
             setIsLoading(false);
@@ -88,21 +86,26 @@ const WordFallGame = () => {
     }, [isLoading]);
     
      useEffect(() => {
-        if (gameState === 'playing' && lives <= 0) {
-            finishGame();
-        }
-    }, [lives, gameState]);
-
-     useEffect(() => {
         if (gameState === 'playing' && timer <= 0) {
-            handleTimeUp();
+            if (lives > 1) {
+                setLives(prev => prev - 1);
+                setTimer(INITIAL_TIME + TIME_BONUS_PER_LIFE);
+                toast({
+                    variant: "destructive",
+                    title: "Time's Up!",
+                    description: `You lost a life. ${lives - 1} lives remaining.`,
+                });
+            } else {
+                setLives(0);
+                finishGame();
+            }
         }
-    }, [timer, gameState]);
+    }, [timer, lives, gameState, toast]);
+
 
     const spawnLetter = useCallback(() => {
         if (gameAreaSize.width === 0 || gameState !== 'playing') return;
 
-        // For the very first spawn of a new game, use an easy word
         if (fallingLetters.length === 0 && foundWords.length === 0) {
              const word = easyWords[Math.floor(Math.random() * easyWords.length)].toUpperCase();
              const letters = word.split('');
@@ -119,7 +122,7 @@ const WordFallGame = () => {
                         duration: Math.random() * 5 + 8,
                     };
                     setFallingLetters(prev => [...prev, newLetter]);
-                 }, index * 300); // Stagger the drop
+                 }, index * 300);
              });
              return;
         }
@@ -127,7 +130,7 @@ const WordFallGame = () => {
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const newChar = alphabet[Math.floor(Math.random() * alphabet.length)];
         
-        const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10)); // +10 for padding
+        const numLanes = Math.floor(gameAreaSize.width / (LETTER_SIZE + 10));
         const laneIndex = Math.floor(Math.random() * numLanes);
         const xPos = laneIndex * (LETTER_SIZE + 10) + 5;
 
@@ -135,7 +138,7 @@ const WordFallGame = () => {
             id: Date.now() + Math.random(),
             text: newChar,
             x: xPos,
-            duration: Math.random() * 5 + 8, // 8-13 seconds to fall
+            duration: Math.random() * 5 + 8,
         };
 
         setFallingLetters(prev => [...prev, newLetter]);
@@ -155,7 +158,7 @@ const WordFallGame = () => {
         setLives(3);
         setTimer(INITIAL_TIME);
         
-        spawnLetter(); // Initial spawn
+        spawnLetter();
         
         if (letterIntervalRef.current) clearInterval(letterIntervalRef.current);
         letterIntervalRef.current = setInterval(spawnLetter, LETTER_SPAWN_INTERVAL);
@@ -177,35 +180,20 @@ const WordFallGame = () => {
     // --- Letter and Word Logic ---
     
     const handleLetterMiss = useCallback((id: number) => {
-        // The core of the fix: Check the ref directly.
-        // If the ID is in the ref, it means it was clicked, so we do nothing.
         if (clickedLetterIdsRef.current.has(id)) {
             return;
         }
-
-        // If it's not in the ref, it means it fell off the screen.
         setFallingLetters(prev => prev.filter(l => l.id !== id));
-        if (gameState === 'playing') {
-            setLives(prev => Math.max(0, prev - 1));
-            toast({
-                variant: "destructive",
-                title: "Life Lost!",
-                description: `A letter was missed.`,
-            });
-        }
-    }, [gameState, toast]);
+    }, []);
 
 
     const handleLetterClick = (letter: FallingLetter) => {
         if (gameState !== 'playing') return;
         
-        // Immediately add the letter's ID to the ref. This is synchronous.
         clickedLetterIdsRef.current.add(letter.id);
         
-        // Remove from falling letters on screen
         setFallingLetters(prev => prev.filter(l => l.id !== letter.id));
         
-        // Add to the player's selected word
         setSelectedLetters(prev => [...prev, { id: letter.id, text: letter.text }]);
     }
     
@@ -251,20 +239,6 @@ const WordFallGame = () => {
             toast({ variant: "destructive", title: "Not a Word", description: `"${word}" is not in our dictionary.` });
         }
     }
-    
-     const handleTimeUp = () => {
-        if (lives > 0) {
-            setLives(prev => prev - 1);
-            setTimer(INITIAL_TIME + TIME_BONUS_PER_LIFE);
-            if (lives -1 > 0) {
-                toast({
-                    variant: "destructive",
-                    title: "Time's Up!",
-                    description: `You lost a life. ${lives - 1} lives remaining.`,
-                });
-            }
-        }
-    };
     
     if (isLoading) {
         return (
@@ -377,5 +351,3 @@ const WordFallGame = () => {
 };
 
 export default WordFallGame;
-
-    
