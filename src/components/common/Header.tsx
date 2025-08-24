@@ -67,7 +67,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
   );
 };
 
-const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games"];
+const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone"];
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -263,3 +263,5 @@ const futureNavLinks = [
   { href: "#", label: "Warzone", icon: Swords },
   { href: "#", label: "Parivartan Chamber", icon: BrainCircuit },
 ];
+
+    

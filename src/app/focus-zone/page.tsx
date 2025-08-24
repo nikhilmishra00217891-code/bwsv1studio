@@ -268,11 +268,11 @@ const FocusZonePage = () => {
             const newFiles = Array.from(event.target.files);
             const audioFiles = newFiles.filter(file => file.type.startsWith('audio/'));
 
-            if (audioFiles.length > 10) {
+            if (audioFiles.length > 1) {
                 toast({
                     variant: "destructive",
                     title: "Playlist Limit Reached",
-                    description: "You can only upload a maximum of 10 songs.",
+                    description: "You can only upload a maximum of 1 song.",
                 });
                 // Clear the file input so the user can try again
                 if(fileInputRef.current) {
@@ -297,8 +297,8 @@ const FocusZonePage = () => {
             }
 
             toast({
-                title: "Music playlist updated!",
-                description: `${audioFiles.length} song(s) added to your cosmos.`,
+                title: "Music updated!",
+                description: `${audioFiles.length} song added to your cosmos.`,
             })
         }
     };
@@ -542,9 +542,9 @@ const FocusZonePage = () => {
                             <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center">
                                 <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
                                 <p className="font-semibold mb-2">Upload Your Focus Music</p>
-                                <p className="text-xs text-muted-foreground mb-4">Your playlist will be saved on this device. (Max 10)</p>
+                                <p className="text-xs text-muted-foreground mb-4">Your file will be saved on this device. (Max 1 song)</p>
                                 <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                    Select Audio Files
+                                    Select Audio File
                                 </Button>
                                 <input 
                                     type="file" 
@@ -642,8 +642,5 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
-
-
-    
 
     

@@ -33,6 +33,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         )
     }
 
+    if (isFocusZone) {
+         return (
+             <div className="flex min-h-screen flex-col">
+                <main className="flex-1">{children}</main>
+            </div>
+        )
+    }
+
     const isOnboarding = pathname === '/onboarding';
     const isHomepage = pathname === '/';
     const isGamePage = pathname.startsWith('/games/');
@@ -55,12 +63,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return (
         <>
             <div className="flex min-h-screen flex-col">
-                {!isOnboarding && !isFocusZone && <Header />}
+                {!isOnboarding && <Header />}
                 <main className="flex-1">{children}</main>
-                {!isGamePage && !isAdminPage && !isFocusZone && <Footer />}
+                {!isGamePage && !isAdminPage && <Footer />}
             </div>
              {isHomepage && user && <FloatingCTA />}
-            {!isOnboarding && !isGamePage && !isFocusZone && (
+            {!isOnboarding && !isGamePage && (
                  <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
                     <FeedbackWidget />
                     <Button
@@ -79,3 +87,5 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </>
     )
 }
+
+    
