@@ -40,6 +40,7 @@ import { suspendUser, unsuspendUser } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 
 const suspensionReasons = [
     "Violation of Terms of Service",
@@ -242,25 +243,27 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
              <p className="text-muted-foreground">Search, view, and manage all users on the platform.</p>
         </div>
       
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Input
-          placeholder="Search by name or email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
-        <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
-                <Button variant={filter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('all')}>All</Button>
-                <Button variant={filter === 'active' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('active')}>Active</Button>
-                <Button variant={filter === 'suspended' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('suspended')}>Suspended</Button>
+        <AnalyticsDashboard users={users} />
+
+        <div className="flex flex-col sm:flex-row gap-4">
+            <Input
+            placeholder="Search by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+            />
+            <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
+                    <Button variant={filter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('all')}>All</Button>
+                    <Button variant={filter === 'active' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('active')}>Active</Button>
+                    <Button variant={filter === 'suspended' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('suspended')}>Suspended</Button>
+                </div>
+                <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending}>
+                    <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
+                    <span className="sr-only">Refresh</span>
+                </Button>
             </div>
-            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending}>
-                <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
-                <span className="sr-only">Refresh</span>
-            </Button>
         </div>
-      </div>
 
       <div className="border rounded-lg">
         <ScrollArea className="h-[calc(100vh-22rem)]">
