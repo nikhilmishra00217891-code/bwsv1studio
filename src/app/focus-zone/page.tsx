@@ -97,8 +97,12 @@ const FocusZonePage = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
     
-     useEffect(() => {
+    useEffect(() => {
         setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isMounted) return;
         // Load playlist from IndexedDB once on mount
         getPlaylistFromDB().then(tracks => {
             if (tracks.length > 0) {
@@ -109,7 +113,7 @@ const FocusZonePage = () => {
             }
         }).catch(err => console.error("Could not load playlist from IndexedDB", err));
          // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isMounted]);
 
     useEffect(() => {
         if (!isMounted) return;
@@ -117,16 +121,14 @@ const FocusZonePage = () => {
             const savedDuration = localStorage.getItem('focusZoneWorkMinutes');
             if (savedDuration) {
                 const parsedDuration = parseInt(savedDuration, 10);
-                setWorkMinutes(parsedDuration);
-                setBreakMinutes(Math.ceil(parsedDuration / 5));
-                if (!isActive) { // only update timer if not active
-                    setTimeLeft(parsedDuration * 60);
+                if(!isNaN(parsedDuration) && parsedDuration > 0) {
+                    setWorkMinutes(parsedDuration);
                 }
             }
         } catch (error) {
             console.error("Could not load settings from localStorage", error);
         }
-    }, [isMounted, isActive]);
+    }, [isMounted]);
 
     useEffect(() => {
         if (!isMounted) return;
@@ -137,9 +139,18 @@ const FocusZonePage = () => {
         }
     }, [workMinutes, isMounted]);
 
+    useEffect(() => {
+        setBreakMinutes(Math.ceil(workMinutes / 5));
+        if (!isActive) {
+            setTimeLeft(workMinutes * 60);
+        }
+    }, [workMinutes, isActive]);
+
+
     const handleSessionEnd = useCallback(() => {
         const newMode = mode === 'work' ? 'break' : 'work';
         setMode(newMode);
+        setTimeLeft((newMode === 'work' ? workMinutes : breakMinutes) * 60);
         setIsActive(true);
         
         const sessionEndAudio = document.getElementById('session-end-audio') as HTMLAudioElement;
@@ -149,43 +160,31 @@ const FocusZonePage = () => {
             title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
             description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
         });
-    }, [mode, toast]);
+    }, [mode, toast, workMinutes, breakMinutes]);
 
     // This effect runs the timer countdown
     useEffect(() => {
         if (!isActive) return;
+
+        if (timeLeft <= 0) {
+            handleSessionEnd();
+            return;
+        }
 
         const interval = setInterval(() => {
             setTimeLeft(prev => prev - 1);
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isActive]);
-    
-    // This effect handles the session change when time runs out
-    useEffect(() => {
-        if (timeLeft === 0 && isActive) {
-            handleSessionEnd();
-        }
-    }, [timeLeft, isActive, handleSessionEnd]);
-    
-     // This effect correctly sets the time for the new session after `mode` changes
-     // or when the user changes the duration while the timer is paused.
-    useEffect(() => {
-        if (!isActive) {
-             setTimeLeft((mode === 'work' ? workMinutes : breakMinutes) * 60);
-        }
-    }, [mode, workMinutes, breakMinutes, isActive]);
+    }, [isActive, timeLeft, handleSessionEnd]);
 
 
     const handleWorkMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const minutes = parseInt(e.target.value, 10);
         if (isNaN(minutes) || minutes < 1) {
             setWorkMinutes(1);
-            setBreakMinutes(Math.ceil(1 / 5));
         } else {
             setWorkMinutes(minutes);
-            setBreakMinutes(Math.ceil(minutes / 5));
         }
     };
 
@@ -194,6 +193,7 @@ const FocusZonePage = () => {
     const resetTimer = () => {
         setIsActive(false);
         setMode('work');
+        setTimeLeft(workMinutes * 60);
     };
 
     const formatTime = (seconds: number) => {
@@ -209,21 +209,16 @@ const FocusZonePage = () => {
             const newFiles = Array.from(event.target.files);
             const audioFiles = newFiles.filter(file => file.type.startsWith('audio/'));
             
-            // Clear existing playlist and DB
             await clearPlaylistFromDB();
             
-            // Save new files to DB
             for (const file of audioFiles) {
                 await saveTrackToDB(file);
             }
 
-            // Reload playlist from DB and update state once
             const updatedPlaylist = await getPlaylistFromDB();
             setPlaylist(updatedPlaylist);
 
-            if (currentTrackIndex === null && audioFiles.length > 0) {
-                setCurrentTrackIndex(0);
-            } else if (audioFiles.length > 0) {
+            if (updatedPlaylist.length > 0) {
                 setCurrentTrackIndex(0);
             } else {
                 setCurrentTrackIndex(null);
@@ -276,7 +271,7 @@ const FocusZonePage = () => {
     }, [currentTrackIndex, playlist.length, playMusic]);
 
     if (!isMounted) {
-        return null; // or a loading spinner
+        return null;
     }
 
     return (
@@ -309,10 +304,11 @@ const FocusZonePage = () => {
                                 r="45"
                                 strokeWidth="10"
                                 className={cn(
-                                    "stroke-current stroke-round",
+                                    "stroke-current",
                                     mode === 'work' ? 'text-primary' : 'text-accent'
                                 )}
                                 fill="transparent"
+                                strokeLinecap="round"
                                 initial={{ pathLength: 1 }}
                                 animate={{ pathLength: progress / 100 }}
                                 transition={{ duration: 1, ease: 'linear' }}
