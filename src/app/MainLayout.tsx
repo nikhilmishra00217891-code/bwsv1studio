@@ -19,6 +19,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const isOnboarding = pathname === '/onboarding';
     const isHomepage = pathname === '/';
     const isGamePage = pathname.startsWith('/games/');
+    const isAdminPage = pathname.startsWith('/admin/');
 
     if (userProfile?.suspension?.isSuspended) {
         return <SuspendedAccountFirewall reason={userProfile.suspension.reason} />;
@@ -39,7 +40,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="flex min-h-screen flex-col">
                 {!isOnboarding && <Header />}
                 <main className="flex-1">{children}</main>
-                {!isGamePage && <Footer />}
+                {!isGamePage && !isAdminPage && <Footer />}
             </div>
              {isHomepage && user && <FloatingCTA />}
             {!isOnboarding && !isGamePage && (
