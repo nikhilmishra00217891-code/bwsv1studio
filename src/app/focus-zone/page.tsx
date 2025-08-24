@@ -175,17 +175,27 @@ const FocusZonePage = () => {
                                 borderColor: mode === 'work' ? 'hsl(var(--primary) / 0.2)' : 'hsl(var(--secondary))',
                             }}
                         />
-                        <motion.div 
-                            className="absolute inset-0 rounded-full border-[10px] border-l-primary border-t-primary border-r-primary/20 border-b-primary/20"
-                            style={{
-                                rotate: -45,
-                                pathLength: (progress / 100),
-                                borderColor: mode === 'work' ? 'hsl(var(--primary))' : 'hsl(var(--accent))'
-                            }}
-                            initial={{ pathLength: 1, rotate: -45 }}
-                            animate={{ pathLength: (progress / 100), rotate: -45 }}
-                            transition={{ duration: 1, ease: 'linear' }}
-                        />
+                        <motion.svg
+                            className="absolute inset-0 w-full h-full"
+                            viewBox="0 0 100 100"
+                            initial={{ rotate: -90 }}
+                            animate={{ rotate: -90 }}
+                        >
+                            <motion.circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                strokeWidth="10"
+                                className={cn(
+                                    "stroke-current",
+                                    mode === 'work' ? 'text-primary' : 'text-accent'
+                                )}
+                                fill="transparent"
+                                initial={{ pathLength: 1 }}
+                                animate={{ pathLength: progress / 100 }}
+                                transition={{ duration: 1, ease: 'linear' }}
+                            />
+                        </motion.svg>
                         <div className="relative text-center">
                             <div className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                                 {mode === 'work' ? <Brain className="w-5 h-5"/> : <Coffee className="w-5 h-5"/>}
@@ -312,3 +322,5 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
+
+    
