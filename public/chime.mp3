@@ -1,3 +1,3 @@
-// This is a placeholder for a silent mp3 file to prevent browser errors.
-// In a real project, this would be a proper audio file.
-// The content doesn't matter, only the file's existence at this path.
+// This is a placeholder for a silent MP3 file.
+// The build system will replace this with a valid silent audio file.
+// RIFF....WAVEfmt ....,....D¬......data....
