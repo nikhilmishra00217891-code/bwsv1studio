@@ -24,12 +24,69 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+// --- IndexedDB Helper Functions ---
+const DB_NAME = 'FocusZoneDB';
+const STORE_NAME = 'playlistStore';
+const DB_VERSION = 1;
+
+const openDB = (): Promise<IDBDatabase> => {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+};
+
+const saveTrackToDB = async (file: File) => {
+    const db = await openDB();
+    return new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.add({ name: file.name, file });
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+};
+
+const getPlaylistFromDB = async (): Promise<File[]> => {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.getAll();
+        request.onsuccess = () => {
+            const tracks = request.result.map(item => item.file);
+            resolve(tracks);
+        };
+        request.onerror = () => reject(request.error);
+    });
+};
+
+const clearPlaylistFromDB = async () => {
+    const db = await openDB();
+    return new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+
 const FocusZonePage = () => {
+    const [isMounted, setIsMounted] = useState(false);
     const [workMinutes, setWorkMinutes] = useState(25);
     const [breakMinutes, setBreakMinutes] = useState(5);
     
     const [mode, setMode] = useState<'work' | 'break'>('work');
-    const [timeLeft, setTimeLeft] = useState(workMinutes * 60);
+    const [timeLeft, setTimeLeft] = useState(25 * 60);
     const [isActive, setIsActive] = useState(false);
 
     const [playlist, setPlaylist] = useState<File[]>([]);
@@ -40,11 +97,47 @@ const FocusZonePage = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
     
+     useEffect(() => {
+        setIsMounted(true);
+        // Load settings from localStorage
+        try {
+            const savedDuration = localStorage.getItem('focusZoneWorkMinutes');
+            if (savedDuration) {
+                const parsedDuration = parseInt(savedDuration, 10);
+                setWorkMinutes(parsedDuration);
+                setBreakMinutes(Math.ceil(parsedDuration / 5));
+                if (!isActive) { // only update timer if not active
+                    setTimeLeft(parsedDuration * 60);
+                }
+            }
+        } catch (error) {
+            console.error("Could not load settings from localStorage", error);
+        }
+
+        // Load playlist from IndexedDB
+        getPlaylistFromDB().then(tracks => {
+            if (tracks.length > 0) {
+                setPlaylist(tracks);
+                if(currentTrackIndex === null) {
+                    setCurrentTrackIndex(0);
+                }
+            }
+        }).catch(err => console.error("Could not load playlist from IndexedDB", err));
+    }, []);
+
+    useEffect(() => {
+        if (!isMounted) return;
+        try {
+            localStorage.setItem('focusZoneWorkMinutes', String(workMinutes));
+        } catch (error) {
+            console.error("Could not save settings to localStorage", error);
+        }
+    }, [workMinutes, isMounted]);
+
     const handleSessionEnd = useCallback(() => {
         const newMode = mode === 'work' ? 'break' : 'work';
         setMode(newMode);
-        setTimeLeft((newMode === 'work' ? workMinutes : breakMinutes) * 60);
-        setIsActive(true); // Keep the timer running for the next session
+        setIsActive(true);
         
         const sessionEndAudio = document.getElementById('session-end-audio') as HTMLAudioElement;
         if(sessionEndAudio) sessionEndAudio.play();
@@ -53,14 +146,14 @@ const FocusZonePage = () => {
             title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
             description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
         });
-    }, [mode, workMinutes, breakMinutes, toast]);
+    }, [mode, toast]);
 
     // This effect runs the timer countdown
     useEffect(() => {
         if (!isActive) return;
 
         const interval = setInterval(() => {
-            setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
+            setTimeLeft(prev => prev - 1);
         }, 1000);
 
         return () => clearInterval(interval);
@@ -73,12 +166,14 @@ const FocusZonePage = () => {
         }
     }, [timeLeft, isActive, handleSessionEnd]);
     
+     // This effect correctly sets the time for the new session after `mode` changes
+     // or when the user changes the duration while the timer is paused.
     useEffect(() => {
         if (!isActive) {
-            setTimeLeft(workMinutes * 60);
-            setMode('work');
+             setTimeLeft((mode === 'work' ? workMinutes : breakMinutes) * 60);
         }
-    }, [workMinutes]);
+    }, [mode, workMinutes, breakMinutes, isActive]);
+
 
     const handleWorkMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const minutes = parseInt(e.target.value, 10);
@@ -91,20 +186,11 @@ const FocusZonePage = () => {
         }
     };
 
-    useEffect(() => {
-        // This effect now correctly sets the time for the new session after `mode` changes
-        if (!isActive) { // Only reset if timer is not active
-             setTimeLeft((mode === 'work' ? workMinutes : breakMinutes) * 60);
-        }
-    }, [mode, workMinutes, breakMinutes]);
-
-
     const toggleTimer = () => setIsActive(!isActive);
 
     const resetTimer = () => {
         setIsActive(false);
         setMode('work');
-        setTimeLeft(workMinutes * 60);
     };
 
     const formatTime = (seconds: number) => {
@@ -113,18 +199,31 @@ const FocusZonePage = () => {
         return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
     
-    const progress = (timeLeft / ((mode === 'work' ? workMinutes : breakMinutes) * 60)) * 100;
+    const progress = timeLeft > 0 ? (timeLeft / ((mode === 'work' ? workMinutes : breakMinutes) * 60)) * 100 : 0;
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
             const newFiles = Array.from(event.target.files);
             const audioFiles = newFiles.filter(file => file.type.startsWith('audio/'));
-            setPlaylist(prev => [...prev, ...audioFiles]);
+            
+            // Clear existing playlist and DB
+            await clearPlaylistFromDB();
+            setPlaylist([]);
+            
+            // Save new files to DB
+            for (const file of audioFiles) {
+                await saveTrackToDB(file);
+            }
+
+            // Reload playlist from DB
+            const updatedPlaylist = await getPlaylistFromDB();
+            setPlaylist(updatedPlaylist);
+
             if (currentTrackIndex === null && audioFiles.length > 0) {
                 setCurrentTrackIndex(0);
             }
             toast({
-                title: "Music added!",
+                title: "Music playlist updated!",
                 description: `${audioFiles.length} song(s) added to your cosmos.`,
             })
         }
@@ -147,10 +246,10 @@ const FocusZonePage = () => {
             audioRef.current.pause();
             setIsPlayingMusic(false);
         } else {
-            if (currentTrackIndex === null && playlist.length > 0) {
-                 playMusic(0);
-            } else {
+            if (currentTrackIndex !== null) {
                 audioRef.current.play().then(() => setIsPlayingMusic(true));
+            } else if (playlist.length > 0) {
+                 playMusic(0);
             }
         }
     };
@@ -168,6 +267,10 @@ const FocusZonePage = () => {
             playMusic(prevIndex);
         }
     }, [currentTrackIndex, playlist.length, playMusic]);
+
+    if (!isMounted) {
+        return null; // or a loading spinner
+    }
 
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-card/50 py-16 md:py-24 animate-fade-in">
@@ -269,7 +372,7 @@ const FocusZonePage = () => {
                         <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center">
                              <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
                             <p className="font-semibold mb-2">Upload Your Focus Music</p>
-                            <p className="text-xs text-muted-foreground mb-4">Files are not stored on our servers.</p>
+                            <p className="text-xs text-muted-foreground mb-4">Your playlist will be saved on this device.</p>
                             <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                                 Select Audio Files
                             </Button>
@@ -335,3 +438,5 @@ const FocusZonePage = () => {
 };
 
 export default FocusZonePage;
+
+    
