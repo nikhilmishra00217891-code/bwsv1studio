@@ -53,7 +53,7 @@ const openDB = (): Promise<IDBDatabase> => {
     });
 };
 
-const saveTrackToDB = async (file: File) => {
+const addTrackToDB = async (file: File) => {
     const db = await openDB();
     return new Promise<void>((resolve, reject) => {
         const transaction = db.transaction(STORE_NAME, 'readwrite');
@@ -268,38 +268,33 @@ const FocusZonePage = () => {
             const newFiles = Array.from(event.target.files);
             const audioFiles = newFiles.filter(file => file.type.startsWith('audio/'));
 
-            if (audioFiles.length > 10) {
+            if (playlist.length + audioFiles.length > 10) {
                 toast({
                     variant: "destructive",
                     title: "Playlist Limit Reached",
-                    description: "You can only upload a maximum of 10 songs.",
+                    description: `You can only have 10 songs in total. You already have ${playlist.length}.`,
                 });
-                // Clear the file input so the user can try again
-                if(fileInputRef.current) {
-                    fileInputRef.current.value = "";
-                }
+                if(fileInputRef.current) fileInputRef.current.value = "";
                 return;
             }
             
-            await clearPlaylistFromDB();
-            
             for (const file of audioFiles) {
-                await saveTrackToDB(file);
+                await addTrackToDB(file);
             }
 
             const updatedPlaylist = await getPlaylistFromDB();
             setPlaylist(updatedPlaylist);
 
-            if (updatedPlaylist.length > 0) {
+            if (currentTrackIndex === null && updatedPlaylist.length > 0) {
                 setCurrentTrackIndex(0);
-            } else {
-                setCurrentTrackIndex(null);
             }
 
             toast({
                 title: "Music updated!",
-                description: `${audioFiles.length} song(s) added to your cosmos.`,
-            })
+                description: `${audioFiles.length} new song(s) added to your cosmos.`,
+            });
+            
+            if(fileInputRef.current) fileInputRef.current.value = "";
         }
     };
     
