@@ -23,7 +23,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setIsMounted(true);
     }, []);
 
-    const isFocusZone = pathname === '/focus-zone';
+    const isFocusZone = pathname.startsWith('/focus-zone');
 
     if (!isMounted) {
         return (
@@ -87,5 +87,3 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </>
     )
 }
-
-    

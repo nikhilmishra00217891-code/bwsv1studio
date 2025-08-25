@@ -85,11 +85,18 @@ export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: str
         await runTransaction(db, async (transaction) => {
             const roomSnap = await transaction.get(roomRef);
             if (!roomSnap.exists()) {
-                throw new Error("Room not found");
+                // Room might have been deleted already, which is fine.
+                return;
             }
             const roomData = roomSnap.data() as Room;
             const updatedMembers = roomData.members.filter(m => m.uid !== memberIdToRemove);
-            transaction.update(roomRef, { members: updatedMembers });
+            
+            if (updatedMembers.length === 0) {
+                // If the last member is leaving, delete the room.
+                transaction.delete(roomRef);
+            } else {
+                transaction.update(roomRef, { members: updatedMembers });
+            }
         });
     } catch (error) {
         console.error("Error removing member from room: ", error);

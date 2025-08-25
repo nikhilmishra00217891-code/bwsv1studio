@@ -735,15 +735,11 @@ const FocusZoneUI = () => {
         setTasks(tasks.filter(task => !task.completed));
     }
 
-    const handleAttemptToLeave = () => {
-        setShowExitDialog(true);
-    };
-
     const handleConfirmLeave = async () => {
         if (!user) return;
-        // This is for regular members leaving or hosts leaving solo/last in room
         if (isMultiplayer && roomId) {
-             const isLastMember = room?.members.length === 1 && room.hostId === user.uid;
+             const isHost = room?.hostId === user.uid;
+             const isLastMember = room?.members.length === 1 && isHost;
              if (isLastMember) {
                 await deleteRoom(roomId);
              } else {
@@ -846,8 +842,8 @@ const FocusZoneUI = () => {
 
     return (
         <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in flex flex-col">
-            <div className="absolute top-6 left-6">
-                <Button variant="outline" size="icon" onClick={handleAttemptToLeave}>
+            <div className="absolute top-6 left-6 z-50">
+                <Button variant="outline" size="icon" onClick={() => setShowExitDialog(true)}>
                     <ArrowLeft />
                 </Button>
             </div>
