@@ -126,7 +126,7 @@ interface Task {
     completed: boolean;
 }
 
-const MemberCard = ({ member, isHost, currentUserId, onRemove }: { member: RoomMember, isHost: boolean, currentUserId: string, onRemove: (memberId: string) => void }) => {
+const MemberCard = React.memo(({ member, isHost, currentUserId, onRemove }: { member: RoomMember, isHost: boolean, currentUserId: string, onRemove: (memberId: string) => void }) => {
     const AvatarIcon = avatarIcons[member.avatar] || Brain;
     const canRemove = isHost && member.uid !== currentUserId;
 
@@ -156,7 +156,9 @@ const MemberCard = ({ member, isHost, currentUserId, onRemove }: { member: RoomM
              )}
         </div>
     )
-}
+});
+MemberCard.displayName = 'MemberCard';
+
 
 const MemberListPanel = ({ room }: { room: Room | null }) => {
     const { user } = useAuth();
@@ -181,16 +183,16 @@ const MemberListPanel = ({ room }: { room: Room | null }) => {
             toast({ description: "Share feature not supported, Room ID copied instead." });
         }
     };
-
-    const handleRemoveMember = async (memberId: string) => {
-        if (!room || user?.uid !== room.hostId) return;
+    
+    const handleRemoveMember = useCallback(async (memberId: string) => {
+        if (!room || !user || user.uid !== room.hostId) return;
         try {
             await removeMemberFromRoom(room.id, memberId);
             toast({ title: 'Member removed' });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Failed to remove member', description: error.message });
         }
-    };
+    }, [room, user, toast]);
 
     if (!room || !user) {
         return (
