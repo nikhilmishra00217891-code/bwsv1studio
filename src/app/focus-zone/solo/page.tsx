@@ -128,6 +128,7 @@ const clearPlaylistFromDB = async () => {
 const MemberInspectionSheet = ({ member }: { member: RoomMember }) => {
     const AvatarIcon = avatarIcons[member.avatar] || Brain;
     const focusStats = member.focusStats || { totalMinutes: 0, totalSessions: 0 };
+    const timerSettings = member.timerSettings || { workMinutes: 25, breakMinutes: 5 };
     const hours = Math.floor(focusStats.totalMinutes / 60);
     const minutes = focusStats.totalMinutes % 60;
     
@@ -157,7 +158,7 @@ const MemberInspectionSheet = ({ member }: { member: RoomMember }) => {
                     <CardContent className="space-y-2 text-sm">
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Timer Settings</span>
-                            <span className="font-semibold">{member.timerSettings.workMinutes}m / {member.timerSettings.breakMinutes}m</span>
+                            <span className="font-semibold">{timerSettings.workMinutes}m / {timerSettings.breakMinutes}m</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Total Focus Time</span>
@@ -172,7 +173,7 @@ const MemberInspectionSheet = ({ member }: { member: RoomMember }) => {
                  <Card>
                     <CardHeader><CardTitle>Today's Goals</CardTitle></CardHeader>
                     <CardContent>
-                        {member.isTasksPublic && member.tasks.length > 0 ? (
+                        {member.isTasksPublic && member.tasks && member.tasks.length > 0 ? (
                             <ul className="space-y-2">
                                 {member.tasks.map(task => (
                                     <li key={task.id} className={cn("flex items-center gap-2 text-sm", task.completed && "line-through text-muted-foreground")}>
