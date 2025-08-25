@@ -38,7 +38,8 @@ import {
     Share2,
     Send,
     LogOut,
-    XCircle
+    XCircle,
+    PartyPopper
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -161,7 +162,7 @@ const MemberCard = React.memo(({ member, isHost, currentUserId, onRemove }: { me
 MemberCard.displayName = 'MemberCard';
 
 
-const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | null, onRemoveMember: (memberId: string) => Promise<void> }) => {
+const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | null, onRemoveMember: (memberId: string) => void }) => {
     const { user } = useAuth();
     const { toast } = useToast();
 
@@ -347,7 +348,8 @@ const FocusZoneUI = () => {
     const [workMinutes, setWorkMinutes] = useState(25);
     const [breakMinutes, setBreakMinutes] = useState(5);
     
-    const [mode, setMode] = useState<'work' | 'break'>('work');
+    const [mode, setMode] = useState<'work' | 'break' | 'transition'>('work');
+    const [lastCompletedMode, setLastCompletedMode] = useState<'work' | 'break' | null>(null);
     const [timeLeft, setTimeLeft] = useState(25 * 60);
     const [isActive, setIsActive] = useState(false);
     const [cycles, setCycles] = useState(0);
@@ -412,13 +414,15 @@ const FocusZoneUI = () => {
                 const parsedDuration = parseInt(savedDuration, 10);
                 if(!isNaN(parsedDuration) && parsedDuration > 0) {
                     setWorkMinutes(parsedDuration);
-                    setTimeLeft(parsedDuration * 60);
+                    if (!isActive) {
+                        setTimeLeft(parsedDuration * 60);
+                    }
                 }
             }
         } catch (error) {
             console.error("Could not load settings from localStorage", error);
         }
-    }, [isMounted]);
+    }, [isMounted, isActive]);
 
     useEffect(() => {
         if (!isMounted) return;
@@ -430,15 +434,20 @@ const FocusZoneUI = () => {
     }, [workMinutes, isMounted]);
 
     useEffect(() => {
-        if (!isActive) {
+        if (!isActive && mode === 'work') {
             setTimeLeft(workMinutes * 60);
+        } else if (!isActive && mode === 'break') {
+            setTimeLeft(breakMinutes * 60);
         }
         setBreakMinutes(Math.ceil(workMinutes / 5));
-    }, [workMinutes, isActive]);
+    }, [workMinutes, breakMinutes, isActive, mode]);
 
 
-    const handleSessionEnd = useCallback(async () => {
-        const newMode = mode === 'work' ? 'break' : 'work';
+    const handleSessionEnd = useCallback(() => {
+        setIsActive(false);
+        setLastCompletedMode(mode);
+        setMode('transition');
+        
         if (mode === 'work') {
             setCycles(prev => prev + 1);
             if (user && userProfile) {
@@ -452,40 +461,27 @@ const FocusZoneUI = () => {
                         totalSessions: newTotalSessions
                     }
                 };
-
-                // Optimistically update local state
                 setUserProfile(updatedProfile);
-
-                try {
-                    await updateUserProfile(user.uid, {
-                        focusStats: {
-                            totalMinutes: newTotalMinutes,
-                            totalSessions: newTotalSessions
-                        }
-                    });
-                } catch(err) {
-                    console.error("Failed to update focus stats", err);
-                    // Optionally revert optimistic update on error
-                    setUserProfile(userProfile);
-                }
+                updateUserProfile(user.uid, {
+                    focusStats: {
+                        totalMinutes: newTotalMinutes,
+                        totalSessions: newTotalSessions
+                    }
+                }).catch(err => {
+                     console.error("Failed to update focus stats", err);
+                     setUserProfile(userProfile); // Revert on error
+                });
             }
         }
-        setMode(newMode);
-        setTimeLeft((newMode === 'work' ? workMinutes : breakMinutes) * 60);
-        setIsActive(true);
         
         const sessionEndAudio = document.getElementById('session-end-audio') as HTMLAudioElement;
         if(sessionEndAudio) sessionEndAudio.play().catch(e => console.log("Chime blocked"));
         
-        toast({
-            title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
-            description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
-        });
-    }, [mode, toast, workMinutes, breakMinutes, user, userProfile, setUserProfile]);
+    }, [mode, user, userProfile, workMinutes, setUserProfile]);
 
     // This effect runs the timer countdown
     useEffect(() => {
-        if (!isActive) return;
+        if (!isActive || mode === 'transition') return;
 
         if (timeLeft <= 0) {
             handleSessionEnd();
@@ -497,8 +493,25 @@ const FocusZoneUI = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isActive, timeLeft, handleSessionEnd]);
+    }, [isActive, timeLeft, handleSessionEnd, mode]);
 
+    // This effect handles the transition state
+    useEffect(() => {
+        if (mode === 'transition') {
+            const transitionTimer = setTimeout(() => {
+                const newMode = lastCompletedMode === 'work' ? 'break' : 'work';
+                setMode(newMode);
+                setTimeLeft((newMode === 'work' ? workMinutes : breakMinutes) * 60);
+                setIsActive(true); // Automatically start the next session
+                toast({
+                    title: `Time for a ${newMode === 'work' ? 'Work Session' : 'Break'}!`,
+                    description: newMode === 'work' ? "Let's get back to it." : "Time to relax and recharge.",
+                });
+            }, 3000); // 3-second transition
+
+            return () => clearTimeout(transitionTimer);
+        }
+    }, [mode, lastCompletedMode, workMinutes, breakMinutes, toast]);
 
     const handleWorkMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const minutes = parseInt(e.target.value, 10);
@@ -653,8 +666,41 @@ const FocusZoneUI = () => {
             await removeMemberFromRoom(roomId, memberId);
         } catch (error) {
             console.error(error);
+            toast({
+                variant: 'destructive',
+                title: 'Error removing member',
+                description: 'Could not remove member. Please try again.'
+            });
         }
-    }, [roomId]);
+    }, [roomId, toast]);
+
+    const renderTimerContent = () => {
+        if (mode === 'transition') {
+            return (
+                <div className="text-center animate-pop-in">
+                    <PartyPopper className="w-24 h-24 text-primary mx-auto" />
+                    <div className="text-2xl font-bold mt-4">
+                        {lastCompletedMode === 'work' ? 'Focus Session Complete!' : 'Break Over!'}
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="relative text-center">
+                <div className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center justify-center gap-2">
+                    {mode === 'work' ? <Brain className="w-5 h-5"/> : <Coffee className="w-5 h-5"/>}
+                    {mode === 'work' ? 'Focus Session' : 'Break Time'}
+                </div>
+                <div className="text-6xl md:text-7xl font-bold font-mono tracking-tighter my-2">
+                    {formatTime(timeLeft)}
+                </div>
+                <div className="font-semibold text-muted-foreground">
+                    Cycle: {cycles}
+                </div>
+            </div>
+        );
+    }
 
 
     if (removedMessage) {
@@ -727,26 +773,15 @@ const FocusZoneUI = () => {
                                     fill="transparent"
                                     strokeLinecap="round"
                                     initial={{ pathLength: 1 }}
-                                    animate={{ pathLength: progress / 100 }}
-                                    transition={{ duration: 1, ease: 'linear' }}
+                                    animate={{ pathLength: mode === 'transition' ? 1 : progress / 100 }}
+                                    transition={{ duration: mode === 'transition' ? 0 : 1, ease: 'linear' }}
                                 />
                             </motion.svg>
-                            <div className="relative text-center">
-                                <div className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center justify-center gap-2">
-                                    {mode === 'work' ? <Brain className="w-5 h-5"/> : <Coffee className="w-5 h-5"/>}
-                                    {mode === 'work' ? 'Focus Session' : 'Break Time'}
-                                </div>
-                                <div className="text-6xl md:text-7xl font-bold font-mono tracking-tighter my-2">
-                                    {formatTime(timeLeft)}
-                                </div>
-                                <div className="font-semibold text-muted-foreground">
-                                    Cycle: {cycles}
-                                </div>
-                            </div>
+                           {renderTimerContent()}
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <Button onClick={toggleTimer} size="lg" className="w-32">
+                            <Button onClick={toggleTimer} size="lg" className="w-32" disabled={mode === 'transition'}>
                                 {isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
                                 {isActive ? 'Pause' : 'Start'}
                             </Button>
