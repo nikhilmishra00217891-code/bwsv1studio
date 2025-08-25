@@ -16,6 +16,7 @@ import {
   setDoc,
   orderBy,
   Timestamp,
+  deleteDoc,
 } from "firebase/firestore";
 import type { Room, RoomMember, ChatMessage } from "@/types";
 
@@ -91,6 +92,30 @@ export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: str
         });
     }
 }
+
+export const deleteRoom = async (roomId: string): Promise<void> => {
+    const roomRef = doc(db, 'rooms', roomId);
+    await deleteDoc(roomRef);
+};
+
+export const transferHost = async (roomId: string, newHostId: string): Promise<void> => {
+    const roomRef = doc(db, 'rooms', roomId);
+    const roomSnap = await getDoc(roomRef);
+    if (!roomSnap.exists()) {
+        throw new Error("Room not found");
+    }
+    const roomData = roomSnap.data() as Room;
+    const newHost = roomData.members.find(m => m.uid === newHostId);
+
+    if (!newHost) {
+        throw new Error("New host not found in room members.");
+    }
+
+    await updateDoc(roomRef, {
+        hostId: newHost.uid,
+        hostName: newHost.displayName,
+    });
+};
 
 export const updateMemberStatusInRoom = async (roomId: string, memberId: string, data: Partial<RoomMember>) => {
     const roomRef = doc(db, "rooms", roomId);
