@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
@@ -23,7 +23,16 @@ import {
     Timer,
     Plus,
     Trash2,
-    ArrowLeft
+    ArrowLeft,
+    Users,
+    Rocket,
+    Trophy,
+    VenetianMask,
+    StarIcon,
+    Award,
+    Bird,
+    FerrisWheel,
+    LoaderCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -32,7 +41,22 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { updateUserProfile } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import type { Room, RoomMember } from '@/types';
+import { listenForRoomUpdates } from '@/lib/data/rooms';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
+
+const avatarIcons: { [key: string]: React.ElementType } = {
+  rocket: Rocket,
+  brain: Brain,
+  trophy: Trophy,
+  ninja: VenetianMask,
+  star: StarIcon,
+  award: Award,
+  eagle: Bird,
+  dragon: FerrisWheel,
+};
 
 // --- IndexedDB Helper Functions ---
 const DB_NAME = 'FocusZoneDB';
@@ -95,8 +119,60 @@ interface Task {
     completed: boolean;
 }
 
+const MemberCard = ({ member, isHost }: { member: RoomMember, isHost: boolean }) => {
+    const AvatarIcon = avatarIcons[member.avatar] || Brain;
+    return (
+        <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-lg">
+            <Avatar>
+                <AvatarFallback className="bg-primary/20">
+                    <AvatarIcon className="w-5 h-5 text-primary" />
+                </AvatarFallback>
+            </Avatar>
+            <div className="font-semibold text-sm">{member.displayName}</div>
+            {isHost && (
+                <div className="ml-auto text-primary" title="Room Host">
+                    <span className="text-xl">⚡</span>
+                </div>
+            )}
+        </div>
+    )
+}
+
+const MultiplayerPanel = ({ room, isHost }: { room: Room, isHost: boolean }) => {
+    return (
+        <Card className="w-full max-w-sm">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Users/> Multiplayer Session
+                </CardTitle>
+                <CardDescription>
+                    You are in a focus session with your Parivaar.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <h4 className="font-bold mb-2 text-sm">{room.members.length} Member(s) in Room</h4>
+                <ScrollArea className="h-40">
+                    <div className="space-y-2 pr-4">
+                        {room.members.map(member => (
+                            <MemberCard key={member.uid} member={member} isHost={member.uid === room.hostId} />
+                        ))}
+                    </div>
+                </ScrollArea>
+                {isHost && (
+                    <Button disabled className="w-full mt-4">Start Synced Session (Coming Soon)</Button>
+                )}
+            </CardContent>
+        </Card>
+    );
+};
+
 
 const FocusZonePage = () => {
+    const params = useParams();
+    const roomId = params.roomId as string;
+    const isMultiplayer = roomId !== 'solo';
+    const [room, setRoom] = useState<Room | null>(null);
+
     const [isMounted, setIsMounted] = useState(false);
     const [workMinutes, setWorkMinutes] = useState(25);
     const [breakMinutes, setBreakMinutes] = useState(5);
@@ -126,6 +202,16 @@ const FocusZonePage = () => {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+    
+    useEffect(() => {
+        if (isMultiplayer && roomId) {
+            const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
+                setRoom(updatedRoom);
+            });
+            return () => unsubscribe();
+        }
+    }, [isMultiplayer, roomId]);
+
 
     useEffect(() => {
         if (!isMounted) return;
@@ -382,9 +468,16 @@ const FocusZonePage = () => {
         }
     };
 
-    if (!isMounted) {
-        return null;
+    if (!isMounted || (isMultiplayer && !room)) {
+        return (
+             <div className="flex h-screen items-center justify-center">
+                <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+                <p className="ml-4">Entering Room...</p>
+            </div>
+        );
     }
+    
+    const isHost = user?.uid === room?.hostId;
 
     return (
         <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in">
@@ -399,7 +492,9 @@ const FocusZonePage = () => {
                 <div className="lg:col-span-2 flex flex-col items-center gap-8">
                      <div className="text-center">
                         <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Focus Zone</h1>
-                        <p className="text-lg text-muted-foreground mt-2">Your personal space for deep work.</p>
+                        <p className="text-lg text-muted-foreground mt-2">
+                             {isMultiplayer ? "Focusing with the Parivaar." : "Your personal space for deep work."}
+                        </p>
                     </div>
 
                     <div className="relative w-72 h-72 md:w-80 md:h-80 flex items-center justify-center">
@@ -455,31 +550,35 @@ const FocusZonePage = () => {
                         </Button>
                     </div>
 
-                    <Card className="w-full max-w-sm">
-                        <CardHeader><CardTitle>Customize Session</CardTitle></CardHeader>
-                        <CardContent className="flex items-end gap-4">
-                            <div>
-                                <Label htmlFor="work-minutes">Focus (mins)</Label>
-                                <Input 
-                                    id="work-minutes"
-                                    type="number"
-                                    value={workMinutes}
-                                    onChange={handleWorkMinutesChange}
-                                    min={1}
-                                    disabled={isActive}
-                                />
-                            </div>
-                             <div className="pb-2 text-muted-foreground">
-                                <Timer className="w-6 h-6"/>
-                            </div>
-                             <div>
-                                <Label>Break (mins)</Label>
-                                <div className="h-10 flex items-center justify-center rounded-md border bg-muted px-3 font-bold text-muted-foreground">
-                                    {breakMinutes}
+                    {isMultiplayer && room ? (
+                        <MultiplayerPanel room={room} isHost={isHost}/>
+                    ) : (
+                        <Card className="w-full max-w-sm">
+                            <CardHeader><CardTitle>Customize Session</CardTitle></CardHeader>
+                            <CardContent className="flex items-end gap-4">
+                                <div>
+                                    <Label htmlFor="work-minutes">Focus (mins)</Label>
+                                    <Input 
+                                        id="work-minutes"
+                                        type="number"
+                                        value={workMinutes}
+                                        onChange={handleWorkMinutesChange}
+                                        min={1}
+                                        disabled={isActive}
+                                    />
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                <div className="pb-2 text-muted-foreground">
+                                    <Timer className="w-6 h-6"/>
+                                </div>
+                                <div>
+                                    <Label>Break (mins)</Label>
+                                    <div className="h-10 flex items-center justify-center rounded-md border bg-muted px-3 font-bold text-muted-foreground">
+                                        {breakMinutes}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
                 <div className="space-y-6">
