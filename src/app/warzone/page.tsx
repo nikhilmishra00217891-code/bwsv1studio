@@ -27,8 +27,8 @@ const modes = [
         icon: Users,
         title: "Multiplayer",
         description: "Join forces with your Parivaar in epic team-based quiz battles.",
-        href: "#",
-        isReady: false,
+        href: "/warzone/lobby",
+        isReady: true,
     }
 ];
 
