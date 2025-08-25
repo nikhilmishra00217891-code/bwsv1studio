@@ -17,6 +17,7 @@ import {
   orderBy,
   Timestamp,
   deleteDoc,
+  runTransaction,
 } from "firebase/firestore";
 import type { Room, RoomMember, ChatMessage } from "@/types";
 
@@ -80,18 +81,21 @@ export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room |
 
 export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: string) => {
     const roomRef = doc(db, 'rooms', roomId);
-    const roomSnap = await getDoc(roomRef);
-    if (!roomSnap.exists()) {
-        throw new Error("Room not found");
-    }
-    const roomData = roomSnap.data() as Room;
-    const memberToRemove = roomData.members.find(m => m.uid === memberIdToRemove);
-    if (memberToRemove) {
-        await updateDoc(roomRef, {
-            members: arrayRemove(memberToRemove)
+    try {
+        await runTransaction(db, async (transaction) => {
+            const roomSnap = await transaction.get(roomRef);
+            if (!roomSnap.exists()) {
+                throw new Error("Room not found");
+            }
+            const roomData = roomSnap.data() as Room;
+            const updatedMembers = roomData.members.filter(m => m.uid !== memberIdToRemove);
+            transaction.update(roomRef, { members: updatedMembers });
         });
+    } catch (error) {
+        console.error("Error removing member from room: ", error);
+        throw error;
     }
-}
+};
 
 export const deleteRoom = async (roomId: string): Promise<void> => {
     const roomRef = doc(db, 'rooms', roomId);
@@ -119,22 +123,28 @@ export const transferHost = async (roomId: string, newHostId: string): Promise<v
 
 export const updateMemberStatusInRoom = async (roomId: string, memberId: string, data: Partial<RoomMember>) => {
     const roomRef = doc(db, "rooms", roomId);
-    const roomSnap = await getDoc(roomRef);
+    try {
+      await runTransaction(db, async (transaction) => {
+        const roomSnap = await transaction.get(roomRef);
+        if (!roomSnap.exists()) {
+          // The room might have been deleted, so we just ignore the update.
+          return;
+        }
 
-    if (roomSnap.exists()) {
         const roomData = roomSnap.data() as Room;
         const memberIndex = roomData.members.findIndex(m => m.uid === memberId);
 
         if (memberIndex !== -1) {
             const updatedMembers = [...roomData.members];
             updatedMembers[memberIndex] = { ...updatedMembers[memberIndex], ...data };
-            
-            await updateDoc(roomRef, {
-                members: updatedMembers
-            });
+            transaction.update(roomRef, { members: updatedMembers });
         }
+      });
+    } catch (error) {
+        console.error("Failed to update member status:", error);
     }
 }
+
 
 export const listenForRoomUpdates = (
   roomId: string,

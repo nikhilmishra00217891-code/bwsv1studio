@@ -560,7 +560,7 @@ const FocusZoneUI = () => {
         }
         
         const sessionEndAudio = document.getElementById('session-end-audio') as HTMLAudioElement;
-        if(sessionEndaudio) sessionEndAudio.play().catch(e => console.log("Chime blocked"));
+        if(sessionEndAudio) sessionEndAudio.play().catch(e => console.log("Chime blocked"));
         
     }, [mode, user, userProfile, workMinutes, setUserProfile]);
 
@@ -740,10 +740,17 @@ const FocusZoneUI = () => {
     };
 
     const handleConfirmLeave = async () => {
-        // This is for regular members leaving
-        if (isMultiplayer && roomId && user) {
-            await removeMemberFromRoom(roomId, user.uid);
+        if (!user) return;
+        // This is for regular members leaving or hosts leaving solo/last in room
+        if (isMultiplayer && roomId) {
+             const isLastMember = room?.members.length === 1 && room.hostId === user.uid;
+             if (isLastMember) {
+                await deleteRoom(roomId);
+             } else {
+                await removeMemberFromRoom(roomId, user.uid);
+             }
         }
+        setShowExitDialog(false);
         router.push('/focus-zone');
     };
 
@@ -1147,7 +1154,7 @@ const FocusZoneUI = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={isHost && !hasOtherMembers ? handleHostDeleteRoom : handleConfirmLeave}>Confirm Leave</AlertDialogAction>
+                                <AlertDialogAction onClick={handleConfirmLeave}>Confirm Leave</AlertDialogAction>
                             </AlertDialogFooter>
                         </>
                     )}
