@@ -793,38 +793,46 @@ const FocusZoneUI = () => {
         setTasks(tasks.filter(task => !task.completed));
     }
     
-    const handleBackNavigation = async () => {
-        if (isActive) {
-            setShowExitConfirm(true);
-            return;
-        }
+    const handleLeaveRoomAndGoToLobby = () => {
+        router.push('/focus-zone/lobby');
+    };
 
+    const handleAttemptToLeave = useCallback(async () => {
         if (isMultiplayer && room && user) {
             const isHost = user.uid === room.hostId;
             if (isHost && room.members.length > 1) {
                 setShowHostLeaveDialog(true);
                 return;
             }
-            // If user is not host, or host is last one, leave normally
-            await handleLeaveRoom();
+        }
+    
+        if (isActive) {
+            setShowExitConfirm(true);
+            return;
+        }
+    
+        // If not multiplayer, or not host, or timer not active, leave directly
+        if (isMultiplayer && roomId && user) {
+             const isHost = user.uid === room?.hostId;
+             if (isHost) {
+                await deleteRoom(roomId);
+             } else {
+                await removeMemberFromRoom(roomId, user.uid);
+             }
+             router.push('/focus-zone/lobby');
         } else {
             router.push('/focus-zone');
         }
-    };
-    
-    const handleLeaveRoom = async () => {
-        if (roomId && user) {
-            const isHost = user.uid === room?.hostId;
-            const isLastMember = room?.members.length === 1;
+    }, [isMultiplayer, room, user, isActive, router, roomId]);
 
-            if (isHost && isLastMember) {
-                await deleteRoom(roomId);
-            } else {
-                await removeMemberFromRoom(roomId, user.uid);
-            }
+    const handleConfirmLeave = useCallback(async () => {
+         if (isMultiplayer && roomId && user) {
+            await removeMemberFromRoom(roomId, user.uid);
+            router.push('/focus-zone/lobby');
+        } else {
+            router.push('/focus-zone');
         }
-        router.push('/focus-zone/lobby');
-    };
+    }, [isMultiplayer, roomId, user, router]);
 
     const handleHostDeleteRoom = async () => {
         if (roomId) {
@@ -836,15 +844,14 @@ const FocusZoneUI = () => {
     }
 
     const handleHostTransfer = async (newHostId: string) => {
-        if(roomId) {
+        if(roomId && user) {
             await transferHost(roomId, newHostId);
             toast({ title: "Host Transferred!", description: "You are no longer the host."});
             setShowHostLeaveDialog(false);
-            // Now the user can leave as a normal member
-            await handleLeaveRoom();
+            await removeMemberFromRoom(roomId, user.uid); // Now leave as a normal member
+            router.push('/focus-zone/lobby');
         }
     }
-
 
     const handleRemoveMember = useCallback(async (memberId: string) => {
         if (!roomId) return;
@@ -899,7 +906,7 @@ const FocusZoneUI = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">{removedMessage}</p>
-                        <Button className="mt-4" onClick={() => router.push('/focus-zone/lobby')}>Back to Lobby</Button>
+                        <Button className="mt-4" onClick={handleLeaveRoomAndGoToLobby}>Back to Lobby</Button>
                     </CardContent>
                 </Card>
             </div>
@@ -918,7 +925,7 @@ const FocusZoneUI = () => {
     return (
         <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in flex flex-col">
             <div className="absolute top-6 left-6">
-                <Button variant="outline" size="icon" onClick={handleBackNavigation}>
+                <Button variant="outline" size="icon" onClick={handleAttemptToLeave}>
                     <ArrowLeft />
                 </Button>
             </div>
@@ -1178,8 +1185,8 @@ const FocusZoneUI = () => {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Nope</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleLeaveRoom()}>Confirm</AlertDialogAction>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmLeave}>Confirm</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
