@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -403,64 +403,6 @@ const ChatBox = ({ roomId }: { roomId: string }) => {
     )
 }
 
-const HostLeaveDialog = ({ room, onTransfer, onDelete, onCancel }: { room: Room, onTransfer: (newHostId: string) => void, onDelete: () => void, onCancel: () => void }) => {
-    const { user } = useAuth();
-    const otherMembers = room.members.filter(m => m.uid !== user?.uid);
-
-    return (
-        <Dialog open onOpenChange={(isOpen) => !isOpen && onCancel()}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</DialogTitle>
-                    <DialogDescription>
-                        As the host, if you leave, the room will be deleted for everyone. To prevent this, you can make someone else the host before you go.
-                    </DialogDescription>
-                </DialogHeader>
-                 {otherMembers.length > 0 ? (
-                    <div className="space-y-4 py-4">
-                        <Label>Transfer Host Role</Label>
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                            {otherMembers.map(member => (
-                                <div key={member.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
-                                    <span className="font-semibold">{member.displayName}</span>
-                                    <Button size="sm" variant="outline" onClick={() => onTransfer(member.uid)}>
-                                        <Crown className="mr-2 h-4 w-4"/> Make Host
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ) : (
-                     <p className="py-4 text-center text-muted-foreground">You are the only one here. Leaving will delete the room.</p>
-                )}
-                
-                <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
-                    <Button variant="secondary" onClick={onCancel} className="w-full sm:w-auto">Cancel</Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="w-full sm:w-auto">Leave & Delete Room</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                This will permanently delete the room for all members. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={onDelete} className={cn(buttonVariants({variant: "destructive"}))}>
-                                    Yes, delete room
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 const FocusZoneUI = () => {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -491,8 +433,7 @@ const FocusZoneUI = () => {
     const [newTask, setNewTask] = useState('');
     const [isTasksPublic, setIsTasksPublic] = useState(false);
     
-    const [showExitConfirm, setShowExitConfirm] = useState(false);
-    const [showHostLeaveDialog, setShowHostLeaveDialog] = useState(false);
+    const [showExitDialog, setShowExitDialog] = useState(false);
     const [removedMessage, setRemovedMessage] = useState<string | null>(null);
 
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -794,24 +735,19 @@ const FocusZoneUI = () => {
         setTasks(tasks.filter(task => !task.completed));
     }
     
-    const handleAttemptToLeave = async () => {
+    const handleAttemptToLeave = () => {
         if (isMultiplayer && room && user) {
-            const isHost = user.uid === room.hostId;
-            if (isHost) {
-                setShowHostLeaveDialog(true);
-            } else {
-                setShowExitConfirm(true);
-            }
+            setShowExitDialog(true);
         } else {
-            // Solo mode, or room not loaded yet
+            // Solo mode
             if (isActive) {
-                setShowExitConfirm(true);
+                setShowExitDialog(true);
             } else {
                 router.push('/focus-zone');
             }
         }
     };
-
+    
     const handleConfirmLeave = async () => {
         // This is for regular members leaving
         if (isMultiplayer && roomId && user) {
@@ -827,7 +763,7 @@ const FocusZoneUI = () => {
         if (roomId && room?.hostId === user?.uid) {
             await deleteRoom(roomId);
             toast({ title: "Room Deleted", description: "The focus room has been deleted." });
-            setShowHostLeaveDialog(false);
+            setShowExitDialog(false);
             router.push('/focus-zone/lobby');
         }
     }
@@ -837,7 +773,7 @@ const FocusZoneUI = () => {
             await transferHost(roomId, newHostId);
             await removeMemberFromRoom(roomId, user.uid); // Now leave as a normal member
             toast({ title: "Host Transferred & Left Room!", description: "You are no longer the host."});
-            setShowHostLeaveDialog(false);
+            setShowExitDialog(false);
             router.push('/focus-zone/lobby');
         }
     }
@@ -1164,28 +1100,68 @@ const FocusZoneUI = () => {
             <audio ref={audioRef} onEnded={playNextTrack} />
             <audio id="session-end-audio" src="/chime.mp3" preload="auto" />
 
-            <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+             <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
                 <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Your session will end and you will leave the room.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmLeave}>Confirm</AlertDialogAction>
-                    </AlertDialogFooter>
+                    {room && user?.uid === room.hostId && room.members.length > 1 ? (
+                        <>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    As the host, if you leave, the room will be deleted for everyone. To prevent this, you can make someone else the host before you go.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="space-y-4 py-4">
+                                <Label>Transfer Host Role</Label>
+                                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                                    {room.members.filter(m => m.uid !== user?.uid).map(member => (
+                                        <div key={member.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                                            <span className="font-semibold">{member.displayName}</span>
+                                            <Button size="sm" variant="outline" onClick={() => handleHostTransfer(member.uid)}>
+                                                <Crown className="mr-2 h-4 w-4"/> Make Host
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
+                                <Button variant="secondary" onClick={() => setShowExitDialog(false)} className="w-full sm:w-auto">Cancel</Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" className="w-full sm:w-auto">Leave & Delete Room</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                            This will permanently delete the room for all members. This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleHostDeleteRoom} className={cn(buttonVariants({variant: "destructive"}))}>
+                                                Yes, delete room
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </AlertDialogFooter>
+                        </>
+                    ) : (
+                         <>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Your session will end and you will leave the room.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleConfirmLeave}>Confirm Leave</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </>
+                    )}
                 </AlertDialogContent>
             </AlertDialog>
-            {showHostLeaveDialog && room && (
-                <HostLeaveDialog 
-                    room={room}
-                    onDelete={handleHostDeleteRoom}
-                    onTransfer={handleHostTransfer}
-                    onCancel={() => setShowHostLeaveDialog(false)}
-                />
-            )}
         </div>
     );
 };
@@ -1202,5 +1178,3 @@ export default function FocusZonePage() {
         </Suspense>
     )
 }
-
-    
