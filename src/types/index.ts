@@ -117,3 +117,10 @@ export interface Room {
     members: RoomMember[];
     createdAt: Timestamp;
 }
+
+export interface Question {
+    questionText: string;
+    options: string[];
+    correctAnswer: string;
+    explanation: string;
+}

@@ -12,16 +12,30 @@ import {
   query,
   where,
   getDocs,
+  setDoc,
 } from "firebase/firestore";
 import type { Room, RoomMember } from "@/types";
 
 const roomsCollection = collection(db, "rooms");
 
+const generateRoomId = (length: number = 8): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
 export const createRoom = async (
   type: 'focus-zone' | 'warzone',
   host: RoomMember
 ): Promise<string> => {
+  const roomId = generateRoomId();
+  const roomRef = doc(db, "rooms", roomId);
+  
   const newRoom = {
+    id: roomId, // Store the ID within the document as well
     type,
     hostId: host.uid,
     hostName: host.displayName,
@@ -29,8 +43,9 @@ export const createRoom = async (
     status: 'waiting',
     createdAt: serverTimestamp(),
   };
-  const docRef = await addDoc(roomsCollection, newRoom);
-  return docRef.id;
+
+  await setDoc(roomRef, newRoom);
+  return roomId;
 };
 
 export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room | null> => {
@@ -57,13 +72,18 @@ export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room |
 
 export const listenForRoomUpdates = (
   roomId: string,
-  callback: (room: Room) => void
+  callback: (room: Room | null) => void
 ): (() => void) => {
   const roomRef = doc(db, "rooms", roomId);
   const unsubscribe = onSnapshot(roomRef, (docSnap) => {
     if (docSnap.exists()) {
       callback({ id: docSnap.id, ...docSnap.data() } as Room);
+    } else {
+      callback(null); // Room doesn't exist or was deleted
     }
+  }, (error) => {
+    console.error("Error listening for room updates:", error);
+    callback(null);
   });
   return unsubscribe;
 };

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -32,7 +32,9 @@ import {
     Award,
     Bird,
     FerrisWheel,
-    LoaderCircle
+    LoaderCircle,
+    Copy,
+    Share2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -41,10 +43,11 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { updateUserProfile } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { Room, RoomMember } from '@/types';
 import { listenForRoomUpdates } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const avatarIcons: { [key: string]: React.ElementType } = {
@@ -130,15 +133,57 @@ const MemberCard = ({ member, isHost }: { member: RoomMember, isHost: boolean })
             </Avatar>
             <div className="font-semibold text-sm">{member.displayName}</div>
             {isHost && (
-                <div className="ml-auto text-primary" title="Room Host">
-                    <span className="text-xl">⚡</span>
+                <div className="ml-auto" title="Room Host">
+                    <span className="text-xl text-primary">⚡</span>
                 </div>
             )}
         </div>
     )
 }
 
-const MultiplayerPanel = ({ room, isHost }: { room: Room, isHost: boolean }) => {
+const MultiplayerPanel = ({ room }: { room: Room | null }) => {
+    const { user } = useAuth();
+    const { toast } = useToast();
+
+    const handleCopyRoomId = () => {
+        if (!room) return;
+        navigator.clipboard.writeText(room.id);
+        toast({ title: 'Room ID Copied!' });
+    };
+
+    const handleShare = () => {
+        if (!room) return;
+        if (navigator.share) {
+            navigator.share({
+                title: 'Join my Focus Session!',
+                text: `Join my study session on BiharWaleSirji! Room ID: ${room.id}`,
+                url: window.location.href,
+            });
+        } else {
+            handleCopyRoomId();
+            toast({ description: "Share feature not supported, Room ID copied instead." });
+        }
+    };
+
+
+    if (!room) {
+        return (
+             <Card className="w-full max-w-sm">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Skeleton className="h-6 w-6 rounded-full" /><Skeleton className="h-6 w-32" /></CardTitle>
+                    <CardDescription><Skeleton className="h-4 w-48" /></CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </CardContent>
+            </Card>
+        )
+    }
+
+    const isHost = user?.uid === room.hostId;
+
     return (
         <Card className="w-full max-w-sm">
             <CardHeader>
@@ -150,6 +195,11 @@ const MultiplayerPanel = ({ room, isHost }: { room: Room, isHost: boolean }) => 
                 </CardDescription>
             </CardHeader>
             <CardContent>
+                <div className="flex items-center gap-2 mb-2">
+                    <Input readOnly value={room.id} className="font-mono text-center bg-muted" />
+                    <Button variant="outline" size="icon" onClick={handleCopyRoomId}><Copy className="w-4 h-4"/></Button>
+                    <Button variant="outline" size="icon" onClick={handleShare}><Share2 className="w-4 h-4"/></Button>
+                </div>
                 <h4 className="font-bold mb-2 text-sm">{room.members.length} Member(s) in Room</h4>
                 <ScrollArea className="h-40">
                     <div className="space-y-2 pr-4">
@@ -167,12 +217,15 @@ const MultiplayerPanel = ({ room, isHost }: { room: Room, isHost: boolean }) => 
 };
 
 
-const FocusZonePage = () => {
-    const params = useParams();
-    const roomId = params.roomId as string;
-    const isMultiplayer = roomId !== 'solo';
-    const [room, setRoom] = useState<Room | null>(null);
+const FocusZoneUI = () => {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const { user, userProfile, setUserProfile } = useAuth();
+    
+    const roomId = searchParams.get('roomId');
+    const isMultiplayer = !!roomId;
 
+    const [room, setRoom] = useState<Room | null>(null);
     const [isMounted, setIsMounted] = useState(false);
     const [workMinutes, setWorkMinutes] = useState(25);
     const [breakMinutes, setBreakMinutes] = useState(5);
@@ -196,8 +249,6 @@ const FocusZonePage = () => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
-    const { user, userProfile, setUserProfile } = useAuth();
-    const router = useRouter();
     
     useEffect(() => {
         setIsMounted(true);
@@ -206,11 +257,17 @@ const FocusZonePage = () => {
     useEffect(() => {
         if (isMultiplayer && roomId) {
             const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
-                setRoom(updatedRoom);
+                if (updatedRoom) {
+                    setRoom(updatedRoom);
+                } else {
+                    // Room was deleted or not found
+                    toast({ variant: 'destructive', title: 'Room not found', description: 'This room no longer exists. Redirecting...' });
+                    router.push('/focus-zone/lobby');
+                }
             });
             return () => unsubscribe();
         }
-    }, [isMultiplayer, roomId]);
+    }, [isMultiplayer, roomId, router, toast]);
 
 
     useEffect(() => {
@@ -468,16 +525,14 @@ const FocusZonePage = () => {
         }
     };
 
-    if (!isMounted || (isMultiplayer && !room)) {
+    if (!isMounted) {
         return (
              <div className="flex h-screen items-center justify-center">
                 <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-                <p className="ml-4">Entering Room...</p>
+                <p className="ml-4">Loading Focus Zone...</p>
             </div>
         );
     }
-    
-    const isHost = user?.uid === room?.hostId;
 
     return (
         <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in">
@@ -550,8 +605,8 @@ const FocusZonePage = () => {
                         </Button>
                     </div>
 
-                    {isMultiplayer && room ? (
-                        <MultiplayerPanel room={room} isHost={isHost}/>
+                    {isMultiplayer ? (
+                        <MultiplayerPanel room={room}/>
                     ) : (
                         <Card className="w-full max-w-sm">
                             <CardHeader><CardTitle>Customize Session</CardTitle></CardHeader>
@@ -739,4 +794,15 @@ const FocusZonePage = () => {
     );
 };
 
-export default FocusZonePage;
+export default function FocusZonePage() {
+    return (
+        // Use Suspense to handle client-side search param reading
+        <Suspense fallback={
+            <div className="flex h-screen items-center justify-center">
+                <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        }>
+            <FocusZoneUI />
+        </Suspense>
+    )
+}
