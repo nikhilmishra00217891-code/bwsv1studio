@@ -118,6 +118,14 @@ export interface Room {
     createdAt: Timestamp;
 }
 
+export interface ChatMessage {
+    id: string;
+    senderId: string;
+    senderName: string;
+    text: string;
+    timestamp: Timestamp;
+}
+
 export interface Question {
     questionText: string;
     options: string[];

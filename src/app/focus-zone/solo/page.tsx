@@ -34,7 +34,10 @@ import {
     FerrisWheel,
     LoaderCircle,
     Copy,
-    Share2
+    Share2,
+    Send,
+    LogOut,
+    XCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -44,10 +47,11 @@ import { updateUserProfile } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useSearchParams, useRouter } from 'next/navigation';
-import type { Room, RoomMember } from '@/types';
-import { listenForRoomUpdates } from '@/lib/data/rooms';
+import type { Room, RoomMember, ChatMessage } from '@/types';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDistanceToNow } from 'date-fns';
 
 
 const avatarIcons: { [key: string]: React.ElementType } = {
@@ -122,21 +126,110 @@ interface Task {
     completed: boolean;
 }
 
-const MemberCard = ({ member, isHost }: { member: RoomMember, isHost: boolean }) => {
+const MemberCard = ({ member, isHost, currentUserId, onRemove }: { member: RoomMember, isHost: boolean, currentUserId: string, onRemove: (memberId: string) => void }) => {
     const AvatarIcon = avatarIcons[member.avatar] || Brain;
+    const canRemove = currentUserId === isHost && member.uid !== currentUserId;
+
     return (
-        <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-lg group">
             <Avatar>
                 <AvatarFallback className="bg-primary/20">
                     <AvatarIcon className="w-5 h-5 text-primary" />
                 </AvatarFallback>
             </Avatar>
-            <div className="font-semibold text-sm">{member.displayName}</div>
-            {isHost && (
+            <div className="font-semibold text-sm flex-grow">{member.displayName}</div>
+            {member.uid === currentUserId && <span className="text-xs text-muted-foreground">(You)</span>}
+            {isHost && member.uid === currentUserId && (
                 <div className="ml-auto" title="Room Host">
                     <span className="text-xl text-primary">⚡</span>
                 </div>
             )}
+             {canRemove && (
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                    onClick={() => onRemove(member.uid)}
+                >
+                    <XCircle className="w-4 h-4 text-destructive"/>
+                </Button>
+             )}
+        </div>
+    )
+}
+
+const ChatBox = ({ roomId }: { roomId: string }) => {
+    const { user, userProfile } = useAuth();
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const unsubscribe = listenForChatMessages(roomId, setMessages);
+        return () => unsubscribe();
+    }, [roomId]);
+
+     useEffect(() => {
+        // Scroll to bottom when new messages arrive
+        if (scrollAreaRef.current) {
+            const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+            if (viewport) {
+                viewport.scrollTop = viewport.scrollHeight;
+            }
+        }
+    }, [messages]);
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMessage.trim() || !user || !userProfile) return;
+
+        setIsSending(true);
+        try {
+            await sendChatMessage(roomId, {
+                senderId: user.uid,
+                senderName: userProfile.displayName || 'Anonymous',
+                text: newMessage.trim(),
+            });
+            setNewMessage('');
+        } catch (error) {
+            console.error("Failed to send message:", error);
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    return (
+        <div className="mt-4 border-t pt-4">
+             <h4 className="font-bold mb-2 text-sm">Live Chat</h4>
+             <ScrollArea className="h-48 border rounded-md p-2 mb-2" ref={scrollAreaRef}>
+                 <div className="space-y-3 pr-2">
+                    {messages.length > 0 ? messages.map(msg => (
+                        <div key={msg.id} className="text-sm">
+                            <div className="flex justify-between items-baseline">
+                                <span className="font-bold text-primary/80">{msg.senderId === user?.uid ? "You" : msg.senderName}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}
+                                </span>
+                            </div>
+                            <p className="break-words">{msg.text}</p>
+                        </div>
+                    )) : (
+                        <p className="text-center text-muted-foreground p-4">No messages yet. Say hi!</p>
+                    )}
+                 </div>
+             </ScrollArea>
+             <form onSubmit={handleSendMessage} className="flex gap-2">
+                <Input 
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    disabled={isSending}
+                />
+                <Button type="submit" size="icon" disabled={isSending || !newMessage.trim()}>
+                    {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
+                </Button>
+             </form>
         </div>
     )
 }
@@ -165,8 +258,18 @@ const MultiplayerPanel = ({ room }: { room: Room | null }) => {
         }
     };
 
+    const handleRemoveMember = async (memberId: string) => {
+        if (!room || user?.uid !== room.hostId) return;
+        try {
+            await removeMemberFromRoom(room.id, memberId);
+            toast({ title: 'Member removed' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Failed to remove member', description: error.message });
+        }
+    };
 
-    if (!room) {
+
+    if (!room || !user) {
         return (
              <Card className="w-full max-w-sm">
                 <CardHeader>
@@ -204,10 +307,19 @@ const MultiplayerPanel = ({ room }: { room: Room | null }) => {
                 <ScrollArea className="h-40">
                     <div className="space-y-2 pr-4">
                         {room.members.map(member => (
-                            <MemberCard key={member.uid} member={member} isHost={member.uid === room.hostId} />
+                            <MemberCard 
+                                key={member.uid} 
+                                member={member} 
+                                isHost={isHost} 
+                                currentUserId={user.uid}
+                                onRemove={handleRemoveMember}
+                            />
                         ))}
                     </div>
                 </ScrollArea>
+                
+                <ChatBox roomId={room.id} />
+
                 {isHost && (
                     <Button disabled className="w-full mt-4">Start Synced Session (Coming Soon)</Button>
                 )}
@@ -245,6 +357,7 @@ const FocusZoneUI = () => {
     const [newTask, setNewTask] = useState('');
     
     const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [removedMessage, setRemovedMessage] = useState<string | null>(null);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -257,17 +370,20 @@ const FocusZoneUI = () => {
     useEffect(() => {
         if (isMultiplayer && roomId) {
             const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
-                if (updatedRoom) {
+                 if (updatedRoom) {
                     setRoom(updatedRoom);
+                    // Check if current user is still in the room
+                    if (user && !updatedRoom.members.some(m => m.uid === user.uid)) {
+                        setRemovedMessage('You have been removed from the room by the host.');
+                    }
                 } else {
                     // Room was deleted or not found
-                    toast({ variant: 'destructive', title: 'Room not found', description: 'This room no longer exists. Redirecting...' });
-                    router.push('/focus-zone/lobby');
+                    setRemovedMessage('This room no longer exists.');
                 }
             });
             return () => unsubscribe();
         }
-    }, [isMultiplayer, roomId, router, toast]);
+    }, [isMultiplayer, roomId, user]);
 
 
     useEffect(() => {
@@ -520,10 +636,28 @@ const FocusZoneUI = () => {
     const handleBackNavigation = () => {
         if (isActive) {
             setShowExitConfirm(true);
+        } else if (isMultiplayer) {
+            router.push('/focus-zone/lobby');
         } else {
             router.push('/focus-zone');
         }
     };
+
+    if (removedMessage) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Card className="max-w-md text-center">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-center gap-2"><LogOut className="w-6 h-6 text-destructive"/> Session Ended</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">{removedMessage}</p>
+                        <Button className="mt-4" onClick={() => router.push('/focus-zone/lobby')}>Back to Lobby</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
     if (!isMounted) {
         return (
