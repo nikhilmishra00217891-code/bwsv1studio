@@ -260,7 +260,7 @@ const navLinks = [
 const futureNavLinks = [
   { href: "/profile", label: "My Profile", icon: UserCircle },
   { href: "/focus-zone", label: "Focus Zone", icon: Target },
-  { href: "#", label: "Warzone", icon: Swords },
+  { href: "/warzone", label: "Warzone", icon: Swords },
   { href: "#", label: "Parivartan Chamber", icon: BrainCircuit },
 ];
 
