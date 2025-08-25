@@ -337,6 +337,7 @@ const FocusZoneUI = () => {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { user, userProfile, setUserProfile } = useAuth();
+    const { toast } = useToast();
     
     const roomId = searchParams.get('roomId');
     const isMultiplayer = !!roomId;
@@ -365,7 +366,6 @@ const FocusZoneUI = () => {
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { toast } = useToast();
     
     useEffect(() => {
         setIsMounted(true);
@@ -649,7 +649,11 @@ const FocusZoneUI = () => {
     
     const handleRemoveMember = useCallback(async (memberId: string) => {
         if (!roomId) return;
-        await removeMemberFromRoom(roomId, memberId);
+        try {
+            await removeMemberFromRoom(roomId, memberId);
+        } catch (error) {
+            console.error(error);
+        }
     }, [roomId]);
 
 
