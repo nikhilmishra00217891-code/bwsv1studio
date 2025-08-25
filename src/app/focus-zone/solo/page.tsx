@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
@@ -160,7 +161,7 @@ const MemberCard = React.memo(({ member, isHost, currentUserId, onRemove }: { me
 MemberCard.displayName = 'MemberCard';
 
 
-const MemberListPanel = ({ room, onRemoveMember }: { room: Room | null, onRemoveMember: (memberId: string) => Promise<void> }) => {
+const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | null, onRemoveMember: (memberId: string) => Promise<void> }) => {
     const { user } = useAuth();
     const { toast } = useToast();
 
@@ -247,7 +248,9 @@ const MemberListPanel = ({ room, onRemoveMember }: { room: Room | null, onRemove
             </CardContent>
         </Card>
     );
-}
+});
+MemberListPanel.displayName = 'MemberListPanel';
+
 
 const ChatBox = ({ roomId }: { roomId: string }) => {
     const { user, userProfile } = useAuth();
@@ -643,7 +646,7 @@ const FocusZoneUI = () => {
             router.push('/focus-zone');
         }
     };
-
+    
     const handleRemoveMember = useCallback(async (memberId: string) => {
         if (!roomId) return;
         await removeMemberFromRoom(roomId, memberId);
