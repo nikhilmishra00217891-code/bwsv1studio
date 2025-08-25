@@ -736,27 +736,15 @@ const FocusZoneUI = () => {
     }
     
     const handleAttemptToLeave = () => {
-        if (isMultiplayer && room && user) {
-            setShowExitDialog(true);
-        } else {
-            // Solo mode
-            if (isActive) {
-                setShowExitDialog(true);
-            } else {
-                router.push('/focus-zone');
-            }
-        }
+      setShowExitDialog(true);
     };
     
     const handleConfirmLeave = async () => {
         // This is for regular members leaving
         if (isMultiplayer && roomId && user) {
             await removeMemberFromRoom(roomId, user.uid);
-            router.push('/focus-zone/lobby');
-        } else {
-            // This is for solo mode
-            router.push('/focus-zone');
         }
+        router.push('/focus-zone');
     };
 
     const handleHostDeleteRoom = async () => {
@@ -846,6 +834,9 @@ const FocusZoneUI = () => {
             </div>
         );
     }
+
+    const isHost = room?.hostId === user?.uid;
+    const hasOtherMembers = (room?.members.length ?? 0) > 1;
 
     return (
         <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in flex flex-col">
@@ -1102,7 +1093,7 @@ const FocusZoneUI = () => {
 
              <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
                 <AlertDialogContent>
-                    {room && user?.uid === room.hostId && room.members.length > 1 ? (
+                    {isMultiplayer && isHost && hasOtherMembers ? (
                         <>
                             <AlertDialogHeader>
                                 <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
@@ -1151,7 +1142,7 @@ const FocusZoneUI = () => {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Your session will end and you will leave the room.
+                                    {isActive ? "Your current session will be interrupted." : "You will leave the focus zone."}
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
