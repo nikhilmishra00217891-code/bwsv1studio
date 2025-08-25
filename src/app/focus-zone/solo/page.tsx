@@ -740,34 +740,31 @@ const FocusZoneUI = () => {
                             </Button>
                         </div>
                         
-                         {!isMultiplayer && (
-                             <Card className="w-full max-w-sm">
-                                <CardHeader><CardTitle>Customize Session</CardTitle></CardHeader>
-                                <CardContent className="flex items-end gap-4">
-                                    <div>
-                                        <Label htmlFor="work-minutes">Focus (mins)</Label>
-                                        <Input 
-                                            id="work-minutes"
-                                            type="number"
-                                            value={workMinutes}
-                                            onChange={handleWorkMinutesChange}
-                                            min={1}
-                                            disabled={isActive}
-                                        />
+                        <Card className="w-full max-w-sm">
+                            <CardHeader><CardTitle>Customize Session</CardTitle></CardHeader>
+                            <CardContent className="flex items-end gap-4">
+                                <div>
+                                    <Label htmlFor="work-minutes">Focus (mins)</Label>
+                                    <Input 
+                                        id="work-minutes"
+                                        type="number"
+                                        value={workMinutes}
+                                        onChange={handleWorkMinutesChange}
+                                        min={1}
+                                        disabled={isActive}
+                                    />
+                                </div>
+                                <div className="pb-2 text-muted-foreground">
+                                    <Timer className="w-6 h-6"/>
+                                </div>
+                                <div>
+                                    <Label>Break (mins)</Label>
+                                    <div className="h-10 flex items-center justify-center rounded-md border bg-muted px-3 font-bold text-muted-foreground">
+                                        {breakMinutes}
                                     </div>
-                                    <div className="pb-2 text-muted-foreground">
-                                        <Timer className="w-6 h-6"/>
-                                    </div>
-                                    <div>
-                                        <Label>Break (mins)</Label>
-                                        <div className="h-10 flex items-center justify-center rounded-md border bg-muted px-3 font-bold text-muted-foreground">
-                                            {breakMinutes}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                         )}
-
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
 
                     <div className="space-y-6">
@@ -953,5 +950,3 @@ export default function FocusZonePage() {
         </Suspense>
     )
 }
-
-    
