@@ -160,7 +160,7 @@ const MemberCard = React.memo(({ member, isHost, currentUserId, onRemove }: { me
 MemberCard.displayName = 'MemberCard';
 
 
-const MemberListPanel = ({ room }: { room: Room | null }) => {
+const MemberListPanel = ({ room, onRemoveMember }: { room: Room | null, onRemoveMember: (memberId: string) => Promise<void> }) => {
     const { user } = useAuth();
     const { toast } = useToast();
 
@@ -187,12 +187,12 @@ const MemberListPanel = ({ room }: { room: Room | null }) => {
     const handleRemoveMember = useCallback(async (memberId: string) => {
         if (!room || !user || user.uid !== room.hostId) return;
         try {
-            await removeMemberFromRoom(room.id, memberId);
+            await onRemoveMember(memberId);
             toast({ title: 'Member removed' });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Failed to remove member', description: error.message });
         }
-    }, [room, user, toast]);
+    }, [room, user, toast, onRemoveMember]);
 
     if (!room || !user) {
         return (
@@ -771,7 +771,7 @@ const FocusZoneUI = () => {
 
                     <div className="space-y-6">
                         {isMultiplayer && (
-                            <MemberListPanel room={room} />
+                            <MemberListPanel room={room} onRemoveMember={removeMemberFromRoom}/>
                         )}
 
                         {/* To-Do List Section */}
