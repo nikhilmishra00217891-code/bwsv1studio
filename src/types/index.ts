@@ -1,5 +1,7 @@
 
+
 import { Timestamp } from "firebase/firestore";
+import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
 export interface Lesson {
   id: string;
@@ -122,6 +124,8 @@ export interface Room {
     status: 'waiting' | 'in-progress' | 'finished';
     members: RoomMember[];
     createdAt: Timestamp;
+    quizSettings?: GenerateQuizInput;
+    quizData?: GenerateQuizOutput;
 }
 
 export interface ChatMessage {
@@ -138,3 +142,4 @@ export interface Question {
     correctAnswer: string;
     explanation: string;
 }
+

@@ -1,4 +1,5 @@
 
+
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -20,6 +21,7 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import type { Room, RoomMember, ChatMessage } from "@/types";
+import { generateQuiz, type GenerateQuizInput } from "@/ai/flows";
 
 const roomsCollection = collection(db, "rooms");
 
@@ -48,6 +50,15 @@ export const createRoom = async (
     status: 'waiting',
     createdAt: serverTimestamp() as Timestamp, // Cast for type consistency
   };
+  
+  if (type === 'warzone') {
+      newRoom.quizSettings = {
+          topic: '',
+          grade: 'Competitive Exams',
+          difficulty: 'Medium',
+          numberOfQuestions: 10,
+      }
+  }
 
   await setDoc(roomRef, newRoom);
   return roomId;
@@ -95,7 +106,14 @@ export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: str
                 // If the last member is leaving, delete the room.
                 transaction.delete(roomRef);
             } else {
-                transaction.update(roomRef, { members: updatedMembers });
+                let newHostId = roomData.hostId;
+                let newHostName = roomData.hostName;
+                // If the host is leaving, assign a new host.
+                if (roomData.hostId === memberIdToRemove) {
+                    newHostId = updatedMembers[0].uid;
+                    newHostName = updatedMembers[0].displayName;
+                }
+                transaction.update(roomRef, { members: updatedMembers, hostId: newHostId, hostName: newHostName });
             }
         });
     } catch (error) {
@@ -103,6 +121,7 @@ export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: str
         throw error;
     }
 };
+
 
 export const deleteRoom = async (roomId: string): Promise<void> => {
     const roomRef = doc(db, 'rooms', roomId);
@@ -150,6 +169,34 @@ export const updateMemberStatusInRoom = async (roomId: string, memberId: string,
     } catch (error) {
         console.error("Failed to update member status:", error);
     }
+}
+
+export const updateQuizSettings = async (roomId: string, settings: Partial<GenerateQuizInput>) => {
+    const roomRef = doc(db, "rooms", roomId);
+    await updateDoc(roomRef, {
+        quizSettings: settings,
+    });
+};
+
+export const startQuiz = async (roomId: string): Promise<void> => {
+    const roomRef = doc(db, "rooms", roomId);
+    const roomSnap = await getDoc(roomRef);
+
+    if (!roomSnap.exists()) {
+        throw new Error("Room not found.");
+    }
+    const roomData = roomSnap.data() as Room;
+
+    if (!roomData.quizSettings) {
+        throw new Error("Quiz settings are not configured.");
+    }
+
+    const quizData = await generateQuiz(roomData.quizSettings);
+    
+    await updateDoc(roomRef, {
+        quizData,
+        status: 'in-progress'
+    });
 }
 
 
@@ -203,3 +250,4 @@ export const listenForChatMessages = (roomId: string, callback: (messages: ChatM
 
     return unsubscribe;
 };
+

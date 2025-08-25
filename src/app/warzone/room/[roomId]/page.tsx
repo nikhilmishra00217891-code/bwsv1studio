@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useRef, useMemo } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,10 @@ import {
     AlertTriangle,
     Brain,
     Swords,
+    Check,
+    X,
+    ChevronsRight,
+    BookOpen
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -32,13 +37,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useParams, useRouter } from 'next/navigation';
-import type { Room, RoomMember, ChatMessage } from '@/types';
-import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost } from '@/lib/data/rooms';
+import type { Room, RoomMember, ChatMessage, Question } from '@/types';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateQuizSettings, startQuiz } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import type { GenerateQuizInput } from '@/ai/flows';
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -242,21 +249,46 @@ const ChatBox = ({ roomId }: { roomId: string }) => {
     )
 }
 
-const WarzoneHostSetup = () => {
-    const [topic, setTopic] = useState('');
-    const [grade, setGrade] = useState('');
-    const [difficulty, setDifficulty] = useState('Medium');
-    const [numQuestions, setNumQuestions] = useState('10');
+const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings: GenerateQuizInput }) => {
+    const [quizSettings, setQuizSettings] = useState<GenerateQuizInput>(settings);
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
 
-    const handleStartBattle = (e: React.FormEvent) => {
+    useEffect(() => {
+        // Debounced update to Firestore
+        const handler = setTimeout(() => {
+            if (JSON.stringify(quizSettings) !== JSON.stringify(settings)) {
+                updateQuizSettings(roomId, quizSettings);
+            }
+        }, 500);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [quizSettings, roomId, settings]);
+
+    const handleSettingChange = (field: keyof GenerateQuizInput, value: string | number) => {
+        setQuizSettings(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleStartBattle = async (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, this would update the room state and trigger the quiz for all members.
-         toast({
-            title: "Quiz Started!",
-            description: "This would start the quiz for all members in a real app.",
-        });
+        setIsLoading(true);
+        try {
+            await startQuiz(roomId);
+            toast({
+                title: "Battle Started!",
+                description: "The quiz is now live for all members.",
+            });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: "Failed to Start Quiz",
+                description: error.message || "An unknown error occurred.",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -272,15 +304,15 @@ const WarzoneHostSetup = () => {
                         <Input
                             id="topic"
                             placeholder="e.g., Photosynthesis, Indian History"
-                            value={topic}
-                            onChange={(e) => setTopic(e.target.value)}
+                            value={quizSettings.topic}
+                            onChange={(e) => handleSettingChange('topic', e.target.value)}
                             required
                         />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="grade">Grade</Label>
-                            <Select value={grade} onValueChange={setGrade} required>
+                            <Select value={quizSettings.grade} onValueChange={(v) => handleSettingChange('grade', v)} required>
                                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                                 <SelectContent>
                                     {['6th', '7th', '8th', '9th', '10th', '11th', '12th', 'Competitive Exams'].map(g => (
@@ -291,7 +323,7 @@ const WarzoneHostSetup = () => {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="difficulty">Difficulty</Label>
-                            <Select value={difficulty} onValueChange={setDifficulty} required>
+                            <Select value={quizSettings.difficulty} onValueChange={(v) => handleSettingChange('difficulty', v)} required>
                                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Easy">Easy</SelectItem>
@@ -302,7 +334,7 @@ const WarzoneHostSetup = () => {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="numQuestions">Questions</Label>
-                            <Select value={numQuestions} onValueChange={setNumQuestions} required>
+                            <Select value={String(quizSettings.numberOfQuestions)} onValueChange={(v) => handleSettingChange('numberOfQuestions', parseInt(v))} required>
                                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="5">5</SelectItem>
@@ -312,7 +344,7 @@ const WarzoneHostSetup = () => {
                             </Select>
                         </div>
                     </div>
-                    <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+                    <Button type="submit" size="lg" className="w-full" disabled={isLoading || !quizSettings.topic}>
                         {isLoading ? <LoaderCircle className="animate-spin" /> : 'Start Battle for All'}
                     </Button>
                 </CardContent>
@@ -321,14 +353,23 @@ const WarzoneHostSetup = () => {
     );
 };
 
-const WaitingForHost = () => (
+const WaitingForHost = ({ settings }: { settings?: GenerateQuizInput }) => (
     <Card className="shadow-lg">
         <CardHeader>
              <CardTitle>Waiting for Host</CardTitle>
              <CardDescription>The host is setting up the quiz. Get ready for battle!</CardDescription>
         </CardHeader>
-        <CardContent className="text-center">
+        <CardContent className="text-center space-y-4">
             <LoaderCircle className="w-12 h-12 text-primary animate-spin mx-auto"/>
+            {settings && settings.topic && (
+                <div className='text-left space-y-2 pt-4 border-t'>
+                    <h4 className="font-semibold">Current Settings:</h4>
+                    <p className="text-sm text-muted-foreground"><strong>Topic:</strong> {settings.topic}</p>
+                    <p className="text-sm text-muted-foreground"><strong>Grade:</strong> {settings.grade}</p>
+                    <p className="text-sm text-muted-foreground"><strong>Difficulty:</strong> {settings.difficulty}</p>
+                    <p className="text-sm text-muted-foreground"><strong>Questions:</strong> {settings.numberOfQuestions}</p>
+                </div>
+            )}
         </CardContent>
     </Card>
 );
@@ -378,14 +419,7 @@ const WarzoneUI = () => {
     const handleConfirmLeave = async () => {
         if (!user || !room) return;
         
-        const isHost = room.hostId === user.uid;
-        const isLastMember = room.members.length === 1 && isHost;
-        
-        if(isLastMember) {
-             await deleteRoom(room.id);
-        } else {
-            await removeMemberFromRoom(room.id, user.uid);
-        }
+        await removeMemberFromRoom(room.id, user.uid);
         router.push('/warzone/lobby');
     };
 
@@ -448,7 +482,13 @@ const WarzoneUI = () => {
             </div>
         );
     }
+    
+    // Quiz view
+    if (room.status === 'in-progress' && room.quizData) {
+        return <MultiplayerQuizUI room={room} />
+    }
 
+    // Lobby view
     return (
         <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in flex flex-col">
             <div className="absolute top-6 left-6 z-50">
@@ -460,7 +500,7 @@ const WarzoneUI = () => {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will remove you from the current battle. Your progress may not be saved.
+                                This will remove you from the current battle.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -480,7 +520,7 @@ const WarzoneUI = () => {
                 </div>
                 <div className="grid lg:grid-cols-3 gap-8 items-start">
                     <div className="lg:col-span-2 space-y-8">
-                        {isHost ? <WarzoneHostSetup /> : <WaitingForHost />}
+                        {isHost ? <WarzoneHostSetup roomId={room.id} settings={room.quizSettings!} /> : <WaitingForHost settings={room.quizSettings} />}
                         <ChatBox roomId={roomId} />
                     </div>
                     <div className="lg:col-span-1">
@@ -494,7 +534,7 @@ const WarzoneUI = () => {
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
                         <AlertDialogDescription>
-                            As the host, if you leave, the room will be deleted for everyone. To prevent this, you can make someone else the host before you go.
+                            As the host, if you leave, another member will become the host. To delete the room for everyone, you must be the last member to leave.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="space-y-4 py-4">
@@ -504,39 +544,50 @@ const WarzoneUI = () => {
                                 <div key={member.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
                                     <span className="font-semibold">{member.displayName}</span>
                                     <Button size="sm" variant="outline" onClick={() => handleHostTransfer(member.uid)}>
-                                        <Crown className="mr-2 h-4 w-4"/> Make Host
+                                        <Crown className="mr-2 h-4 w-4"/> Make Host & Leave
                                     </Button>
                                 </div>
                             ))}
                         </div>
                     </div>
                     <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
-                        <Button variant="secondary" onClick={() => setShowHostLeaveDialog(false)} className="w-full sm:w-auto">Cancel</Button>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" className="w-full sm:w-auto">Leave & Delete Room</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                    This will permanently delete the warzone for all members. This action cannot be undone.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleHostDeleteRoom} className={cn(buttonVariants({variant: "destructive"}))}>
-                                        Yes, delete room
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                         <Button variant="secondary" onClick={() => setShowHostLeaveDialog(false)} className="w-full sm:w-auto">Cancel</Button>
+                         <Button variant="destructive" onClick={handleConfirmLeave} className="w-full sm:w-auto">Leave & Assign New Host</Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </div>
     );
 };
+
+const MultiplayerQuizUI = ({ room }: { room: Room }) => {
+    // This is a placeholder for the actual multiplayer quiz UI
+    // For now, it will just show the questions from the solo quiz UI
+    const quizData = room.quizData!;
+    const quizParams = room.quizSettings!;
+
+    return (
+        <div className="bg-card/50 min-h-screen flex items-center justify-center">
+            <div className="p-4 md:p-8 w-full max-w-4xl mx-auto animate-fade-in">
+                <div className="text-center mb-6">
+                    <p className="text-sm font-semibold text-primary">{quizParams.topic} - {quizParams.difficulty}</p>
+                    <h1 className="text-2xl md:text-3xl font-bold font-headline">The Battle has begun!</h1>
+                    <p className="text-muted-foreground">Question 1 of {quizData.questions.length}</p>
+                </div>
+                 <Card>
+                    <CardHeader><CardTitle>{quizData.questions[0].questionText}</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {quizData.questions[0].options.map((option, index) => (
+                            <Button key={index} variant="outline" className="h-auto py-4 text-base justify-start">
+                                {option}
+                            </Button>
+                        ))}
+                    </CardContent>
+                 </Card>
+            </div>
+        </div>
+    )
+}
 
 export default function WarzoneRoomPage() {
     return (
