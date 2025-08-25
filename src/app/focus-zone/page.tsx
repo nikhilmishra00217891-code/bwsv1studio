@@ -23,8 +23,8 @@ const modes = [
         icon: Users,
         title: "Multidimensional Mode",
         description: "Join or create group study sessions with friends and the BWS Parivaar.",
-        href: "#",
-        isReady: false,
+        href: "/focus-zone/lobby",
+        isReady: true,
     }
 ];
 

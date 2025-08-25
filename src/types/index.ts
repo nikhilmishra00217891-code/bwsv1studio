@@ -22,7 +22,7 @@ export interface Course {
 }
 
 export interface Testimonial {
-  id: string;
+  id: "t1" | "t2" | "t3" | "t4" | "t5";
   name: string;
   role: string;
   avatar: string;
@@ -101,5 +101,19 @@ export interface Announcement {
   reactions: string[];
 }
 
+export interface RoomMember {
+    uid: string;
+    displayName: string;
+    photoURL: string;
+    avatar: string;
+}
 
-    
+export interface Room {
+    id: string;
+    type: 'focus-zone' | 'warzone';
+    hostId: string;
+    hostName: string;
+    status: 'waiting' | 'in-progress' | 'finished';
+    members: RoomMember[];
+    createdAt: Timestamp;
+}
