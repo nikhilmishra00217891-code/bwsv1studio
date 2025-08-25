@@ -249,10 +249,23 @@ const ChatBox = ({ roomId }: { roomId: string }) => {
     )
 }
 
-const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings: GenerateQuizInput }) => {
-    const [quizSettings, setQuizSettings] = useState<GenerateQuizInput>(settings);
+const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: GenerateQuizInput }) => {
+    const defaultSettings = {
+        topic: '',
+        grade: 'Competitive Exams',
+        difficulty: 'Medium' as 'Easy' | 'Medium' | 'Hard',
+        numberOfQuestions: 10,
+    };
+    
+    const [quizSettings, setQuizSettings] = useState<GenerateQuizInput>(settings || defaultSettings);
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    
+    useEffect(() => {
+        if(settings){
+            setQuizSettings(settings);
+        }
+    }, [settings]);
 
     useEffect(() => {
         // Debounced update to Firestore
@@ -520,7 +533,7 @@ const WarzoneUI = () => {
                 </div>
                 <div className="grid lg:grid-cols-3 gap-8 items-start">
                     <div className="lg:col-span-2 space-y-8">
-                        {isHost ? <WarzoneHostSetup roomId={room.id} settings={room.quizSettings!} /> : <WaitingForHost settings={room.quizSettings} />}
+                        {isHost ? <WarzoneHostSetup roomId={room.id} settings={room.quizSettings} /> : <WaitingForHost settings={room.quizSettings} />}
                         <ChatBox roomId={roomId} />
                     </div>
                     <div className="lg:col-span-1">
