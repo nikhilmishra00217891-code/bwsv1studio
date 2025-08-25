@@ -184,7 +184,7 @@ const MemberListPanel = ({ room, onRemoveMember }: { room: Room | null, onRemove
         }
     };
     
-    const handleRemoveMember = useCallback(async (memberId: string) => {
+    const handleRemove = useCallback(async (memberId: string) => {
         if (!room || !user || user.uid !== room.hostId) return;
         try {
             await onRemoveMember(memberId);
@@ -236,7 +236,7 @@ const MemberListPanel = ({ room, onRemoveMember }: { room: Room | null, onRemove
                                 member={member} 
                                 isHost={isHost} 
                                 currentUserId={user.uid}
-                                onRemove={handleRemoveMember}
+                                onRemove={handleRemove}
                             />
                         ))}
                     </div>
@@ -644,6 +644,12 @@ const FocusZoneUI = () => {
         }
     };
 
+    const handleRemoveMember = useCallback(async (memberId: string) => {
+        if (!roomId) return;
+        await removeMemberFromRoom(roomId, memberId);
+    }, [roomId]);
+
+
     if (removedMessage) {
         return (
             <div className="flex h-screen items-center justify-center">
@@ -771,7 +777,7 @@ const FocusZoneUI = () => {
 
                     <div className="space-y-6">
                         {isMultiplayer && (
-                            <MemberListPanel room={room} onRemoveMember={removeMemberFromRoom}/>
+                            <MemberListPanel room={room} onRemoveMember={handleRemoveMember}/>
                         )}
 
                         {/* To-Do List Section */}
