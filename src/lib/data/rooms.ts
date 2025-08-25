@@ -19,6 +19,7 @@ import {
   Timestamp,
   deleteDoc,
   runTransaction,
+  writeBatch,
 } from "firebase/firestore";
 import type { Room, RoomMember, ChatMessage } from "@/types";
 import { generateQuiz, type GenerateQuizInput } from "@/ai/flows";
@@ -96,19 +97,16 @@ export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: str
         await runTransaction(db, async (transaction) => {
             const roomSnap = await transaction.get(roomRef);
             if (!roomSnap.exists()) {
-                // Room might have been deleted already, which is fine.
                 return;
             }
             const roomData = roomSnap.data() as Room;
             const updatedMembers = roomData.members.filter(m => m.uid !== memberIdToRemove);
             
             if (updatedMembers.length === 0) {
-                // If the last member is leaving, delete the room.
                 transaction.delete(roomRef);
             } else {
                 let newHostId = roomData.hostId;
                 let newHostName = roomData.hostName;
-                // If the host is leaving, assign a new host.
                 if (roomData.hostId === memberIdToRemove) {
                     newHostId = updatedMembers[0].uid;
                     newHostName = updatedMembers[0].displayName;
@@ -153,7 +151,6 @@ export const updateMemberStatusInRoom = async (roomId: string, memberId: string,
       await runTransaction(db, async (transaction) => {
         const roomSnap = await transaction.get(roomRef);
         if (!roomSnap.exists()) {
-          // The room might have been deleted, so we just ignore the update.
           return;
         }
 
@@ -168,6 +165,32 @@ export const updateMemberStatusInRoom = async (roomId: string, memberId: string,
       });
     } catch (error) {
         console.error("Failed to update member status:", error);
+    }
+}
+
+export const submitAnswer = async (roomId: string, userId: string, questionIndex: number, answer: string) => {
+    const roomRef = doc(db, 'rooms', roomId);
+    const answerPath = `members.${userId}.answers.${questionIndex}`;
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const roomSnap = await transaction.get(roomRef);
+            if (!roomSnap.exists()) return;
+
+            const roomData = roomSnap.data() as Room;
+            const memberIndex = roomData.members.findIndex(m => m.uid === userId);
+            if (memberIndex === -1) return;
+
+            const updatedMembers = [...roomData.members];
+            if (!updatedMembers[memberIndex].answers) {
+                updatedMembers[memberIndex].answers = {};
+            }
+            updatedMembers[memberIndex].answers![questionIndex] = answer;
+            
+            transaction.update(roomRef, { members: updatedMembers });
+        });
+    } catch(e) {
+        console.error("Error submitting answer: ", e);
     }
 }
 
@@ -193,10 +216,17 @@ export const startQuiz = async (roomId: string): Promise<void> => {
 
     const quizData = await generateQuiz(roomData.quizSettings);
     
-    await updateDoc(roomRef, {
+    // Clear previous quiz answers/scores for all members
+    const batch = writeBatch(db);
+    const updatedMembers = roomData.members.map(member => ({ ...member, answers: {}, score: 0 }));
+
+    batch.update(roomRef, {
         quizData,
-        status: 'in-progress'
+        status: 'in-progress',
+        members: updatedMembers
     });
+    
+    await batch.commit();
 }
 
 

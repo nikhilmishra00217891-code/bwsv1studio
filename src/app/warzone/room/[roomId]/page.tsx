@@ -29,7 +29,11 @@ import {
     Check,
     X,
     ChevronsRight,
-    BookOpen
+    BookOpen,
+    ArrowLeft,
+    ArrowRight,
+    ShieldCheck,
+    ShieldX,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -38,7 +42,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useParams, useRouter } from 'next/navigation';
 import type { Room, RoomMember, ChatMessage, Question } from '@/types';
-import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateQuizSettings, startQuiz } from '@/lib/data/rooms';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateQuizSettings, startQuiz, submitAnswer } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -268,7 +272,6 @@ const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: Gen
     }, [settings]);
 
     useEffect(() => {
-        // Debounced update to Firestore
         const handler = setTimeout(() => {
             if (JSON.stringify(quizSettings) !== JSON.stringify(settings)) {
                 updateQuizSettings(roomId, quizSettings);
@@ -374,7 +377,7 @@ const WaitingForHost = ({ settings }: { settings?: GenerateQuizInput }) => (
         </CardHeader>
         <CardContent className="text-center space-y-4">
             <LoaderCircle className="w-12 h-12 text-primary animate-spin mx-auto"/>
-            {settings && settings.topic && (
+            {settings && settings.topic ? (
                 <div className='text-left space-y-2 pt-4 border-t'>
                     <h4 className="font-semibold">Current Settings:</h4>
                     <p className="text-sm text-muted-foreground"><strong>Topic:</strong> {settings.topic}</p>
@@ -382,10 +385,116 @@ const WaitingForHost = ({ settings }: { settings?: GenerateQuizInput }) => (
                     <p className="text-sm text-muted-foreground"><strong>Difficulty:</strong> {settings.difficulty}</p>
                     <p className="text-sm text-muted-foreground"><strong>Questions:</strong> {settings.numberOfQuestions}</p>
                 </div>
+            ) : (
+                 <p className="text-sm text-muted-foreground pt-4 border-t">No topic selected yet.</p>
             )}
         </CardContent>
     </Card>
 );
+
+const MultiplayerQuizUI = ({ room }: { room: Room }) => {
+    const { user } = useAuth();
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+    const [isAnswered, setIsAnswered] = useState(false);
+    
+    const quizData = room.quizData!;
+    const quizParams = room.quizSettings!;
+    const currentUser = room.members.find(m => m.uid === user?.uid);
+    
+    useEffect(() => {
+        const userAnswer = currentUser?.answers?.[currentQuestionIndex];
+        if (userAnswer) {
+            setSelectedAnswer(userAnswer);
+            setIsAnswered(true);
+        } else {
+            setSelectedAnswer(null);
+            setIsAnswered(false);
+        }
+    }, [currentQuestionIndex, currentUser?.answers]);
+
+    const handleAnswer = (answer: string) => {
+        if (isAnswered || !user) return;
+
+        setSelectedAnswer(answer);
+        setIsAnswered(true);
+        submitAnswer(room.id, user.uid, currentQuestionIndex, answer);
+    };
+
+    const handleNext = () => {
+        if (currentQuestionIndex < quizData.questions.length - 1) {
+            setCurrentQuestionIndex(prev => prev + 1);
+        } else {
+            // Handle quiz finish
+            // This will be implemented in a future step.
+        }
+    };
+
+    const handlePrevious = () => {
+        if (currentQuestionIndex > 0) {
+            setCurrentQuestionIndex(prev => prev - 1);
+        }
+    };
+    
+    const currentQuestion = quizData.questions[currentQuestionIndex];
+    const progress = ((currentQuestionIndex + 1) / quizData.questions.length) * 100;
+
+    return (
+        <div className="bg-card/50 min-h-screen flex items-center justify-center">
+            <div className="p-4 md:p-8 w-full max-w-4xl mx-auto animate-fade-in">
+                <div className="text-center mb-6">
+                    <p className="text-sm font-semibold text-primary">{quizParams.topic} - {quizParams.difficulty}</p>
+                    <h1 className="text-2xl md:text-3xl font-bold font-headline">{currentQuestion.questionText}</h1>
+                </div>
+                
+                <div className="mb-6">
+                    <Progress value={progress} />
+                    <p className="text-center text-sm text-muted-foreground mt-2">Question {currentQuestionIndex + 1} of {quizData.questions.length}</p>
+                </div>
+
+                 <Card>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+                        {currentQuestion.options.map((option, index) => {
+                             const isCorrect = option === currentQuestion.correctAnswer;
+                             const isSelected = selectedAnswer === option;
+                            return (
+                                <Button
+                                    key={index}
+                                    onClick={() => handleAnswer(option)}
+                                    disabled={isAnswered}
+                                    className={cn(
+                                        "h-auto py-4 text-base justify-start transition-all duration-300 transform-gpu",
+                                        isAnswered && isCorrect && "bg-green-600 hover:bg-green-600 text-white animate-pop-in",
+                                        isAnswered && isSelected && !isCorrect && "bg-destructive hover:bg-destructive text-white animate-[shake_0.82s_cubic-bezier(.36,.07,.19,.97)_both]",
+                                        isAnswered && !isSelected && !isCorrect && "opacity-50"
+                                    )}
+                                >
+                                    <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 shrink-0",
+                                        isAnswered && isCorrect && "bg-white border-green-600",
+                                        isAnswered && isSelected && !isCorrect && "bg-white border-destructive",
+                                        !isAnswered && "border-primary/50"
+                                    )}>
+                                        {isAnswered && isCorrect && <ShieldCheck className="w-4 h-4 text-green-600"/>}
+                                        {isAnswered && isSelected && !isCorrect && <ShieldX className="w-4 h-4 text-destructive"/>}
+                                    </div>
+                                    <span className="text-left">{option}</span>
+                                </Button>
+                            )
+                        })}
+                    </CardContent>
+                 </Card>
+                 <div className="flex justify-between items-center mt-6">
+                     <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
+                        <ArrowLeft className="mr-2 h-4 w-4"/> Previous
+                     </Button>
+                      <Button onClick={handleNext} disabled={currentQuestionIndex === quizData.questions.length - 1}>
+                        Next <ArrowRight className="ml-2 h-4 w-4"/>
+                     </Button>
+                 </div>
+            </div>
+        </div>
+    )
+}
 
 const WarzoneUI = () => {
     const params = useParams();
@@ -399,7 +508,6 @@ const WarzoneUI = () => {
     const [removedMessage, setRemovedMessage] = useState<string | null>(null);
     const [showHostLeaveDialog, setShowHostLeaveDialog] = useState(false);
 
-    // Multiplayer room listener
     useEffect(() => {
         if (roomId) {
             const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
@@ -448,7 +556,7 @@ const WarzoneUI = () => {
     const handleHostTransfer = async (newHostId: string) => {
         if(room && user) {
             await transferHost(room.id, newHostId);
-            await removeMemberFromRoom(room.id, user.uid); // Now leave as a normal member
+            await removeMemberFromRoom(room.id, user.uid);
             toast({ title: "Host Transferred & Left Room!", description: "You are no longer the host."});
             setShowHostLeaveDialog(false);
             router.push('/warzone/lobby');
@@ -496,7 +604,6 @@ const WarzoneUI = () => {
         );
     }
     
-    // Quiz view
     if (room.status === 'in-progress' && room.quizData) {
         return <MultiplayerQuizUI room={room} />
     }
@@ -573,34 +680,6 @@ const WarzoneUI = () => {
     );
 };
 
-const MultiplayerQuizUI = ({ room }: { room: Room }) => {
-    // This is a placeholder for the actual multiplayer quiz UI
-    // For now, it will just show the questions from the solo quiz UI
-    const quizData = room.quizData!;
-    const quizParams = room.quizSettings!;
-
-    return (
-        <div className="bg-card/50 min-h-screen flex items-center justify-center">
-            <div className="p-4 md:p-8 w-full max-w-4xl mx-auto animate-fade-in">
-                <div className="text-center mb-6">
-                    <p className="text-sm font-semibold text-primary">{quizParams.topic} - {quizParams.difficulty}</p>
-                    <h1 className="text-2xl md:text-3xl font-bold font-headline">The Battle has begun!</h1>
-                    <p className="text-muted-foreground">Question 1 of {quizData.questions.length}</p>
-                </div>
-                 <Card>
-                    <CardHeader><CardTitle>{quizData.questions[0].questionText}</CardTitle></CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {quizData.questions[0].options.map((option, index) => (
-                            <Button key={index} variant="outline" className="h-auto py-4 text-base justify-start">
-                                {option}
-                            </Button>
-                        ))}
-                    </CardContent>
-                 </Card>
-            </div>
-        </div>
-    )
-}
 
 export default function WarzoneRoomPage() {
     return (

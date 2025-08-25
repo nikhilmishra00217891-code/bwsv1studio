@@ -114,6 +114,9 @@ export interface RoomMember {
     };
     tasks?: Task[];
     isTasksPublic?: boolean;
+    // Warzone specific
+    answers?: { [questionIndex: number]: string };
+    score?: number;
 }
 
 export interface Room {
@@ -142,4 +145,5 @@ export interface Question {
     correctAnswer: string;
     explanation: string;
 }
+
 
