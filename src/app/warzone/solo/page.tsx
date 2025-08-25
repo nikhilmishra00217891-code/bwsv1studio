@@ -3,13 +3,14 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { generateQuiz, type GenerateQuizInput, type GenerateQuizOutput } from '@/ai/flows/generate-quiz-flow';
+import { generateQuiz, type GenerateQuizInput, type GenerateQuizOutput, type Question } from '@/ai/flows/generate-quiz-flow';
 import { useEffect, useState, useMemo } from 'react';
-import { LoaderCircle, ShieldCheck, ShieldX, Clock, Trophy, ArrowRight, BookOpen } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoaderCircle, ShieldCheck, ShieldX, Clock, Trophy, ArrowRight, BookOpen, Check, X, ChevronsRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface Answer {
   questionIndex: number;
@@ -29,6 +30,7 @@ const QuizUI = () => {
   const [isAnswered, setIsAnswered] = useState(false);
   const [userAnswers, setUserAnswers] = useState<Answer[]>([]);
   const [totalTime, setTotalTime] = useState(0);
+  const [isReviewMode, setIsReviewMode] = useState(false);
 
   const quizParams: GenerateQuizInput = useMemo(() => ({
     topic: searchParams.get('topic') || '',
@@ -122,39 +124,95 @@ const QuizUI = () => {
     }, 1500); // Wait 1.5 seconds before moving to the next question
   };
 
+  const AnswerReview = ({ question, userAnswer }: { question: Question, userAnswer: Answer }) => {
+    return (
+        <Card className="mb-4">
+            <CardHeader>
+                <CardTitle className="text-lg">Q. {question.questionText}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                    {question.options.map((option, i) => {
+                        const isCorrect = option === question.correctAnswer;
+                        const isUserChoice = option === userAnswer.answer;
+                        return (
+                            <div key={i} className={cn(
+                                "flex items-center gap-3 p-3 rounded-md border",
+                                isCorrect ? "bg-green-100/50 border-green-400" : "",
+                                isUserChoice && !isCorrect ? "bg-red-100/50 border-red-400" : ""
+                            )}>
+                                {isCorrect ? <Check className="w-5 h-5 text-green-600" /> : isUserChoice ? <X className="w-5 h-5 text-red-600" /> : <div className="w-5 h-5"/>}
+                                <span>{option}</span>
+                            </div>
+                        )
+                    })}
+                </div>
+                <Alert className="mt-4">
+                    <BookOpen className="h-4 w-4" />
+                    <AlertTitle>Explanation</AlertTitle>
+                    <AlertDescription>
+                        {question.explanation}
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
+    );
+};
+
   if (isQuizFinished) {
     const score = userAnswers.filter(a => a.isCorrect).length;
     const accuracy = (score / quizData.questions.length) * 100;
     
      return (
-        <div className="animate-fade-in text-center p-8 max-w-2xl mx-auto">
-            <Card className="shadow-2xl border-primary/20">
-                <CardHeader>
-                    <Trophy className="h-16 w-16 mx-auto text-amber-400 mb-4"/>
-                    <CardTitle className="text-4xl font-headline">Battle Report</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                            <p className="text-sm text-muted-foreground">Score</p>
-                            <p className="text-3xl font-bold">{score}/{quizData.questions.length}</p>
+        <div className="animate-fade-in text-center p-4 md:p-8 max-w-4xl mx-auto w-full">
+            {!isReviewMode ? (
+                 <Card className="shadow-2xl border-primary/20">
+                    <CardHeader>
+                        <Trophy className="h-16 w-16 mx-auto text-amber-400 mb-4"/>
+                        <CardTitle className="text-4xl font-headline">Battle Report</CardTitle>
+                        <CardDescription>Well done, soldier. Here's your performance breakdown.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Score</p>
+                                <p className="text-3xl font-bold">{score}/{quizData.questions.length}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Accuracy</p>
+                                <p className="text-3xl font-bold">{accuracy.toFixed(0)}%</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Time</p>
+                                <p className="text-3xl font-bold">{totalTime}s</p>
+                            </div>
                         </div>
-                         <div>
-                            <p className="text-sm text-muted-foreground">Accuracy</p>
-                            <p className="text-3xl font-bold">{accuracy.toFixed(0)}%</p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                             <Button size="lg" asChild>
+                                <a href="/warzone">
+                                    New Warzone <ChevronsRight className="ml-2 h-5 w-5" />
+                                </a>
+                            </Button>
+                             <Button size="lg" variant="outline" onClick={() => setIsReviewMode(true)}>
+                                <BookOpen className="mr-2 h-5 w-5" /> Review Answers
+                            </Button>
                         </div>
-                         <div>
-                            <p className="text-sm text-muted-foreground">Time</p>
-                            <p className="text-3xl font-bold">{totalTime}s</p>
-                        </div>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div>
+                     <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold font-headline">Quiz Review</h2>
+                        <p className="text-muted-foreground">Learn from your battle to win the war.</p>
                     </div>
-                     <Button size="lg" asChild>
-                        <a href="/warzone">
-                            Enter New Warzone <ArrowRight className="ml-2 h-5 w-5" />
-                        </a>
+                    {quizData.questions.map((q, index) => (
+                        <AnswerReview key={index} question={q} userAnswer={userAnswers[index]} />
+                    ))}
+                    <Button size="lg" className="mt-8" onClick={() => setIsReviewMode(false)}>
+                        Back to Summary
                     </Button>
-                </CardContent>
-            </Card>
+                </div>
+            )}
         </div>
     );
   }
@@ -192,14 +250,15 @@ const QuizUI = () => {
                             isAnswered && !isSelected && !isCorrect && "opacity-50"
                         )}
                     >
-                         <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4",
+                         <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 shrink-0",
                              isAnswered && isCorrect && "bg-white border-green-600",
-                             isAnswered && isSelected && !isCorrect && "bg-white border-destructive"
+                             isAnswered && isSelected && !isCorrect && "bg-white border-destructive",
+                             !isAnswered && "border-primary/50"
                          )}>
                              {isAnswered && isCorrect && <ShieldCheck className="w-4 h-4 text-green-600"/>}
                              {isAnswered && isSelected && !isCorrect && <ShieldX className="w-4 h-4 text-destructive"/>}
                          </div>
-                        {option}
+                        <span className="text-left">{option}</span>
                     </Button>
                 )
             })}
@@ -212,7 +271,11 @@ const QuizUI = () => {
 export default function WarzoneSoloPage() {
     return (
         <div className="bg-card/50 min-h-[calc(100vh-4rem)] flex items-center justify-center">
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={
+                 <div className="flex flex-col items-center justify-center text-center p-8">
+                    <LoaderCircle className="h-16 w-16 animate-spin text-primary mb-4" />
+                 </div>
+            }>
                 <QuizUI />
             </Suspense>
         </div>
