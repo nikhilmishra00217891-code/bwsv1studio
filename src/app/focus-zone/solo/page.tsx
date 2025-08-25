@@ -560,7 +560,7 @@ const FocusZoneUI = () => {
         }
         
         const sessionEndAudio = document.getElementById('session-end-audio') as HTMLAudioElement;
-        if(sessionEndAudio) sessionEndAudio.play().catch(e => console.log("Chime blocked"));
+        if(sessionEndaudio) sessionEndAudio.play().catch(e => console.log("Chime blocked"));
         
     }, [mode, user, userProfile, workMinutes, setUserProfile]);
 
@@ -734,11 +734,11 @@ const FocusZoneUI = () => {
     const clearCompletedTasks = () => {
         setTasks(tasks.filter(task => !task.completed));
     }
-    
+
     const handleAttemptToLeave = () => {
-      setShowExitDialog(true);
+        setShowExitDialog(true);
     };
-    
+
     const handleConfirmLeave = async () => {
         // This is for regular members leaving
         if (isMultiplayer && roomId && user) {
@@ -809,6 +809,8 @@ const FocusZoneUI = () => {
         );
     }
 
+    const isHost = room?.hostId === user?.uid;
+    const hasOtherMembers = isMultiplayer && (room?.members.length ?? 0) > 1;
 
     if (removedMessage) {
         return (
@@ -834,9 +836,6 @@ const FocusZoneUI = () => {
             </div>
         );
     }
-
-    const isHost = room?.hostId === user?.uid;
-    const hasOtherMembers = (room?.members.length ?? 0) > 1;
 
     return (
         <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in flex flex-col">
@@ -1093,7 +1092,7 @@ const FocusZoneUI = () => {
 
              <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
                 <AlertDialogContent>
-                    {isMultiplayer && isHost && hasOtherMembers ? (
+                    {isHost && hasOtherMembers ? (
                         <>
                             <AlertDialogHeader>
                                 <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
@@ -1142,12 +1141,13 @@ const FocusZoneUI = () => {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    {isActive ? "Your current session will be interrupted." : "You will leave the focus zone."}
+                                    {isMultiplayer ? "You will be removed from the room." : "Your current session progress will not be saved."}
+                                    {isHost && !hasOtherMembers && isMultiplayer && " Since you are the last one here, the room will be deleted."}
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleConfirmLeave}>Confirm Leave</AlertDialogAction>
+                                <AlertDialogAction onClick={isHost && !hasOtherMembers ? handleHostDeleteRoom : handleConfirmLeave}>Confirm Leave</AlertDialogAction>
                             </AlertDialogFooter>
                         </>
                     )}
