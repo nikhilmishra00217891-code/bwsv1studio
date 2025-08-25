@@ -128,7 +128,7 @@ interface Task {
 
 const MemberCard = ({ member, isHost, currentUserId, onRemove }: { member: RoomMember, isHost: boolean, currentUserId: string, onRemove: (memberId: string) => void }) => {
     const AvatarIcon = avatarIcons[member.avatar] || Brain;
-    const canRemove = currentUserId === isHost && member.uid !== currentUserId;
+    const canRemove = isHost && member.uid !== currentUserId;
 
     return (
         <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-lg group">
@@ -156,6 +156,95 @@ const MemberCard = ({ member, isHost, currentUserId, onRemove }: { member: RoomM
              )}
         </div>
     )
+}
+
+const MemberListPanel = ({ room }: { room: Room | null }) => {
+    const { user } = useAuth();
+    const { toast } = useToast();
+
+    const handleCopyRoomId = () => {
+        if (!room) return;
+        navigator.clipboard.writeText(room.id);
+        toast({ title: 'Room ID Copied!' });
+    };
+
+    const handleShare = () => {
+        if (!room) return;
+        if (navigator.share) {
+            navigator.share({
+                title: 'Join my Focus Session!',
+                text: `Join my study session on BiharWaleSirji! Room ID: ${room.id}`,
+                url: window.location.href,
+            });
+        } else {
+            handleCopyRoomId();
+            toast({ description: "Share feature not supported, Room ID copied instead." });
+        }
+    };
+
+    const handleRemoveMember = async (memberId: string) => {
+        if (!room || user?.uid !== room.hostId) return;
+        try {
+            await removeMemberFromRoom(room.id, memberId);
+            toast({ title: 'Member removed' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Failed to remove member', description: error.message });
+        }
+    };
+
+    if (!room || !user) {
+        return (
+             <Card className="w-full max-w-sm">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Skeleton className="h-6 w-6 rounded-full" /><Skeleton className="h-6 w-32" /></CardTitle>
+                    <CardDescription><Skeleton className="h-4 w-48" /></CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </CardContent>
+            </Card>
+        )
+    }
+    
+    const isHost = user?.uid === room.hostId;
+
+     return (
+        <Card className="w-full max-w-sm">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Users/> Member List
+                </CardTitle>
+                <CardDescription>
+                    {room.members.length} member(s) in room.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center gap-2 mb-4">
+                    <Input readOnly value={room.id} className="font-mono text-center bg-muted" />
+                    <Button variant="outline" size="icon" onClick={handleCopyRoomId}><Copy className="w-4 h-4"/></Button>
+                    <Button variant="outline" size="icon" onClick={handleShare}><Share2 className="w-4 h-4"/></Button>
+                </div>
+                <ScrollArea className="h-48">
+                    <div className="space-y-2 pr-4">
+                        {room.members.map(member => (
+                            <MemberCard 
+                                key={member.uid} 
+                                member={member} 
+                                isHost={isHost} 
+                                currentUserId={user.uid}
+                                onRemove={handleRemoveMember}
+                            />
+                        ))}
+                    </div>
+                </ScrollArea>
+                 {isHost && (
+                    <Button disabled className="w-full mt-4">Start Synced Session (Coming Soon)</Button>
+                )}
+            </CardContent>
+        </Card>
+    );
 }
 
 const ChatBox = ({ roomId }: { roomId: string }) => {
@@ -200,134 +289,44 @@ const ChatBox = ({ roomId }: { roomId: string }) => {
     };
 
     return (
-        <div className="mt-4 border-t pt-4">
-             <h4 className="font-bold mb-2 text-sm">Live Chat</h4>
-             <ScrollArea className="h-48 border rounded-md p-2 mb-2" ref={scrollAreaRef}>
-                 <div className="space-y-3 pr-2">
-                    {messages.length > 0 ? messages.map(msg => (
-                        <div key={msg.id} className="text-sm">
-                            <div className="flex justify-between items-baseline">
-                                <span className="font-bold text-primary/80">{msg.senderId === user?.uid ? "You" : msg.senderName}</span>
-                                <span className="text-xs text-muted-foreground">
-                                    {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}
-                                </span>
-                            </div>
-                            <p className="break-words">{msg.text}</p>
-                        </div>
-                    )) : (
-                        <p className="text-center text-muted-foreground p-4">No messages yet. Say hi!</p>
-                    )}
-                 </div>
-             </ScrollArea>
-             <form onSubmit={handleSendMessage} className="flex gap-2">
-                <Input 
-                    placeholder="Type a message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    disabled={isSending}
-                />
-                <Button type="submit" size="icon" disabled={isSending || !newMessage.trim()}>
-                    {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
-                </Button>
-             </form>
-        </div>
-    )
-}
-
-const MultiplayerPanel = ({ room }: { room: Room | null }) => {
-    const { user } = useAuth();
-    const { toast } = useToast();
-
-    const handleCopyRoomId = () => {
-        if (!room) return;
-        navigator.clipboard.writeText(room.id);
-        toast({ title: 'Room ID Copied!' });
-    };
-
-    const handleShare = () => {
-        if (!room) return;
-        if (navigator.share) {
-            navigator.share({
-                title: 'Join my Focus Session!',
-                text: `Join my study session on BiharWaleSirji! Room ID: ${room.id}`,
-                url: window.location.href,
-            });
-        } else {
-            handleCopyRoomId();
-            toast({ description: "Share feature not supported, Room ID copied instead." });
-        }
-    };
-
-    const handleRemoveMember = async (memberId: string) => {
-        if (!room || user?.uid !== room.hostId) return;
-        try {
-            await removeMemberFromRoom(room.id, memberId);
-            toast({ title: 'Member removed' });
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Failed to remove member', description: error.message });
-        }
-    };
-
-
-    if (!room || !user) {
-        return (
-             <Card className="w-full max-w-sm">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Skeleton className="h-6 w-6 rounded-full" /><Skeleton className="h-6 w-32" /></CardTitle>
-                    <CardDescription><Skeleton className="h-4 w-48" /></CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                </CardContent>
-            </Card>
-        )
-    }
-
-    const isHost = user?.uid === room.hostId;
-
-    return (
-        <Card className="w-full max-w-sm">
+        <Card className="w-full">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Users/> Multiplayer Session
-                </CardTitle>
-                <CardDescription>
-                    You are in a focus session with your Parivaar.
-                </CardDescription>
+                <CardTitle>Live Chat</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="flex items-center gap-2 mb-2">
-                    <Input readOnly value={room.id} className="font-mono text-center bg-muted" />
-                    <Button variant="outline" size="icon" onClick={handleCopyRoomId}><Copy className="w-4 h-4"/></Button>
-                    <Button variant="outline" size="icon" onClick={handleShare}><Share2 className="w-4 h-4"/></Button>
-                </div>
-                <h4 className="font-bold mb-2 text-sm">{room.members.length} Member(s) in Room</h4>
-                <ScrollArea className="h-40">
-                    <div className="space-y-2 pr-4">
-                        {room.members.map(member => (
-                            <MemberCard 
-                                key={member.uid} 
-                                member={member} 
-                                isHost={isHost} 
-                                currentUserId={user.uid}
-                                onRemove={handleRemoveMember}
-                            />
-                        ))}
-                    </div>
-                </ScrollArea>
-                
-                <ChatBox roomId={room.id} />
-
-                {isHost && (
-                    <Button disabled className="w-full mt-4">Start Synced Session (Coming Soon)</Button>
-                )}
+                 <ScrollArea className="h-64 border rounded-md p-4 mb-4" ref={scrollAreaRef}>
+                     <div className="space-y-4 pr-2">
+                        {messages.length > 0 ? messages.map(msg => (
+                            <div key={msg.id} className="text-sm">
+                                <div className="flex justify-between items-baseline">
+                                    <span className="font-bold text-primary/80">{msg.senderId === user?.uid ? "You" : msg.senderName}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}
+                                    </span>
+                                </div>
+                                <p className="break-words">{msg.text}</p>
+                            </div>
+                        )) : (
+                            <p className="text-center text-muted-foreground py-8">No messages yet. Say hi!</p>
+                        )}
+                     </div>
+                 </ScrollArea>
+                 <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <Input 
+                        placeholder="Type a message and press Enter..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        disabled={isSending}
+                        className="h-12"
+                    />
+                    <Button type="submit" size="lg" disabled={isSending || !newMessage.trim()}>
+                        {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
+                    </Button>
+                 </form>
             </CardContent>
         </Card>
-    );
-};
-
+    )
+}
 
 const FocusZoneUI = () => {
     const searchParams = useSearchParams();
@@ -669,247 +668,261 @@ const FocusZoneUI = () => {
     }
 
     return (
-        <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in">
+        <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in flex flex-col">
             <div className="absolute top-6 left-6">
                 <Button variant="outline" size="icon" onClick={handleBackNavigation}>
                     <ArrowLeft />
                 </Button>
             </div>
-            <div className="container mx-auto px-6 grid lg:grid-cols-3 gap-12 items-start">
-                
-                {/* Timer Section */}
-                <div className="lg:col-span-2 flex flex-col items-center gap-8">
-                     <div className="text-center">
-                        <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Focus Zone</h1>
-                        <p className="text-lg text-muted-foreground mt-2">
-                             {isMultiplayer ? "Focusing with the Parivaar." : "Your personal space for deep work."}
-                        </p>
-                    </div>
+            
+            <div className="container mx-auto px-6 flex-grow">
+                <div className="grid lg:grid-cols-3 gap-12 items-start">
+                    
+                    {/* Timer Section */}
+                    <div className="lg:col-span-2 flex flex-col items-center gap-8">
+                         <div className="text-center">
+                            <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Focus Zone</h1>
+                            <p className="text-lg text-muted-foreground mt-2">
+                                 {isMultiplayer ? "Focusing with the Parivaar." : "Your personal space for deep work."}
+                            </p>
+                        </div>
 
-                    <div className="relative w-72 h-72 md:w-80 md:h-80 flex items-center justify-center">
-                        <motion.div 
-                            className="absolute inset-0 rounded-full border-[10px]"
-                            style={{ 
-                                borderColor: mode === 'work' ? 'hsl(var(--primary) / 0.2)' : 'hsl(var(--accent))',
-                            }}
-                        />
-                        <motion.svg
-                            className="absolute inset-0 w-full h-full"
-                            viewBox="0 0 100 100"
-                            initial={{ rotate: -90 }}
-                            animate={{ rotate: -90 }}
-                        >
-                            <motion.circle
-                                cx="50"
-                                cy="50"
-                                r="45"
-                                strokeWidth="10"
-                                className={cn(
-                                    "stroke-current",
-                                    mode === 'work' ? 'text-primary' : 'text-accent'
-                                )}
-                                fill="transparent"
-                                strokeLinecap="round"
-                                initial={{ pathLength: 1 }}
-                                animate={{ pathLength: progress / 100 }}
-                                transition={{ duration: 1, ease: 'linear' }}
+                        <div className="relative w-72 h-72 md:w-80 md:h-80 flex items-center justify-center">
+                            <motion.div 
+                                className="absolute inset-0 rounded-full border-[10px]"
+                                style={{ 
+                                    borderColor: mode === 'work' ? 'hsl(var(--primary) / 0.2)' : 'hsl(var(--accent))',
+                                }}
                             />
-                        </motion.svg>
-                        <div className="relative text-center">
-                            <div className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center justify-center gap-2">
-                                {mode === 'work' ? <Brain className="w-5 h-5"/> : <Coffee className="w-5 h-5"/>}
-                                {mode === 'work' ? 'Focus Session' : 'Break Time'}
-                            </div>
-                            <div className="text-6xl md:text-7xl font-bold font-mono tracking-tighter my-2">
-                                {formatTime(timeLeft)}
-                            </div>
-                            <div className="font-semibold text-muted-foreground">
-                                Cycle: {cycles}
+                            <motion.svg
+                                className="absolute inset-0 w-full h-full"
+                                viewBox="0 0 100 100"
+                                initial={{ rotate: -90 }}
+                                animate={{ rotate: -90 }}
+                            >
+                                <motion.circle
+                                    cx="50"
+                                    cy="50"
+                                    r="45"
+                                    strokeWidth="10"
+                                    className={cn(
+                                        "stroke-current",
+                                        mode === 'work' ? 'text-primary' : 'text-accent'
+                                    )}
+                                    fill="transparent"
+                                    strokeLinecap="round"
+                                    initial={{ pathLength: 1 }}
+                                    animate={{ pathLength: progress / 100 }}
+                                    transition={{ duration: 1, ease: 'linear' }}
+                                />
+                            </motion.svg>
+                            <div className="relative text-center">
+                                <div className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center justify-center gap-2">
+                                    {mode === 'work' ? <Brain className="w-5 h-5"/> : <Coffee className="w-5 h-5"/>}
+                                    {mode === 'work' ? 'Focus Session' : 'Break Time'}
+                                </div>
+                                <div className="text-6xl md:text-7xl font-bold font-mono tracking-tighter my-2">
+                                    {formatTime(timeLeft)}
+                                </div>
+                                <div className="font-semibold text-muted-foreground">
+                                    Cycle: {cycles}
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="flex items-center gap-4">
-                        <Button onClick={toggleTimer} size="lg" className="w-32">
-                            {isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
-                            {isActive ? 'Pause' : 'Start'}
-                        </Button>
-                        <Button onClick={resetTimer} size="lg" variant="outline">
-                            <RotateCcw className="mr-2"/> Reset
-                        </Button>
-                    </div>
-
-                    {isMultiplayer ? (
-                        <MultiplayerPanel room={room}/>
-                    ) : (
-                        <Card className="w-full max-w-sm">
-                            <CardHeader><CardTitle>Customize Session</CardTitle></CardHeader>
-                            <CardContent className="flex items-end gap-4">
-                                <div>
-                                    <Label htmlFor="work-minutes">Focus (mins)</Label>
-                                    <Input 
-                                        id="work-minutes"
-                                        type="number"
-                                        value={workMinutes}
-                                        onChange={handleWorkMinutesChange}
-                                        min={1}
-                                        disabled={isActive}
-                                    />
-                                </div>
-                                <div className="pb-2 text-muted-foreground">
-                                    <Timer className="w-6 h-6"/>
-                                </div>
-                                <div>
-                                    <Label>Break (mins)</Label>
-                                    <div className="h-10 flex items-center justify-center rounded-md border bg-muted px-3 font-bold text-muted-foreground">
-                                        {breakMinutes}
+                        <div className="flex items-center gap-4">
+                            <Button onClick={toggleTimer} size="lg" className="w-32">
+                                {isActive ? <Pause className="mr-2"/> : <Play className="mr-2"/>}
+                                {isActive ? 'Pause' : 'Start'}
+                            </Button>
+                            <Button onClick={resetTimer} size="lg" variant="outline">
+                                <RotateCcw className="mr-2"/> Reset
+                            </Button>
+                        </div>
+                        
+                         {!isMultiplayer && (
+                             <Card className="w-full max-w-sm">
+                                <CardHeader><CardTitle>Customize Session</CardTitle></CardHeader>
+                                <CardContent className="flex items-end gap-4">
+                                    <div>
+                                        <Label htmlFor="work-minutes">Focus (mins)</Label>
+                                        <Input 
+                                            id="work-minutes"
+                                            type="number"
+                                            value={workMinutes}
+                                            onChange={handleWorkMinutesChange}
+                                            min={1}
+                                            disabled={isActive}
+                                        />
                                     </div>
-                                </div>
+                                    <div className="pb-2 text-muted-foreground">
+                                        <Timer className="w-6 h-6"/>
+                                    </div>
+                                    <div>
+                                        <Label>Break (mins)</Label>
+                                        <div className="h-10 flex items-center justify-center rounded-md border bg-muted px-3 font-bold text-muted-foreground">
+                                            {breakMinutes}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                         )}
+
+                    </div>
+
+                    <div className="space-y-6">
+                        {isMultiplayer && (
+                            <MemberListPanel room={room} />
+                        )}
+
+                        {/* To-Do List Section */}
+                        <Card className="shadow-lg">
+                            <CardHeader>
+                                <CardTitle>Session Goals</CardTitle>
+                                 <p className="text-sm text-muted-foreground">What will you accomplish now?</p>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
+                                    <Input 
+                                        placeholder="Add a new task..."
+                                        value={newTask}
+                                        onChange={e => setNewTask(e.target.value)}
+                                    />
+                                    <Button type="submit" size="icon"><Plus/></Button>
+                                </form>
+                                <ScrollArea className="h-40">
+                                    <div className="space-y-2 pr-4">
+                                        {tasks.length > 0 ? tasks.map(task => (
+                                            <div key={task.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                                                <Checkbox
+                                                    id={`task-${task.id}`}
+                                                    checked={task.completed}
+                                                    onCheckedChange={() => toggleTask(task.id)}
+                                                />
+                                                <Label htmlFor={`task-${task.id}`} className={cn("flex-grow", task.completed && "line-through text-muted-foreground")}>
+                                                    {task.text}
+                                                </Label>
+                                            </div>
+                                        )) : <p className="text-sm text-muted-foreground text-center py-4">No tasks yet. Add one!</p>}
+                                    </div>
+                                </ScrollArea>
+                                {tasks.some(t => t.completed) && (
+                                    <Button variant="outline" size="sm" className="mt-4 w-full" onClick={clearCompletedTasks}>
+                                        <Trash2 className="mr-2 h-4 w-4"/>
+                                        Clear Completed
+                                    </Button>
+                                )}
                             </CardContent>
                         </Card>
-                    )}
-                </div>
-
-                <div className="space-y-6">
-                    {/* To-Do List Section */}
-                    <Card className="shadow-lg">
-                        <CardHeader>
-                            <CardTitle>Session Goals</CardTitle>
-                             <p className="text-sm text-muted-foreground">What will you accomplish now?</p>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
-                                <Input 
-                                    placeholder="Add a new task..."
-                                    value={newTask}
-                                    onChange={e => setNewTask(e.target.value)}
-                                />
-                                <Button type="submit" size="icon"><Plus/></Button>
-                            </form>
-                            <ScrollArea className="h-40">
-                                <div className="space-y-2 pr-4">
-                                    {tasks.length > 0 ? tasks.map(task => (
-                                        <div key={task.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                                            <Checkbox
-                                                id={`task-${task.id}`}
-                                                checked={task.completed}
-                                                onCheckedChange={() => toggleTask(task.id)}
-                                            />
-                                            <Label htmlFor={`task-${task.id}`} className={cn("flex-grow", task.completed && "line-through text-muted-foreground")}>
-                                                {task.text}
-                                            </Label>
-                                        </div>
-                                    )) : <p className="text-sm text-muted-foreground text-center py-4">No tasks yet. Add one!</p>}
-                                </div>
-                            </ScrollArea>
-                            {tasks.some(t => t.completed) && (
-                                <Button variant="outline" size="sm" className="mt-4 w-full" onClick={clearCompletedTasks}>
-                                    <Trash2 className="mr-2 h-4 w-4"/>
-                                    Clear Completed
-                                </Button>
-                            )}
-                        </CardContent>
-                    </Card>
 
 
-                    {/* Music Section */}
-                    <Card className="shadow-lg">
-                        <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <Music className="w-6 h-6 text-primary" />
-                                <div>
-                                    <CardTitle>Your Musical Cosmos</CardTitle>
-                                    <p className="text-sm text-muted-foreground">Load local music to aid your focus.</p>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center">
-                                <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
-                                <p className="font-semibold mb-2">Upload Your Focus Music</p>
-                                <p className="text-xs text-muted-foreground mb-4">
-                                    Your files will be saved on this device. ({playlist.length}/10 songs)
-                                </p>
-                                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                    Select Audio Files
-                                </Button>
-                                <input 
-                                    type="file" 
-                                    ref={fileInputRef} 
-                                    multiple 
-                                    accept="audio/*"
-                                    className="hidden"
-                                    onChange={handleFileChange}
-                                />
-                            </div>
-                            
-                            {playlist.length > 0 && (
-                                <>
-                                    <div className="p-4 bg-muted/50 rounded-lg text-center">
-                                        <p className="text-sm text-muted-foreground">Now Playing</p>
-                                        <p className="font-bold truncate">
-                                            {currentTrackIndex !== null ? playlist[currentTrackIndex].name : "No track selected"}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Button variant="ghost" size="icon" onClick={playPrevTrack} disabled={playlist.length < 2}>
-                                            <SkipBack className="w-6 h-6" />
-                                        </Button>
-                                        <Button size="icon" className="w-16 h-16 rounded-full" onClick={toggleMusicPlay}>
-                                            {isPlayingMusic ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={playNextTrack} disabled={playlist.length < 2}>
-                                            <SkipForward className="w-6 h-6" />
-                                        </Button>
-                                    </div>
-
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Button 
-                                            variant={isShuffle ? 'secondary' : 'ghost'} 
-                                            size="icon" 
-                                            onClick={() => setIsShuffle(!isShuffle)}
-                                            aria-label="Shuffle"
-                                        >
-                                            <Shuffle className="w-5 h-5" />
-                                        </Button>
-                                        <Button 
-                                            variant={isLoop ? 'secondary' : 'ghost'} 
-                                            size="icon" 
-                                            onClick={() => setIsLoop(!isLoop)}
-                                            aria-label="Loop"
-                                        >
-                                            <Repeat className="w-5 h-5" />
-                                        </Button>
-                                    </div>
-
+                        {/* Music Section */}
+                        <Card className="shadow-lg">
+                            <CardHeader>
+                                <div className="flex items-center gap-3">
+                                    <Music className="w-6 h-6 text-primary" />
                                     <div>
-                                        <h4 className="font-semibold mb-2 flex items-center gap-2"><ListMusic className="w-5 h-5"/> Playlist</h4>
-                                        <ScrollArea className="h-48 border rounded-md">
-                                            <div className="p-2 space-y-1">
-                                                {playlist.map((track, index) => (
-                                                    <button
-                                                        key={track.id}
-                                                        onClick={() => playMusic(index)}
-                                                        className={cn(
-                                                            "w-full text-left p-2 rounded-md text-sm transition-colors",
-                                                            currentTrackIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
-                                                        )}
-                                                    >
-                                                    <span className="truncate">{index + 1}. {track.name}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </ScrollArea>
+                                        <CardTitle>Your Musical Cosmos</CardTitle>
+                                        <p className="text-sm text-muted-foreground">Load local music to aid your focus.</p>
                                     </div>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 text-center">
+                                    <UploadCloud className="w-12 h-12 text-muted-foreground mb-2" />
+                                    <p className="font-semibold mb-2">Upload Your Focus Music</p>
+                                    <p className="text-xs text-muted-foreground mb-4">
+                                        Your files will be saved on this device. ({playlist.length}/10 songs)
+                                    </p>
+                                    <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                        Select Audio Files
+                                    </Button>
+                                    <input 
+                                        type="file" 
+                                        ref={fileInputRef} 
+                                        multiple 
+                                        accept="audio/*"
+                                        className="hidden"
+                                        onChange={handleFileChange}
+                                    />
+                                </div>
+                                
+                                {playlist.length > 0 && (
+                                    <>
+                                        <div className="p-4 bg-muted/50 rounded-lg text-center">
+                                            <p className="text-sm text-muted-foreground">Now Playing</p>
+                                            <p className="font-bold truncate">
+                                                {currentTrackIndex !== null ? playlist[currentTrackIndex].name : "No track selected"}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button variant="ghost" size="icon" onClick={playPrevTrack} disabled={playlist.length < 2}>
+                                                <SkipBack className="w-6 h-6" />
+                                            </Button>
+                                            <Button size="icon" className="w-16 h-16 rounded-full" onClick={toggleMusicPlay}>
+                                                {isPlayingMusic ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
+                                            </Button>
+                                            <Button variant="ghost" size="icon" onClick={playNextTrack} disabled={playlist.length < 2}>
+                                                <SkipForward className="w-6 h-6" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="flex items-center justify-center gap-2">
+                                            <Button 
+                                                variant={isShuffle ? 'secondary' : 'ghost'} 
+                                                size="icon" 
+                                                onClick={() => setIsShuffle(!isShuffle)}
+                                                aria-label="Shuffle"
+                                            >
+                                                <Shuffle className="w-5 h-5" />
+                                            </Button>
+                                            <Button 
+                                                variant={isLoop ? 'secondary' : 'ghost'} 
+                                                size="icon" 
+                                                onClick={() => setIsLoop(!isLoop)}
+                                                aria-label="Loop"
+                                            >
+                                                <Repeat className="w-5 h-5" />
+                                            </Button>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><ListMusic className="w-5 h-5"/> Playlist</h4>
+                                            <ScrollArea className="h-48 border rounded-md">
+                                                <div className="p-2 space-y-1">
+                                                    {playlist.map((track, index) => (
+                                                        <button
+                                                            key={track.id}
+                                                            onClick={() => playMusic(index)}
+                                                            className={cn(
+                                                                "w-full text-left p-2 rounded-md text-sm transition-colors",
+                                                                currentTrackIndex === index ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
+                                                            )}
+                                                        >
+                                                        <span className="truncate">{index + 1}. {track.name}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </ScrollArea>
+                                        </div>
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
+
+            {isMultiplayer && roomId && (
+                <div className="mt-8 container mx-auto px-6">
+                    <ChatBox roomId={roomId} />
+                </div>
+            )}
+            
             <audio ref={audioRef} onEnded={playNextTrack} />
             <audio id="session-end-audio" src="/chime.mp3" preload="auto" />
+
             <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -920,7 +933,7 @@ const FocusZoneUI = () => {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Nope</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => router.push('/focus-zone')}>Confirm</AlertDialogAction>
+                        <AlertDialogAction onClick={() => router.push(isMultiplayer ? '/focus-zone/lobby' : '/focus-zone')}>Confirm</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -940,3 +953,5 @@ export default function FocusZonePage() {
         </Suspense>
     )
 }
+
+    
