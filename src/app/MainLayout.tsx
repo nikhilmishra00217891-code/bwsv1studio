@@ -43,7 +43,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     const isOnboarding = pathname === '/onboarding';
     const isHomepage = pathname === '/';
-    const isGamePage = pathname.startsWith('/games/');
+    const isGamePage = pathname.startsWith('/games/') || pathname.startsWith('/warzone');
     const isAdminPage = pathname.startsWith('/admin/');
 
     if (userProfile?.suspension?.isSuspended) {
