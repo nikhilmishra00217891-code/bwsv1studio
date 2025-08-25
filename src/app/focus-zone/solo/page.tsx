@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
@@ -39,7 +38,9 @@ import {
     Send,
     LogOut,
     XCircle,
-    PartyPopper
+    PartyPopper,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -49,11 +50,13 @@ import { updateUserProfile } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useSearchParams, useRouter } from 'next/navigation';
-import type { Room, RoomMember, ChatMessage } from '@/types';
-import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage } from '@/lib/data/rooms';
+import type { Room, RoomMember, ChatMessage, Task, FocusStats } from '@/types';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, updateMemberStatusInRoom } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
 
 
 const avatarIcons: { [key: string]: React.ElementType } = {
@@ -122,41 +125,109 @@ const clearPlaylistFromDB = async () => {
     });
 }
 
-interface Task {
-    id: number;
-    text: string;
-    completed: boolean;
+const MemberInspectionSheet = ({ member }: { member: RoomMember }) => {
+    const AvatarIcon = avatarIcons[member.avatar] || Brain;
+    const focusStats = member.focusStats || { totalMinutes: 0, totalSessions: 0 };
+    const hours = Math.floor(focusStats.totalMinutes / 60);
+    const minutes = focusStats.totalMinutes % 60;
+    
+    return (
+        <SheetContent>
+            <SheetHeader className="text-left">
+                <SheetTitle className="flex items-center gap-4">
+                     <Avatar className="w-16 h-16 border-4 border-primary bg-primary/10">
+                        <AvatarFallback className="text-4xl flex items-center justify-center">
+                            <AvatarIcon className="w-8 h-8 text-primary" />
+                        </AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <p className="text-2xl font-headline">{member.displayName}</p>
+                         <Badge variant={member.currentCycle === 'work' ? 'default' : 'secondary'} className="mt-1">
+                            {member.currentCycle === 'work' && <Brain className="w-3 h-3 mr-1"/>}
+                            {member.currentCycle === 'break' && <Coffee className="w-3 h-3 mr-1"/>}
+                            {member.currentCycle === 'transition' && <PartyPopper className="w-3 h-3 mr-1"/>}
+                           <span className="capitalize">{member.currentCycle}</span> 
+                        </Badge>
+                    </div>
+                </SheetTitle>
+            </SheetHeader>
+            <div className="py-6 space-y-6">
+                <Card>
+                    <CardHeader><CardTitle>Live Stats</CardTitle></CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Timer Settings</span>
+                            <span className="font-semibold">{member.timerSettings.workMinutes}m / {member.timerSettings.breakMinutes}m</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Total Focus Time</span>
+                            <span className="font-semibold">{hours}h {minutes}m</span>
+                        </div>
+                         <div className="flex justify-between">
+                            <span className="text-muted-foreground">Sessions Completed</span>
+                            <span className="font-semibold">{focusStats.totalSessions}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader><CardTitle>Today's Goals</CardTitle></CardHeader>
+                    <CardContent>
+                        {member.isTasksPublic && member.tasks.length > 0 ? (
+                            <ul className="space-y-2">
+                                {member.tasks.map(task => (
+                                    <li key={task.id} className={cn("flex items-center gap-2 text-sm", task.completed && "line-through text-muted-foreground")}>
+                                        <Checkbox checked={task.completed} disabled className="cursor-default" />
+                                        {task.text}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center p-4">
+                               {member.isTasksPublic ? "No tasks for this session." : "This member's task list is private."}
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+        </SheetContent>
+    )
 }
 
 const MemberCard = React.memo(({ member, isHost, currentUserId, onRemove }: { member: RoomMember, isHost: boolean, currentUserId: string, onRemove: (memberId: string) => void }) => {
     const AvatarIcon = avatarIcons[member.avatar] || Brain;
     const canRemove = isHost && member.uid !== currentUserId;
+    const [open, setOpen] = useState(false);
 
     return (
-        <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-lg group">
-            <Avatar>
-                <AvatarFallback className="bg-primary/20">
-                    <AvatarIcon className="w-5 h-5 text-primary" />
-                </AvatarFallback>
-            </Avatar>
-            <div className="font-semibold text-sm flex-grow">{member.displayName}</div>
-            {member.uid === currentUserId && <span className="text-xs text-muted-foreground">(You)</span>}
-            {isHost && member.uid === currentUserId && (
-                <div className="ml-auto" title="Room Host">
-                    <span className="text-xl text-primary">⚡</span>
-                </div>
-            )}
-             {canRemove && (
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                    onClick={() => onRemove(member.uid)}
-                >
-                    <XCircle className="w-4 h-4 text-destructive"/>
-                </Button>
-             )}
-        </div>
+        <Sheet open={open} onOpenChange={setOpen}>
+            <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-lg group">
+                <Avatar>
+                    <AvatarFallback className="bg-primary/20">
+                        <AvatarIcon className="w-5 h-5 text-primary" />
+                    </AvatarFallback>
+                </Avatar>
+                <SheetTrigger asChild>
+                    <button className="font-semibold text-sm flex-grow text-left hover:underline">{member.displayName}</button>
+                </SheetTrigger>
+                {member.uid === currentUserId && <span className="text-xs text-muted-foreground">(You)</span>}
+                {isHost && member.uid === currentUserId && (
+                    <div className="ml-auto" title="Room Host">
+                        <span className="text-xl text-primary">⚡</span>
+                    </div>
+                )}
+                 {canRemove && (
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                        onClick={() => onRemove(member.uid)}
+                    >
+                        <XCircle className="w-4 h-4 text-destructive"/>
+                    </Button>
+                 )}
+            </div>
+            <MemberInspectionSheet member={member} />
+        </Sheet>
     )
 });
 MemberCard.displayName = 'MemberCard';
@@ -203,6 +274,8 @@ const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | nul
     }
     
     const isHost = user?.uid === room.hostId;
+    const sortedMembers = [...room.members].sort((a, b) => (b.focusStats?.totalMinutes || 0) - (a.focusStats?.totalMinutes || 0));
+
 
      return (
         <Card className="w-full max-w-sm">
@@ -211,7 +284,7 @@ const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | nul
                     <Users/> Member List
                 </CardTitle>
                 <CardDescription>
-                    {room.members.length} member(s) in room.
+                    {room.members.length} member(s) in room. Ranked by focus time.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -222,7 +295,7 @@ const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | nul
                 </div>
                 <ScrollArea className="h-48">
                     <div className="space-y-2 pr-4">
-                        {room.members.map(member => (
+                        {sortedMembers.map(member => (
                             <MemberCard 
                                 key={member.uid} 
                                 member={member} 
@@ -352,6 +425,7 @@ const FocusZoneUI = () => {
 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [newTask, setNewTask] = useState('');
+    const [isTasksPublic, setIsTasksPublic] = useState(false);
     
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [removedMessage, setRemovedMessage] = useState<string | null>(null);
@@ -363,6 +437,7 @@ const FocusZoneUI = () => {
         setIsMounted(true);
     }, []);
     
+    // Multiplayer room listener
     useEffect(() => {
         if (isMultiplayer && roomId) {
             const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
@@ -380,6 +455,20 @@ const FocusZoneUI = () => {
             return () => unsubscribe();
         }
     }, [isMultiplayer, roomId, user]);
+
+    // Real-time status sync for multiplayer
+    useEffect(() => {
+        if (isMultiplayer && roomId && user) {
+            const statusUpdate: Partial<RoomMember> = {
+                currentCycle: mode,
+                tasks: isTasksPublic ? tasks : [],
+                isTasksPublic: isTasksPublic,
+                timerSettings: { workMinutes, breakMinutes },
+                focusStats: userProfile?.focusStats || { totalMinutes: 0, totalSessions: 0 }
+            };
+            updateMemberStatusInRoom(roomId, user.uid, statusUpdate);
+        }
+    }, [mode, tasks, isTasksPublic, workMinutes, breakMinutes, isMultiplayer, roomId, user, userProfile?.focusStats]);
 
 
     useEffect(() => {
@@ -844,12 +933,23 @@ const FocusZoneUI = () => {
                                         )) : <p className="text-sm text-muted-foreground text-center py-4">No tasks yet. Add one!</p>}
                                     </div>
                                 </ScrollArea>
-                                {tasks.some(t => t.completed) && (
-                                    <Button variant="outline" size="sm" className="mt-4 w-full" onClick={clearCompletedTasks}>
-                                        <Trash2 className="mr-2 h-4 w-4"/>
-                                        Clear Completed
-                                    </Button>
-                                )}
+                                <div className="flex items-center justify-between mt-4">
+                                    {tasks.some(t => t.completed) && (
+                                        <Button variant="outline" size="sm" onClick={clearCompletedTasks}>
+                                            <Trash2 className="mr-2 h-4 w-4"/>
+                                            Clear Completed
+                                        </Button>
+                                    )}
+                                    {isMultiplayer && (
+                                        <div className="flex items-center space-x-2 ml-auto">
+                                            <Checkbox id="tasks-public" checked={isTasksPublic} onCheckedChange={(checked) => setIsTasksPublic(!!checked)} />
+                                            <Label htmlFor="tasks-public" className="text-sm flex items-center gap-1 text-muted-foreground">
+                                                {isTasksPublic ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4"/>}
+                                                Public
+                                            </Label>
+                                        </div>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -965,6 +1065,7 @@ const FocusZoneUI = () => {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
+
                         <AlertDialogDescription>
                             Your current focus session is still active. Leaving now will reset your progress for this session.
                         </AlertDialogDescription>

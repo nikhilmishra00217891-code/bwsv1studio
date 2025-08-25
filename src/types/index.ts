@@ -42,6 +42,17 @@ export interface MobileNumber {
   number: string;
 }
 
+export interface FocusStats {
+    totalMinutes: number;
+    totalSessions: number;
+}
+
+export interface Task {
+    id: number;
+    text: string;
+    completed: boolean;
+}
+
 export interface UserProfile {
     uid: string;
     email: string | null;
@@ -84,21 +95,7 @@ export interface UserProfile {
     };
     enrolledCourses?: string[];
     progress?: { [courseId: string]: number };
-    focusStats?: {
-        totalMinutes: number;
-        totalSessions: number;
-    };
-}
-
-export interface Announcement {
-  id: string;
-  text: string;
-  authorId: string;
-  authorName: string;
-  authorAvatar: string;
-  createdAt: Timestamp;
-  updatedAt?: Timestamp;
-  reactions: string[];
+    focusStats?: FocusStats;
 }
 
 export interface RoomMember {
@@ -106,6 +103,15 @@ export interface RoomMember {
     displayName: string;
     photoURL: string;
     avatar: string;
+    // Inspectable properties
+    focusStats?: FocusStats;
+    currentCycle?: 'work' | 'break' | 'transition';
+    timerSettings?: {
+        workMinutes: number;
+        breakMinutes: number;
+    };
+    tasks?: Task[];
+    isTasksPublic?: boolean;
 }
 
 export interface Room {

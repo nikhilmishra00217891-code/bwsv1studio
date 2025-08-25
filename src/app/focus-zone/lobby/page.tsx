@@ -32,6 +32,11 @@ export default function FocusZoneLobby() {
                 displayName: userProfile.displayName || "Anonymous",
                 photoURL: userProfile.photoURL || "",
                 avatar: userProfile.avatar || "brain",
+                focusStats: userProfile.focusStats || { totalMinutes: 0, totalSessions: 0 },
+                currentCycle: 'work',
+                timerSettings: { workMinutes: 25, breakMinutes: 5 },
+                tasks: [],
+                isTasksPublic: false,
             };
             const roomId = await createRoom('focus-zone', member);
             toast({ title: "Room created!", description: `Let's get focused!` });
@@ -59,8 +64,13 @@ export default function FocusZoneLobby() {
                 displayName: userProfile.displayName || "Anonymous",
                 photoURL: userProfile.photoURL || "",
                 avatar: userProfile.avatar || "brain",
+                focusStats: userProfile.focusStats || { totalMinutes: 0, totalSessions: 0 },
+                currentCycle: 'work',
+                timerSettings: { workMinutes: 25, breakMinutes: 5 },
+                tasks: [],
+                isTasksPublic: false,
             };
-            const room = await joinRoom(joinRoomId.trim(), member);
+            const room = await joinRoom(joinRoomId.trim().toUpperCase(), member);
             if (room) {
                  router.push(`/focus-zone/solo?roomId=${room.id}`);
             }
@@ -110,6 +120,7 @@ export default function FocusZoneLobby() {
                                         value={joinRoomId}
                                         onChange={(e) => setJoinRoomId(e.target.value)}
                                         disabled={isLoading}
+                                        className="uppercase"
                                     />
                                 </div>
                                 <Button type="submit" disabled={isLoading} className="w-full">
