@@ -186,16 +186,6 @@ const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | nul
         }
     };
     
-    const handleRemove = useCallback(async (memberId: string) => {
-        if (!room || !user || user.uid !== room.hostId) return;
-        try {
-            await onRemoveMember(memberId);
-            toast({ title: 'Member removed' });
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Failed to remove member', description: error.message });
-        }
-    }, [room, user, toast, onRemoveMember]);
-
     if (!room || !user) {
         return (
              <Card className="w-full max-w-sm">
@@ -238,7 +228,7 @@ const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | nul
                                 member={member} 
                                 isHost={isHost} 
                                 currentUserId={user.uid}
-                                onRemove={handleRemove}
+                                onRemove={onRemoveMember}
                             />
                         ))}
                     </div>
@@ -664,6 +654,7 @@ const FocusZoneUI = () => {
         if (!roomId) return;
         try {
             await removeMemberFromRoom(roomId, memberId);
+             toast({ title: 'Member removed' });
         } catch (error) {
             console.error(error);
             toast({
