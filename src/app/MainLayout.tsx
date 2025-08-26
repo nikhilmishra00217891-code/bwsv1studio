@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -23,7 +24,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setIsMounted(true);
     }, []);
 
-    const isFocusOrWarZone = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone');
+    const isFocusOrWarZone = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan');
 
     if (!isMounted) {
         return (

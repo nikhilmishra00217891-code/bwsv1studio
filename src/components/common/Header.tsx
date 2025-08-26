@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -67,7 +68,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
   );
 };
 
-const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone"];
+const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/parivartan"];
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -261,7 +262,7 @@ const futureNavLinks = [
   { href: "/profile", label: "My Profile", icon: UserCircle },
   { href: "/focus-zone", label: "Focus Zone", icon: Target },
   { href: "/warzone", label: "Warzone", icon: Swords },
-  { href: "#", label: "Parivartan Chamber", icon: BrainCircuit },
+  { href: "/parivartan", label: "Parivartan Chamber", icon: Users },
 ];
 
     

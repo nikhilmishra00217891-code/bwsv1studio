@@ -149,5 +149,32 @@ export interface Question {
     explanation: string;
 }
 
+// --- Parivartan Chamber Types ---
+
+export interface ChamberMessage {
+    id: string;
+    text: string;
+    senderId: string;
+    senderName: string;
+    senderAvatar: string;
+    timestamp: Timestamp;
+    isAiResponse?: boolean;
+}
+
+export interface Channel {
+    id: string;
+    name: string;
+    type: 'text' | 'resource' | 'whiteboard';
+}
+
+export interface Chamber {
+    id: string;
+    name: string;
+    description: string;
+    creatorId: string;
+    members: string[]; // array of user UIDs
+    channels: Channel[];
+    createdAt: Timestamp;
+}
 
 
