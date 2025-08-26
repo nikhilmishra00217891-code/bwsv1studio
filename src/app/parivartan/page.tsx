@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils';
 
 const ChamberList = () => (
-    <div className="w-20 bg-card/50 p-3 flex-col items-center gap-4 border-r hidden md:flex">
+    <div className="w-20 bg-card/50 p-3 flex flex-col items-center gap-4 border-r">
         <Tooltip>
             <TooltipTrigger asChild>
                 <button className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl transition-all hover:rounded-lg">
@@ -221,3 +221,5 @@ const ParivartanChamberPage = () => {
 };
 
 export default ParivartanChamberPage;
+
+    

@@ -73,7 +73,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect, isDesktop = false }: { hre
 };
 
 
-const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/parivartan"];
+const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone"];
 const navLinksData = [
   { href: "/", label: "Home", icon: Home },
   { href: "/courses", label: "Courses", icon: Compass },
@@ -273,3 +273,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
