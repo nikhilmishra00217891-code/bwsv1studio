@@ -1,8 +1,8 @@
 
 
-"use client";
+'use client';
 
-import React, { useState, useEffect, useCallback, Suspense, useRef, useMemo } from 'react';
+import React, 'useState, useEffect, useCallback, Suspense, useRef, useMemo } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -56,6 +56,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { GenerateQuizInput } from '@/ai/flows';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
