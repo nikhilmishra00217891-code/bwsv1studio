@@ -160,6 +160,17 @@ export interface Role {
     permissions: Permission[];
 }
 
+export interface Reaction {
+    emoji: string;
+    userIds: string[];
+}
+
+export interface ReplyInfo {
+    messageId: string;
+    senderName: string;
+    text: string;
+}
+
 export interface ChamberMessage {
     id: string;
     text: string;
@@ -168,6 +179,8 @@ export interface ChamberMessage {
     senderAvatar: string;
     timestamp: Timestamp;
     isAiResponse?: boolean;
+    reactions?: Reaction[];
+    replyTo?: ReplyInfo;
 }
 
 export interface Channel {

@@ -2,9 +2,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile } from 'lucide-react';
+import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel, createRole, deleteRole, assignRole, transferHost, updateRolePermissions } from '@/lib/data/parivartan';
+import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel, createRole, deleteRole, assignRole, transferHost, updateRolePermissions, toggleReaction } from '@/lib/data/parivartan';
 import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission } from '@/types';
 import { PERMISSIONS } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -329,52 +329,52 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
 
     return (
         <>
-            <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                 <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
+             <Dialog open={isOpen} onOpenChange={onOpenChange}>
+                <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
                     <DialogHeader className="p-6 pb-4 border-b">
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                     </DialogHeader>
-                    
-                    <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 min-h-0">
+
+                    <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 overflow-hidden">
                         {/* Roles Section */}
                         <Card className="w-full md:w-1/3 flex flex-col">
-                            <CardHeader>
-                                <CardTitle className="text-lg">Roles</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-grow flex flex-col gap-2">
-                                <div className="flex-grow space-y-2 pr-2 overflow-y-auto">
+                            <CardHeader><CardTitle className="text-lg">Roles</CardTitle></CardHeader>
+                            <CardContent className="flex-grow flex flex-col gap-2 overflow-hidden">
+                                <ScrollArea className="flex-grow pr-2 -mr-2">
+                                    <div className="space-y-2">
                                         {(chamber.roles || []).map(role => (
                                             <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted group">
                                                 <span className="font-semibold">{role.name}</span>
                                                 <div className="flex items-center">
                                                     {(role.name !== 'Admin' && role.name !== 'Member') && (
                                                         <>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => setEditingRole(role)}>
-                                                            <PencilRuler className="w-4 h-4"/>
-                                                        </Button>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
-                                                                    <Trash2 className="w-4 h-4 text-destructive"/>
-                                                                </Button>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader><AlertDialogTitle>Delete "{role.name}"?</AlertDialogTitle></AlertDialogHeader>
-                                                                <AlertDialogDescription>This will remove the role from all members who have it. This cannot be undone.</AlertDialogDescription>
-                                                                <AlertDialogFooter>
-                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                    <AlertDialogAction onClick={() => handleDeleteRole(role.id)} className={buttonVariants({variant: "destructive"})}>Delete Role</AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => setEditingRole(role)}>
+                                                                <PencilRuler className="w-4 h-4"/>
+                                                            </Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
+                                                                        <Trash2 className="w-4 h-4 text-destructive"/>
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader><AlertDialogTitle>Delete "{role.name}"?</AlertDialogTitle></AlertDialogHeader>
+                                                                    <AlertDialogDescription>This will remove the role from all members who have it. This cannot be undone.</AlertDialogDescription>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handleDeleteRole(role.id)} className={buttonVariants({variant: "destructive"})}>Delete Role</AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
                                                         </>
                                                     )}
                                                 </div>
                                             </div>
                                         ))}
-                                </div>
-                                 <div className="flex gap-2 pt-4 border-t mt-auto">
+                                    </div>
+                                </ScrollArea>
+                                <div className="flex gap-2 pt-4 border-t mt-auto">
                                     <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
                                     <Button onClick={handleCreateRole} disabled={isCreatingRole}>
                                         {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
@@ -384,13 +384,11 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                         </Card>
                         
                         {/* Members Section */}
-                         <Card className="w-full md:w-2/3 flex flex-col">
-                            <CardHeader>
-                                <CardTitle className="text-lg">Members ({chamber.members.length})</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-grow min-h-0">
-                                <ScrollArea className="h-full">
-                                    <div className="space-y-4 pr-4">
+                        <Card className="w-full md:w-2/3 flex flex-col">
+                            <CardHeader><CardTitle className="text-lg">Members ({chamber.members.length})</CardTitle></CardHeader>
+                            <CardContent className="flex-grow overflow-hidden">
+                                <ScrollArea className="h-full pr-2 -mr-2">
+                                    <div className="space-y-4">
                                         {(chamber.members || []).map(member => (
                                             <div key={member.uid} className="border-b last:border-b-0 pb-4">
                                                 <p className="font-bold">{member.displayName}</p>
@@ -425,7 +423,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                         </Card>
                     </div>
                     
-                     <DialogFooter className="p-6 pt-4 border-t mt-auto">
+                    <DialogFooter className="p-6 pt-4 border-t mt-auto">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -771,11 +769,11 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
 
 const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Channel | null }) => {
     const { user } = useAuth();
-    const { toast } = useToast();
     const [messages, setMessages] = useState<ChamberMessage[]>([]);
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const scrollAreaRef = useState<HTMLDivElement>(null);
+    const [replyToMessage, setReplyToMessage] = useState<ChamberMessage | null>(null);
 
     useEffect(() => {
         if (!chamber || !channel) {
@@ -791,21 +789,33 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
         if (viewport) {
             viewport.scrollTop = viewport.scrollHeight;
         }
-    }, [messages, scrollAreaRef]);
+    }, [messages, scrollAreaRef, replyToMessage]);
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!message.trim() || !user || !chamber || !channel) return;
         
         setIsSending(true);
+
+        const messageData: Omit<ChamberMessage, 'id' | 'timestamp'> = {
+            text: message,
+            senderId: user.uid,
+            senderName: user.displayName || 'Anonymous',
+            senderAvatar: user.photoURL || '',
+        };
+
+        if (replyToMessage) {
+            messageData.replyTo = {
+                messageId: replyToMessage.id,
+                senderName: replyToMessage.senderName,
+                text: replyToMessage.text,
+            };
+        }
+
         try {
-            await sendChannelMessage(chamber.id, channel.id, {
-                text: message,
-                senderId: user.uid,
-                senderName: user.displayName || 'Anonymous',
-                senderAvatar: user.photoURL || '',
-            });
+            await sendChannelMessage(chamber.id, channel.id, messageData);
             setMessage('');
+            setReplyToMessage(null);
         } catch (error) {
             console.error("Failed to send message", error);
         } finally {
@@ -822,12 +832,25 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
         const canExpand = isLongMessage && !isExpanded;
         const canCollapse = isLongMessage && isExpanded;
 
-        const handleActionClick = (action: string) => {
-            toast({
-                title: `${action} Clicked!`,
-                description: `Functionality for "${action}" is coming soon.`,
-            });
+        const handleHeartReaction = async () => {
+            if (!user || !chamber || !channel) return;
+            try {
+                await toggleReaction(chamber.id, channel.id, msg.id, '❤️', user.uid);
+            } catch (error) {
+                console.error("Failed to react:", error);
+                toast({ variant: 'destructive', title: 'Reaction failed.' });
+            }
         };
+
+        const handlePinClick = () => {
+             toast({
+                title: `Pin Clicked!`,
+                description: `Functionality for "Pin" is coming soon.`,
+            });
+        }
+
+        const heartReaction = msg.reactions?.find(r => r.emoji === '❤️');
+        const hasUserHearted = heartReaction?.userIds.includes(user?.uid || '');
 
         return (
             <div className={cn("flex items-start gap-3", isSelf ? "flex-row-reverse" : "flex-row")}>
@@ -837,24 +860,46 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
                         <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
                     </Avatar>
                 )}
-                <div className={cn("flex flex-col", isSelf ? "items-end" : "items-start")}>
-                    {!isSelf && <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>}
-                    <div className={cn("group relative flex items-center", isSelf ? "flex-row-reverse" : "flex-row")}>
+                <div className={cn("flex flex-col group max-w-md", isSelf ? "items-end" : "items-start")}>
+                     {!isSelf && <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>}
+                    {msg.replyTo && (
+                        <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-t-lg border-b border-primary/20 w-full">
+                            <div className="flex items-center gap-1">
+                                <CornerDownRight className="w-3 h-3"/>
+                                Replying to <span className="font-semibold">{msg.replyTo.senderName}</span>
+                            </div>
+                            <p className="line-clamp-1 italic">"{msg.replyTo.text}"</p>
+                        </div>
+                    )}
+                    <div className={cn("relative flex items-end", isSelf ? "flex-row-reverse" : "flex-row")}>
                         <div className={cn(
-                            "p-3 rounded-xl max-w-md", 
+                            "p-3 rounded-xl", 
                             isSelf ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none",
-                            msg.isAiResponse && "border border-primary/50"
+                            msg.isAiResponse && "border border-primary/50",
+                            msg.replyTo && "rounded-t-none"
                         )}>
                             <p className={cn("whitespace-pre-wrap break-words", canExpand && "line-clamp-5")}>
                                 {msg.text}
                             </p>
                             {canExpand && <Button variant="link" size="sm" className="p-0 h-auto text-current" onClick={() => setIsExpanded(true)}>See more</Button>}
                             {canCollapse && <Button variant="link" size="sm" className="p-0 h-auto text-current" onClick={() => setIsExpanded(false)}>See less</Button>}
+                             {heartReaction && heartReaction.userIds.length > 0 && (
+                                <button
+                                    onClick={handleHeartReaction}
+                                    className={cn(
+                                        "absolute -bottom-4 right-2 flex items-center gap-1 rounded-full bg-card px-2 py-1 text-xs shadow-sm border",
+                                        hasUserHearted ? "border-red-500 text-red-500" : "border-muted-foreground/20"
+                                    )}
+                                >
+                                    <Heart className={cn("w-3 h-3", hasUserHearted && "fill-current")} />
+                                    <span>{heartReaction.userIds.length}</span>
+                                </button>
+                            )}
                         </div>
                         <div className="flex items-center gap-1 self-start opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleActionClick('React')}><Smile className="w-4 h-4"/></Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleActionClick('Reply')}><Reply className="w-4 h-4"/></Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleActionClick('Pin')}><Pin className="w-4 h-4"/></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleHeartReaction}><Heart className="w-4 h-4"/></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyToMessage(msg)}><Reply className="w-4 h-4"/></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePinClick}><Pin className="w-4 h-4"/></Button>
                         </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 px-3">
@@ -878,10 +923,10 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
                     <Menu/>
                 </Button>
                 <div className="flex items-center gap-2">
-                    <Hash className="w-6 h-6 text-muted-foreground" />
+                    <Hash className="w-5 h-5 text-muted-foreground" />
                     <h2 className="font-bold text-lg">{channel?.name || 'Select a channel'}</h2>
                 </div>
-                <p className="text-sm text-muted-foreground hidden lg:block">{chamber?.description || 'The general chat channel for our Parivaar.'}</p>
+                <p className="text-sm text-muted-foreground hidden lg:block truncate">{chamber?.description || 'The general chat channel for our Parivaar.'}</p>
                 <Button variant="ghost" size="icon" className="md:hidden" onClick={() => document.dispatchEvent(new CustomEvent('toggle-member-panel'))}>
                     <Users />
                 </Button>
@@ -908,10 +953,20 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
 
             <div className="p-4 border-t bg-card">
                  <form onSubmit={handleSendMessage}>
+                     {replyToMessage && (
+                        <div className="bg-muted px-3 py-2 rounded-t-lg text-sm text-muted-foreground flex justify-between items-center">
+                             <div className="line-clamp-1">
+                                Replying to <span className="font-semibold text-foreground">{replyToMessage.senderName}</span>: <span className="italic">"{replyToMessage.text}"</span>
+                             </div>
+                             <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyToMessage(null)}>
+                                <X className="w-4 h-4"/>
+                            </Button>
+                        </div>
+                     )}
                      <div className="relative">
                         <Input
                             placeholder={`Message #${channel?.name || '...'}`}
-                            className="h-12 pr-24 bg-card/50"
+                            className={cn("h-12 pr-24 bg-card/50", replyToMessage && "rounded-t-none")}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             disabled={!channel || isSending}
@@ -931,9 +986,6 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
                         </div>
                     </div>
                 </form>
-                <p className="text-xs text-center text-muted-foreground mt-2">
-                    Remember: Share only Google Drive links for resources. Direct uploads are disabled to save costs.
-                </p>
             </div>
         </div>
     )

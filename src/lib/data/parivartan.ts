@@ -21,7 +21,7 @@ import {
   arrayRemove,
   runTransaction,
 } from "firebase/firestore";
-import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission } from "@/types";
+import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission, ReplyInfo } from "@/types";
 import { PERMISSIONS } from "@/types";
 
 // --- Chamber Functions ---
@@ -378,6 +378,49 @@ export const sendChannelMessage = async (
         timestamp: serverTimestamp()
     });
 };
+
+export const toggleReaction = async (
+  chamberId: string,
+  channelId: string,
+  messageId: string,
+  emoji: string,
+  userId: string
+) => {
+  const messageRef = doc(db, `chambers/${chamberId}/channels/${channelId}/messages`, messageId);
+
+  await runTransaction(db, async (transaction) => {
+    const messageDoc = await transaction.get(messageRef);
+    if (!messageDoc.exists()) {
+      throw new Error("Message not found");
+    }
+
+    const messageData = messageDoc.data() as ChamberMessage;
+    const reactions = messageData.reactions || [];
+    const reactionIndex = reactions.findIndex(r => r.emoji === emoji);
+
+    if (reactionIndex > -1) {
+      // Emoji exists, check if user has reacted
+      const userIndex = reactions[reactionIndex].userIds.indexOf(userId);
+      if (userIndex > -1) {
+        // User has reacted, so remove their ID
+        reactions[reactionIndex].userIds.splice(userIndex, 1);
+        // If no users are left for this emoji, remove the emoji object
+        if (reactions[reactionIndex].userIds.length === 0) {
+          reactions.splice(reactionIndex, 1);
+        }
+      } else {
+        // User has not reacted, so add their ID
+        reactions[reactionIndex].userIds.push(userId);
+      }
+    } else {
+      // Emoji does not exist, so add it with the current user
+      reactions.push({ emoji, userIds: [userId] });
+    }
+
+    transaction.update(messageRef, { reactions });
+  });
+};
+
 
 
 // --- Role Management Functions ---
