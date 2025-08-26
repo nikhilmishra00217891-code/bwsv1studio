@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -337,7 +337,6 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                     </DialogHeader>
                     
                      <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 min-h-0">
-                        {/* Roles Section */}
                         <Card className="md:w-1/3 flex flex-col">
                             <CardHeader>
                                 <CardTitle>Roles</CardTitle>
@@ -353,9 +352,23 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => setEditingRole(role)}>
                                                         <PencilRuler className="w-4 h-4"/>
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteRole(role.id)}>
-                                                        <Trash2 className="w-4 h-4 text-destructive"/>
-                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
+                                                                <Trash2 className="w-4 h-4 text-destructive"/>
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Delete "{role.name}"?</AlertDialogTitle>
+                                                                <AlertDialogDescription>This will remove the role from all members who have it. This cannot be undone.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteRole(role.id)} className={buttonVariants({variant: "destructive"})}>Delete Role</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </>
                                             )}
                                         </div>
@@ -373,7 +386,6 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                             </div>
                         </Card>
 
-                        {/* Members Section */}
                         <Card className="md:w-2/3 flex flex-col">
                             <CardHeader>
                                 <CardTitle>Members ({chamber.members.length})</CardTitle>
@@ -433,13 +445,11 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
 
      const hasPermission = (permission: Permission): boolean => {
         if (!user || !chamber) return false;
-        // The original creator always has all permissions.
         if (chamber.creatorId === user.uid) return true;
 
         const member = chamber.members.find(m => m.uid === user.uid);
         if (!member || !member.roleIds) return false;
 
-        // Check if any of the member's assigned roles have the required permission.
         return chamber.roles?.some(role => 
             member.roleIds?.includes(role.id) && role.permissions.includes(permission)
         ) || false;
@@ -692,12 +702,8 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
     const getMemberRoles = (member: RoomMember | undefined): (Role)[] => {
         if (!member || !chamber || !chamber.roles) return [];
         const memberRoles = member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter((r): r is Role => !!r) || [];
-        if (member.uid === chamber.creatorId) {
-            const adminRole = chamber.roles.find(r => r.id === 'admin');
-            if (adminRole && !memberRoles.some(r => r.id === 'admin')) {
-                return [adminRole, ...memberRoles];
-            }
-        }
+        // The creator is ALWAYS the Absolute Admin, which is represented by having the 'admin' role and being the creatorId
+        // This is a special status that cannot be assigned.
         return memberRoles;
     }
     
@@ -735,10 +741,10 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
                             </Avatar>
                             <div className="flex-grow overflow-hidden">
                                  <p className="font-semibold text-sm truncate">{member.displayName}</p>
-                                 <div className="flex flex-wrap gap-1 mt-1">
+                                 <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
                                      {member.uid === chamber.creatorId && (
-                                         <span className="text-xs text-muted-foreground font-bold flex items-center gap-1">
-                                            <Crown className="w-3 h-3 text-amber-500" />
+                                         <span className="text-xs text-amber-500 font-bold flex items-center gap-1">
+                                            <Crown className="w-3 h-3" />
                                             Absolute Admin
                                         </span>
                                      )}
@@ -932,7 +938,6 @@ const ParivartanChamberPage = () => {
                 setActiveChamberId(null);
                 setActiveChannelId(null);
             } else if (currentActiveChamberExists) {
-                // If active chamber still exists, check if active channel does
                 const activeChamber = chambers.find(c => c.id === activeChamberId);
                 const currentActiveChannelExists = activeChamber?.channels.some(c => c.id === activeChannelId);
                 if (!currentActiveChannelExists && activeChamber) {
@@ -959,7 +964,6 @@ const ParivartanChamberPage = () => {
         setActiveChamberId(chamberId);
         const selectedChamber = userChambers.find(c => c.id === chamberId);
         if (selectedChamber) {
-            // Only change channel if switching chambers
             if (previouslyActiveChamberId !== chamberId) {
                 setActiveChannelId(selectedChamber.channels[0]?.id || null);
             }
@@ -970,7 +974,7 @@ const ParivartanChamberPage = () => {
     
     const handleChannelSelect = (channelId: string) => {
         setActiveChannelId(channelId);
-        setIsChannelPanelOpen(false); // Close mobile panel on select
+        setIsChannelPanelOpen(false); 
     }
 
     if (loading) {
@@ -1031,7 +1035,6 @@ const ParivartanChamberPage = () => {
                 <ChamberList userChambers={userChambers} activeChamberId={activeChamberId} onChamberSelect={handleChamberSelect} />
 
 
-                {/* --- Mobile Sidebars (Absolute Positioned) --- */}
                 {isChannelPanelOpen && (
                     <div className="absolute inset-0 z-40 md:hidden">
                         <ChannelPanel 
