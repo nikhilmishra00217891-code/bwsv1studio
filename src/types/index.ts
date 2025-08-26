@@ -149,6 +149,7 @@ export const PERMISSIONS = {
     manageChannels: "Manage Channels",
     manageRoles: "Manage Roles",
     removeMembers: "Remove Members",
+    pinMessages: "Pin Messages",
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -181,12 +182,15 @@ export interface ChamberMessage {
     isAiResponse?: boolean;
     reactions?: Reaction[];
     replyTo?: ReplyInfo;
+    isPinned?: boolean;
+    pinnedAt?: Timestamp | null;
 }
 
 export interface Channel {
     id: string;
     name: string;
     type: 'text' | 'resource' | 'whiteboard';
+    pinnedMessageIds?: string[];
 }
 
 export interface Chamber {

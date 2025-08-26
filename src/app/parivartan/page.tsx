@@ -2,9 +2,9 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight } from 'lucide-react';
+import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight, PinOff, ChevronsDown, ChevronsUp, XCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,12 +17,13 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel, createRole, deleteRole, assignRole, transferHost, updateRolePermissions, toggleReaction } from '@/lib/data/parivartan';
+import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel, createRole, deleteRole, assignRole, transferHost, updateRolePermissions, toggleReaction, togglePinMessage } from '@/lib/data/parivartan';
 import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission } from '@/types';
 import { PERMISSIONS } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) => void }) => {
     const { user, userProfile } = useAuth();
@@ -331,12 +332,12 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
         <>
              <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
-                    <DialogHeader className="p-6 pb-4 border-b">
+                    <DialogHeader className="p-6 pb-4 border-b shrink-0">
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 overflow-hidden">
+                    <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 min-h-0">
                         {/* Roles Section */}
                         <Card className="w-full md:w-1/3 flex flex-col">
                             <CardHeader><CardTitle className="text-lg">Roles</CardTitle></CardHeader>
@@ -374,7 +375,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                         ))}
                                     </div>
                                 </ScrollArea>
-                                <div className="flex gap-2 pt-4 border-t mt-auto">
+                                <div className="flex gap-2 pt-4 border-t mt-auto shrink-0">
                                     <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
                                     <Button onClick={handleCreateRole} disabled={isCreatingRole}>
                                         {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
@@ -423,7 +424,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                         </Card>
                     </div>
                     
-                    <DialogFooter className="p-6 pt-4 border-t mt-auto">
+                    <DialogFooter className="p-6 pt-4 border-t mt-auto shrink-0">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -767,29 +768,93 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
     )
 }
 
-const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Channel | null }) => {
+const PinnedMessagesBar = ({ pinnedMessages, isExpanded, onToggle, onPinClick }: { pinnedMessages: ChamberMessage[], isExpanded: boolean, onToggle: () => void, onPinClick: (id: string) => void }) => {
+    if (pinnedMessages.length === 0) return null;
+
+    return (
+        <AnimatePresence>
+            <motion.div 
+                initial={{ y: -50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -50, opacity: 0 }}
+                className="absolute top-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-b z-10 p-2"
+            >
+                <div className="flex items-center gap-2">
+                    <Pin className="w-4 h-4 text-primary shrink-0" />
+                    <div className="flex-grow overflow-hidden">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={isExpanded ? 'expanded' : 'collapsed'}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className={isExpanded ? 'space-y-1' : 'whitespace-nowrap'}
+                            >
+                                {isExpanded ? (
+                                    pinnedMessages.map(msg => (
+                                        <button key={msg.id} onClick={() => onPinClick(msg.id)} className="text-xs text-left w-full hover:bg-muted p-1 rounded">
+                                            <strong className="text-primary/80">{msg.senderName}:</strong> <span className="text-muted-foreground">{msg.text}</span>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <button onClick={() => onPinClick(pinnedMessages[0].id)} className="text-xs text-left w-full truncate">
+                                        <strong className="text-primary/80">{pinnedMessages[0].senderName}:</strong> <span className="text-muted-foreground">{pinnedMessages[0].text}</span>
+                                    </button>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle}>
+                        {isExpanded ? <ChevronsUp className="w-4 h-4" /> : <ChevronsDown className="w-4 h-4" />}
+                    </Button>
+                </div>
+            </motion.div>
+        </AnimatePresence>
+    )
+}
+
+
+const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null, channel: Channel | null, hasPermission: (permission: Permission) => boolean }) => {
     const { user } = useAuth();
     const [messages, setMessages] = useState<ChamberMessage[]>([]);
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const scrollAreaRef = useState<HTMLDivElement>(null);
     const [replyToMessage, setReplyToMessage] = useState<ChamberMessage | null>(null);
 
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+    const [isPinsExpanded, setIsPinsExpanded] = useState(false);
+    
     useEffect(() => {
         if (!chamber || !channel) {
             setMessages([]);
             return;
         };
-        const unsubscribe = listenForChannelMessages(chamber.id, channel.id, setMessages);
+        const unsubscribe = listenForChannelMessages(chamber.id, channel.id, (newMessages) => {
+            setMessages(newMessages);
+            setTimeout(() => scrollToBottom(), 100);
+        });
+
         return () => unsubscribe();
     }, [chamber, channel]);
     
-     useEffect(() => {
+    const scrollToBottom = useCallback(() => {
         const viewport = scrollAreaRef.current?.querySelector('div[data-radix-scroll-area-viewport]');
         if (viewport) {
             viewport.scrollTop = viewport.scrollHeight;
         }
-    }, [messages, scrollAreaRef, replyToMessage]);
+    }, []);
+
+    const scrollToMessage = (messageId: string) => {
+        const element = messageRefs.current.get(messageId);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element?.classList.add('animate-pulse', 'bg-primary/10', 'rounded-lg');
+        setTimeout(() => {
+            element?.classList.remove('animate-pulse', 'bg-primary/10', 'rounded-lg');
+        }, 2000);
+    }
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -842,18 +907,25 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
             }
         };
 
-        const handlePinClick = () => {
-             toast({
-                title: `Pin Clicked!`,
-                description: `Functionality for "Pin" is coming soon.`,
-            });
+        const handlePinClick = async () => {
+            if (!user || !chamber || !channel) return;
+            try {
+                await togglePinMessage(chamber.id, channel.id, msg.id);
+                toast({title: msg.isPinned ? "Message Unpinned" : "Message Pinned"});
+            } catch (error: any) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Action Failed',
+                    description: error.message
+                });
+            }
         }
 
         const heartReaction = msg.reactions?.find(r => r.emoji === '❤️');
         const hasUserHearted = heartReaction?.userIds.includes(user?.uid || '');
 
         return (
-            <div className={cn("flex items-start gap-3", isSelf ? "flex-row-reverse" : "flex-row")}>
+            <div ref={(el) => { if (el) messageRefs.current.set(msg.id, el); }} className={cn("flex items-start gap-3", isSelf ? "flex-row-reverse" : "flex-row")}>
                 {!isSelf && (
                     <Avatar className="w-8 h-8">
                         <AvatarImage src={msg.senderAvatar}/>
@@ -863,13 +935,13 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
                 <div className={cn("flex flex-col group max-w-md", isSelf ? "items-end" : "items-start")}>
                      {!isSelf && <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>}
                     {msg.replyTo && (
-                        <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-t-lg border-b border-primary/20 w-full">
+                        <button onClick={() => scrollToMessage(msg.replyTo.messageId)} className="text-xs text-left text-muted-foreground bg-muted/50 p-2 rounded-t-lg border-b border-primary/20 w-full hover:bg-muted">
                             <div className="flex items-center gap-1">
                                 <CornerDownRight className="w-3 h-3"/>
                                 Replying to <span className="font-semibold">{msg.replyTo.senderName}</span>
                             </div>
                             <p className="line-clamp-1 italic">"{msg.replyTo.text}"</p>
-                        </div>
+                        </button>
                     )}
                     <div className={cn("relative flex items-end", isSelf ? "flex-row-reverse" : "flex-row")}>
                         <div className={cn(
@@ -878,6 +950,7 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
                             msg.isAiResponse && "border border-primary/50",
                             msg.replyTo && "rounded-t-none"
                         )}>
+                            {msg.isPinned && <Pin className="w-3 h-3 text-primary/50 absolute top-1 right-1" />}
                             <p className={cn("whitespace-pre-wrap break-words", canExpand && "line-clamp-5")}>
                                 {msg.text}
                             </p>
@@ -887,7 +960,8 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
                                 <button
                                     onClick={handleHeartReaction}
                                     className={cn(
-                                        "absolute -bottom-4 right-2 flex items-center gap-1 rounded-full bg-card px-2 py-1 text-xs shadow-sm border",
+                                        "absolute flex items-center gap-1 rounded-full bg-card px-2 py-1 text-xs shadow-sm border",
+                                        isSelf ? "-bottom-4 left-2" : "-bottom-4 right-2",
                                         hasUserHearted ? "border-red-500 text-red-500" : "border-muted-foreground/20"
                                     )}
                                 >
@@ -899,7 +973,11 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
                         <div className="flex items-center gap-1 self-start opacity-0 group-hover:opacity-100 transition-opacity p-1">
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleHeartReaction}><Heart className="w-4 h-4"/></Button>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyToMessage(msg)}><Reply className="w-4 h-4"/></Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePinClick}><Pin className="w-4 h-4"/></Button>
+                            {hasPermission('pinMessages') && (
+                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePinClick} title={msg.isPinned ? "Unpin Message" : "Pin Message"}>
+                                    {msg.isPinned ? <PinOff className="w-4 h-4 text-primary" /> : <Pin className="w-4 h-4"/>}
+                                 </Button>
+                            )}
                         </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 px-3">
@@ -915,10 +993,12 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
             </div>
         )
     }
+    
+    const pinnedMessages = messages.filter(m => m.isPinned).sort((a, b) => (b.pinnedAt?.toMillis() || 0) - (a.pinnedAt?.toMillis() || 0));
 
     return (
-         <div className="flex-1 flex flex-col">
-            <header className="p-4 border-b shadow-sm h-14 flex items-center justify-between">
+         <div className="flex-1 flex flex-col relative">
+            <header className="p-4 border-b shadow-sm h-14 flex items-center justify-between z-20 bg-background">
                  <Button variant="ghost" size="icon" className="md:hidden" onClick={() => document.dispatchEvent(new CustomEvent('toggle-channel-panel'))}>
                     <Menu/>
                 </Button>
@@ -932,34 +1012,38 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
                 </Button>
             </header>
 
-            <ScrollArea className="flex-grow p-6" ref={scrollAreaRef}>
-                <div className="space-y-6">
-                    {messages.map(msg => (
-                         <MessageBubble key={msg.id} msg={msg} isSelf={msg.senderId === user?.uid} />
-                    ))}
-                     {!messages.length && channel && (
-                        <div className="text-center text-muted-foreground py-16">
-                            <p>This is the beginning of the #{channel?.name} channel.</p>
-                            <p className="text-sm">Be the first to say something!</p>
-                        </div>
-                     )}
-                     {!channel && chamber && (
-                         <div className="text-center text-muted-foreground py-16">
-                            <p>Select a channel to start chatting.</p>
-                         </div>
-                     )}
-                </div>
-            </ScrollArea>
+            <div className="flex-grow flex flex-col relative overflow-hidden">
+                <PinnedMessagesBar pinnedMessages={pinnedMessages} isExpanded={isPinsExpanded} onToggle={() => setIsPinsExpanded(p => !p)} onPinClick={scrollToMessage} />
 
-            <div className="p-4 border-t bg-card">
+                <ScrollArea className="flex-grow p-6" ref={scrollAreaRef}>
+                    <div className="space-y-6">
+                        {messages.map(msg => (
+                            <MessageBubble key={msg.id} msg={msg} isSelf={msg.senderId === user?.uid} />
+                        ))}
+                        {!messages.length && channel && (
+                            <div className="text-center text-muted-foreground py-16">
+                                <p>This is the beginning of the #{channel?.name} channel.</p>
+                                <p className="text-sm">Be the first to say something!</p>
+                            </div>
+                        )}
+                        {!channel && chamber && (
+                            <div className="text-center text-muted-foreground py-16">
+                                <p>Select a channel to start chatting.</p>
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
+            </div>
+
+            <div className="p-4 border-t bg-card shrink-0">
                  <form onSubmit={handleSendMessage}>
                      {replyToMessage && (
                         <div className="bg-muted px-3 py-2 rounded-t-lg text-sm text-muted-foreground flex justify-between items-center">
-                             <div className="line-clamp-1">
+                             <button onClick={() => scrollToMessage(replyToMessage.id)} className="line-clamp-1 text-left flex-grow hover:text-foreground">
                                 Replying to <span className="font-semibold text-foreground">{replyToMessage.senderName}</span>: <span className="italic">"{replyToMessage.text}"</span>
-                             </div>
+                             </button>
                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyToMessage(null)}>
-                                <X className="w-4 h-4"/>
+                                <XCircle className="w-4 h-4"/>
                             </Button>
                         </div>
                      )}
@@ -1166,7 +1250,7 @@ const ParivartanChamberPage = () => {
                         hasPermission={hasPermission}
                         className="hidden md:flex" 
                     />
-                    <ChatArea chamber={activeChamber} channel={activeChannel || null} />
+                    <ChatArea chamber={activeChamber} channel={activeChannel || null} hasPermission={hasPermission} />
                     <MemberList chamber={activeChamber} className="hidden md:flex" />
                   </>
                 ) : (

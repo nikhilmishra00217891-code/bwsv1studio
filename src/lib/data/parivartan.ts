@@ -21,7 +21,7 @@ import {
   arrayRemove,
   runTransaction,
 } from "firebase/firestore";
-import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission, ReplyInfo } from "@/types";
+import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission } from "@/types";
 import { PERMISSIONS } from "@/types";
 
 // --- Chamber Functions ---
@@ -52,6 +52,7 @@ export const createChamber = async (
     id: "kuch-bhi-pucho",
     name: "kuch-bhi-pucho",
     type: "text",
+    pinnedMessageIds: [],
   };
   
   const adminRole: Role = {
@@ -272,7 +273,8 @@ export const createChannel = async (chamberId: string, channelName: string) => {
     const newChannel: Channel = {
         id: generateChannelId(channelName),
         name: channelName.toLowerCase(),
-        type: 'text'
+        type: 'text',
+        pinnedMessageIds: [],
     };
 
     // Check for duplicate channel names/IDs before adding
@@ -419,6 +421,72 @@ export const toggleReaction = async (
 
     transaction.update(messageRef, { reactions });
   });
+};
+
+export const togglePinMessage = async (
+  chamberId: string,
+  channelId: string,
+  messageId: string
+) => {
+    const chamberRef = doc(db, "chambers", chamberId);
+    const messageRef = doc(db, `chambers/${chamberId}/channels/${channelId}/messages`, messageId);
+    
+    await runTransaction(db, async (transaction) => {
+        const chamberDoc = await transaction.get(chamberRef);
+        const messageDoc = await transaction.get(messageRef);
+
+        if (!chamberDoc.exists() || !messageDoc.exists()) {
+            throw new Error("Chamber or message not found.");
+        }
+
+        const chamberData = chamberDoc.data() as Chamber;
+        const messageData = messageDoc.data() as ChamberMessage;
+        
+        const channelIndex = chamberData.channels.findIndex(c => c.id === channelId);
+        if (channelIndex === -1) {
+            throw new Error("Channel not found in chamber data.");
+        }
+
+        const channel = chamberData.channels[channelIndex];
+        const pinnedIds = channel.pinnedMessageIds || [];
+        
+        const isCurrentlyPinned = messageData.isPinned || false;
+
+        if (isCurrentlyPinned) {
+            // Unpin the message
+            transaction.update(messageRef, { isPinned: false, pinnedAt: null });
+            const updatedPinnedIds = pinnedIds.filter(id => id !== messageId);
+            chamberData.channels[channelIndex].pinnedMessageIds = updatedPinnedIds;
+            transaction.update(chamberRef, { channels: chamberData.channels });
+        } else {
+            // Pin the message
+            if (pinnedIds.length >= 5) {
+                // Limit reached, unpin the oldest one
+                const messagesCol = collection(db, `chambers/${chamberId}/channels/${channelId}/messages`);
+                const q = query(messagesCol, where('isPinned', '==', true), orderBy('pinnedAt', 'asc'), limit(1));
+                const oldestPinnedSnap = await getDocs(q);
+                
+                if (!oldestPinnedSnap.empty) {
+                    const oldestPinnedDoc = oldestPinnedSnap.docs[0];
+                    transaction.update(doc(db, messagesCol.path, oldestPinnedDoc.id), { isPinned: false, pinnedAt: null });
+                    const idToUnpin = oldestPinnedDoc.id;
+                    const updatedPinnedIds = pinnedIds.filter(id => id !== idToUnpin);
+                    updatedPinnedIds.push(messageId);
+                    chamberData.channels[channelIndex].pinnedMessageIds = updatedPinnedIds;
+                } else {
+                     // Data inconsistency, just add the new one
+                     pinnedIds.push(messageId);
+                     chamberData.channels[channelIndex].pinnedMessageIds = pinnedIds;
+                }
+            } else {
+                pinnedIds.push(messageId);
+                chamberData.channels[channelIndex].pinnedMessageIds = pinnedIds;
+            }
+
+            transaction.update(messageRef, { isPinned: true, pinnedAt: serverTimestamp() });
+            transaction.update(chamberRef, { channels: chamberData.channels });
+        }
+    });
 };
 
 
