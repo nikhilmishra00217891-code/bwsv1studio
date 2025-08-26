@@ -279,15 +279,13 @@ const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: Gen
 
     useEffect(() => {
         const handler = setTimeout(() => {
-            if (JSON.stringify(quizSettings) !== JSON.stringify(settings)) {
-                updateQuizSettings(roomId, quizSettings);
-            }
+            updateQuizSettings(roomId, quizSettings);
         }, 500);
 
         return () => {
             clearTimeout(handler);
         };
-    }, [quizSettings, roomId, settings]);
+    }, [quizSettings, roomId]);
 
     const handleSettingChange = (field: keyof GenerateQuizInput, value: string | number) => {
         setQuizSettings(prev => ({ ...prev, [field]: value }));
@@ -499,7 +497,7 @@ const QuizResults = ({ room }: { room: Room }) => {
                                                     <DialogTrigger asChild>
                                                          <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4"/> View</Button>
                                                     </DialogTrigger>
-                                                    <AnswerReviewDialog member={member} quizData={room.quizData!} />
+                                                    {room.quizData && <AnswerReviewDialog member={member} quizData={room.quizData} />}
                                                 </Dialog>
                                             ) : (
                                                 <Button variant="outline" size="sm" disabled>View</Button>
@@ -529,6 +527,7 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const startTimeRef = useRef<number>(Date.now());
+    const { toast } = useToast();
     
     const quizData = room.quizData!;
     const quizParams = room.quizSettings!;
@@ -573,7 +572,16 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
         
         const accuracy = (score / quizData.questions.length) * 100;
         
-        await finishQuizForMember(room.id, user.uid, score, accuracy, timeTaken);
+        try {
+            await finishQuizForMember(room.id, user.uid, score, accuracy, timeTaken);
+        } catch(error) {
+            console.error("Failed to finish quiz:", error);
+            toast({
+                variant: 'destructive',
+                title: "Submission Error",
+                description: "Could not submit your final score. Please check your connection."
+            })
+        }
     }
 
     const handlePrevious = () => {

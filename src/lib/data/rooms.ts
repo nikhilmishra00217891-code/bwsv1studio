@@ -106,7 +106,7 @@ export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: str
             } else {
                 let newHostId = roomData.hostId;
                 let newHostName = roomData.hostName;
-                if (roomData.hostId === memberIdToRemove) {
+                if (roomData.hostId === memberIdToRemove && updatedMembers.length > 0) {
                     newHostId = updatedMembers[0].uid;
                     newHostName = updatedMembers[0].displayName;
                 }
@@ -193,7 +193,7 @@ export const submitAnswer = async (roomId: string, userId: string, questionIndex
 }
 
 export const finishQuizForMember = async (roomId: string, userId: string, score: number, accuracy: number, timeTaken: number) => {
-     const roomRef = doc(db, "rooms", roomId);
+    const roomRef = doc(db, "rooms", roomId);
     try {
       await runTransaction(db, async (transaction) => {
         const roomSnap = await transaction.get(roomRef);
@@ -218,14 +218,16 @@ export const finishQuizForMember = async (roomId: string, userId: string, score:
 
             transaction.update(roomRef, { 
                 members: updatedMembers,
-                status: allFinished ? 'finished' : 'in-progress'
+                ...(allFinished && { status: 'finished' }) // Conditionally update status
             });
         }
       });
     } catch (error) {
         console.error("Failed to finish quiz for member:", error);
+        // Re-throw the error so the client can handle it if needed
+        throw error;
     }
-}
+};
 
 export const updateQuizSettings = async (roomId: string, settings: Partial<GenerateQuizInput>) => {
     const roomRef = doc(db, "rooms", roomId);
@@ -243,8 +245,8 @@ export const startQuiz = async (roomId: string): Promise<void> => {
     }
     const roomData = roomSnap.data() as Room;
 
-    if (!roomData.quizSettings) {
-        throw new Error("Quiz settings are not configured.");
+    if (!roomData.quizSettings?.topic) {
+        throw new Error("Quiz topic must be set before starting.");
     }
 
     const quizData = await generateQuiz(roomData.quizSettings);
