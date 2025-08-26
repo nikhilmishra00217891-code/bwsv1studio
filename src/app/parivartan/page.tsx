@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil } from 'lucide-react';
+import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -330,96 +330,104 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-4xl h-[85vh] flex flex-col">
-                    <DialogHeader>
+                 <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+                    <DialogHeader className="p-6 pb-4 border-b">
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                     </DialogHeader>
                     
-                    <div className="flex-grow overflow-y-auto pr-4 -mr-6 pl-1 space-y-6">
+                    <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 min-h-0">
                         {/* Roles Section */}
-                        <div>
-                             <h3 className="text-lg font-semibold mb-2">Roles</h3>
-                             <div className="space-y-2">
-                                {(chamber.roles || []).map(role => (
-                                    <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted group">
-                                        <span className="font-semibold">{role.name}</span>
-                                        <div className="flex items-center">
-                                            {(role.name !== 'Admin' && role.name !== 'Member') && (
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => setEditingRole(role)}>
-                                                    <PencilRuler className="w-4 h-4"/>
-                                                </Button>
-                                            )}
-                                            {(role.name !== 'Admin' && role.name !== 'Member') && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
-                                                            <Trash2 className="w-4 h-4 text-destructive"/>
+                        <Card className="w-full md:w-1/3 flex flex-col">
+                            <CardHeader>
+                                <CardTitle className="text-lg">Roles</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-grow flex flex-col gap-2">
+                                <ScrollArea className="flex-grow">
+                                    <div className="space-y-2 pr-4">
+                                        {(chamber.roles || []).map(role => (
+                                            <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted group">
+                                                <span className="font-semibold">{role.name}</span>
+                                                <div className="flex items-center">
+                                                    {(role.name !== 'Admin' && role.name !== 'Member') && (
+                                                        <>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => setEditingRole(role)}>
+                                                            <PencilRuler className="w-4 h-4"/>
                                                         </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Delete "{role.name}"?</AlertDialogTitle>
-                                                            <AlertDialogDescription>This will remove the role from all members who have it. This cannot be undone.</AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteRole(role.id)} className={buttonVariants({variant: "destructive"})}>Delete Role</AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            )}
-                                        </div>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
+                                                                    <Trash2 className="w-4 h-4 text-destructive"/>
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader><AlertDialogTitle>Delete "{role.name}"?</AlertDialogTitle></AlertDialogHeader>
+                                                                <AlertDialogDescription>This will remove the role from all members who have it. This cannot be undone.</AlertDialogDescription>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleDeleteRole(role.id)} className={buttonVariants({variant: "destructive"})}>Delete Role</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                            <div className="flex gap-2 mt-4">
-                                <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
-                                <Button onClick={handleCreateRole} disabled={isCreatingRole}>
-                                    {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
-                                </Button>
-                            </div>
-                        </div>
+                                </ScrollArea>
+                                 <div className="flex gap-2 pt-4 border-t">
+                                    <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
+                                    <Button onClick={handleCreateRole} disabled={isCreatingRole}>
+                                        {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                         
-                        <div className="border-t my-6"></div>
-
                         {/* Members Section */}
-                        <div>
-                            <h3 className="text-lg font-semibold mb-2">Members ({chamber.members.length})</h3>
-                            <div className="space-y-4">
-                                {(chamber.members || []).map(member => (
-                                    <div key={member.uid} className="border-b last:border-b-0 pb-4">
-                                        <p className="font-bold">{member.displayName}</p>
-                                        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-                                            {(chamber.roles || []).map(role => {
-                                                const isAbsoluteAdmin = member.uid === chamber.creatorId && role.name === 'Admin';
-                                                const isDefaultMemberRole = role.name === 'Member';
-                                                return (
-                                                    <div key={role.id} className="flex items-center space-x-2">
-                                                        <Checkbox
-                                                            id={`${member.uid}-${role.id}`}
-                                                            checked={(member.roleIds || []).includes(role.id)}
-                                                            onCheckedChange={(checked) => handleAssignRole(member.uid, role.id, !!checked)}
-                                                            disabled={isAbsoluteAdmin || isDefaultMemberRole}
-                                                        />
-                                                        <label
-                                                            htmlFor={`${member.uid}-${role.id}`}
-                                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                                        >
-                                                            {role.name}
-                                                            {isAbsoluteAdmin && <Crown className="w-3 h-3 ml-1 inline text-amber-500"/>}
-                                                        </label>
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
+                         <Card className="w-full md:w-2/3 flex flex-col">
+                            <CardHeader>
+                                <CardTitle className="text-lg">Members ({chamber.members.length})</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-grow min-h-0">
+                                <ScrollArea className="h-full">
+                                    <div className="space-y-4 pr-4">
+                                        {(chamber.members || []).map(member => (
+                                            <div key={member.uid} className="border-b last:border-b-0 pb-4">
+                                                <p className="font-bold">{member.displayName}</p>
+                                                <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                                                    {(chamber.roles || []).map(role => {
+                                                        const isAbsoluteAdmin = member.uid === chamber.creatorId && role.name === 'Admin';
+                                                        const isDefaultMemberRole = role.name === 'Member';
+                                                        return (
+                                                            <div key={role.id} className="flex items-center space-x-2">
+                                                                <Checkbox
+                                                                    id={`${member.uid}-${role.id}`}
+                                                                    checked={(member.roleIds || []).includes(role.id)}
+                                                                    onCheckedChange={(checked) => handleAssignRole(member.uid, role.id, !!checked)}
+                                                                    disabled={isAbsoluteAdmin || isDefaultMemberRole}
+                                                                />
+                                                                <label
+                                                                    htmlFor={`${member.uid}-${role.id}`}
+                                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                                >
+                                                                    {role.name}
+                                                                    {isAbsoluteAdmin && <Crown className="w-3 h-3 ml-1 inline text-amber-500"/>}
+                                                                </label>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        </div>
+                                </ScrollArea>
+                            </CardContent>
+                        </Card>
                     </div>
                     
-                    <DialogFooter className="pt-4 border-t mt-auto">
+                    <DialogFooter className="p-6 pt-4 border-t mt-auto">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -809,6 +817,43 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
             setIsSending(false);
         }
     };
+    
+    const MessageBubble = ({ msg, isSelf }: { msg: ChamberMessage, isSelf: boolean }) => (
+        <div className={cn("flex items-start gap-3", isSelf && "justify-end")}>
+            {!isSelf && (
+                 <Avatar className="w-8 h-8">
+                    <AvatarImage src={msg.senderAvatar}/>
+                    <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                </Avatar>
+            )}
+            <div className={cn("flex flex-col", isSelf ? "items-end" : "items-start")}>
+                {!isSelf && <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>}
+                <div className={cn("group relative flex items-center", isSelf ? "flex-row-reverse" : "flex-row")}>
+                     <div className={cn(
+                        "p-3 rounded-xl max-w-md", 
+                        isSelf ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none",
+                        msg.isAiResponse && "border border-primary/50"
+                     )}>
+                        {msg.text}
+                     </div>
+                     <div className="flex items-center gap-1 self-start opacity-0 group-hover:opacity-100 transition-opacity p-1">
+                        <Button variant="ghost" size="icon" className="h-6 w-6"><Smile className="w-4 h-4"/></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6"><Reply className="w-4 h-4"/></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6"><Pin className="w-4 h-4"/></Button>
+                     </div>
+                </div>
+                 <p className="text-xs text-muted-foreground mt-1 px-3">
+                    {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), {addSuffix: true}) : 'sending...'}
+                 </p>
+            </div>
+            {isSelf && (
+                 <Avatar className="w-8 h-8">
+                    <AvatarImage src={msg.senderAvatar}/>
+                    <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                </Avatar>
+            )}
+        </div>
+    )
 
     return (
          <div className="flex-1 flex flex-col">
@@ -829,18 +874,7 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
             <ScrollArea className="flex-grow p-6" ref={scrollAreaRef}>
                 <div className="space-y-6">
                     {messages.map(msg => (
-                         <div key={msg.id} className="flex gap-4">
-                            <Avatar>
-                                <AvatarImage src={msg.senderAvatar}/>
-                                <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-bold">{msg.senderName} <span className="text-xs text-muted-foreground font-normal ml-2">{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), {addSuffix: true}) : 'sending...'}</span></p>
-                                <div className={cn("bg-card p-3 rounded-lg rounded-tl-none mt-1 max-w-md", msg.isAiResponse && "border border-primary/50")}>
-                                    {msg.text}
-                                </div>
-                            </div>
-                        </div>
+                         <MessageBubble key={msg.id} msg={msg} isSelf={msg.senderId === user?.uid} />
                     ))}
                      {!messages.length && channel && (
                         <div className="text-center text-muted-foreground py-16">
