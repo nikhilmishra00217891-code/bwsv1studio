@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -21,23 +20,25 @@ import { useEditMode } from "./EditModeProvider";
 import { ScrollArea } from "../ui/scroll-area";
 import SmartSearch from "../home/SmartSearch";
 
-const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void }) => {
+const NavLink = ({ href, label, icon: Icon, onSelect, isDesktop = false }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void, isDesktop?: boolean }) => {
   const pathname = usePathname();
   const router = useRouter();
   const isActive = pathname.startsWith(href) && href !== "/" || pathname === href;
 
   const content = (
     <>
-      {Icon && <Icon className="h-6 w-6" />}
+      {Icon && !isDesktop && <Icon className="h-6 w-6" />}
       <span>{label}</span>
     </>
   )
 
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement> | React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (onSelect) {
       router.push(href);
       onSelect();
+    } else {
+      router.push(href);
     }
   };
 
@@ -47,7 +48,8 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
             onClick={handleClick}
             className={cn(
                 "transition-colors hover:text-primary flex items-center gap-4 w-full text-left",
-                isActive ? "text-primary font-semibold" : "text-foreground/80"
+                isActive ? "text-primary font-semibold" : "text-foreground/80",
+                isDesktop && "p-2 rounded-md text-sm gap-2"
             )}
         >
             {content}
@@ -58,9 +60,11 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
   return (
     <Link
       href={href}
+      onClick={handleClick}
       className={cn(
         "transition-colors hover:text-primary flex items-center gap-4",
-        isActive ? "text-primary font-semibold" : "text-foreground/80"
+        isActive ? "text-primary font-semibold" : "text-foreground/80",
+        isDesktop && "p-2 rounded-md text-sm gap-2"
       )}
     >
       {content}
@@ -68,7 +72,23 @@ const NavLink = ({ href, label, icon: Icon, onSelect }: { href: string; label: s
   );
 };
 
+
 const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/parivartan"];
+const navLinksData = [
+  { href: "/", label: "Home", icon: Home },
+  { href: "/courses", label: "Courses", icon: Compass },
+  { href: "/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/games", label: "BWS Games", icon: Gamepad2 },
+  { href: "/about", label: "About", icon: Info },
+  { href: "/contact", label: "Contact", icon: Phone },
+];
+const futureNavLinks = [
+  { href: "/profile", label: "My Profile", icon: UserCircle },
+  { href: "/focus-zone", label: "Focus Zone", icon: Target },
+  { href: "/warzone", label: "Warzone", icon: Swords },
+  { href: "/parivartan", label: "Parivartan Chamber", icon: Users },
+];
+
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -130,7 +150,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-7xl items-center">
-        <div className="flex items-center gap-4 md:gap-8">
+        <div className="flex items-center gap-4">
              {showBackButton ? (
                  <Button variant="ghost" size="icon" className="mr-2" onClick={() => router.back()}>
                     <ArrowLeft />
@@ -144,21 +164,18 @@ export default function Header() {
                     </span>
                 </Link>
              )}
-             <div className="hidden lg:flex flex-1">
-                <SmartSearch />
-             </div>
         </div>
         
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium ml-auto">
-            {navLinks.filter(l => ['Home', 'Courses', 'Announcements'].includes(l.label)).map((link) => (
-                <NavLink key={link.href} {...link} />
+        <nav className="hidden md:flex items-center gap-1 text-sm font-medium mx-auto">
+            {navLinksData.map((link) => (
+                <NavLink key={link.href} {...link} isDesktop />
             ))}
         </nav>
         
-        <div className="flex-1 lg:hidden"></div>
-
-
-        <div className="flex items-center gap-2 md:gap-4 ml-auto md:ml-6">
+        <div className="flex items-center gap-2 md:gap-4 ml-auto">
+          <div className="hidden lg:block">
+            <SmartSearch />
+          </div>
           <ThemeToggle />
           
           {loading ? null : user ? (
@@ -202,7 +219,7 @@ export default function Header() {
                       <SmartSearch />
                     </div>
                     <nav className="flex flex-col gap-4 text-lg p-6">
-                      {navLinks.map((link) => (
+                      {[...navLinksData, { href: "/dashboard", label: "Dashboard", icon: UserCircle }].map((link) => (
                         <NavLink key={link.href} {...link} onSelect={handleLinkClick} />
                       ))}
                       {isFaculty && (
@@ -247,22 +264,3 @@ export default function Header() {
     </header>
   );
 }
-
-const navLinks = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/courses", label: "Courses", icon: Compass },
-  { href: "/announcements", label: "Announcements", icon: Megaphone },
-  { href: "/games", label: "BWS Games", icon: Gamepad2 },
-  { href: "/about", label: "About", icon: Info },
-  { href: "/contact", label: "Contact", icon: Phone },
-  { href: "/dashboard", label: "Dashboard", icon: UserCircle },
-];
-
-const futureNavLinks = [
-  { href: "/profile", label: "My Profile", icon: UserCircle },
-  { href: "/focus-zone", label: "Focus Zone", icon: Target },
-  { href: "/warzone", label: "Warzone", icon: Swords },
-  { href: "/parivartan", label: "Parivartan Chamber", icon: Users },
-];
-
-    
