@@ -3,24 +3,26 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy } from 'lucide-react';
+import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage } from '@/lib/data/parivartan';
-import type { Chamber, ChamberMessage, Channel } from '@/types';
+import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber } from '@/lib/data/parivartan';
+import type { Chamber, ChamberMessage, Channel, RoomMember } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) => void }) => {
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isCreateMode, setIsCreateMode] = useState(true);
@@ -31,10 +33,10 @@ const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) =
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user || !chamberName) return;
+        if (!user || !userProfile || !chamberName) return;
         setIsLoading(true);
         try {
-            const newChamberId = await createChamber(chamberName, chamberDescription, user.uid, user.displayName || 'Anonymous');
+            const newChamberId = await createChamber(chamberName, chamberDescription, user.uid, userProfile.displayName || 'Anonymous');
             toast({ title: "Chamber Created!", description: `Invite friends with ID: ${newChamberId}` });
             onChamberSelect(newChamberId);
         } catch (error: any) {
@@ -48,10 +50,10 @@ const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) =
 
     const handleJoin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user || !joinChamberId) return;
+        if (!user || !userProfile || !joinChamberId) return;
         setIsLoading(true);
         try {
-            const joinedChamber = await joinChamber(joinChamberId.toUpperCase(), user.uid, user.displayName || 'Anonymous', user.photoURL || '');
+            const joinedChamber = await joinChamber(joinChamberId.toUpperCase(), user.uid, userProfile.displayName || 'Anonymous', user.photoURL || '');
             if (joinedChamber) {
                 toast({ title: "Joined Chamber!", description: `Welcome to ${joinedChamber.name}.` });
                 onChamberSelect(joinedChamber.id);
@@ -107,6 +109,15 @@ const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) =
 
 const ChamberList = ({ userChambers, activeChamberId, onChamberSelect }: { userChambers: Chamber[], activeChamberId: string | null, onChamberSelect: (id: string) => void }) => (
     <div className="w-20 bg-card/50 p-3 flex flex-col items-center gap-4 border-r">
+        <Tooltip>
+            <TooltipTrigger asChild>
+                 <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center font-bold text-lg text-primary">
+                    BWS
+                </div>
+            </TooltipTrigger>
+             <TooltipContent side="right"><p>Home</p></TooltipContent>
+        </Tooltip>
+        <div className="w-full h-[2px] bg-border my-2"/>
         {userChambers.map(chamber => (
              <Tooltip key={chamber.id}>
                 <TooltipTrigger asChild>
@@ -146,10 +157,32 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
      const { user } = useAuth();
      const { toast } = useToast();
 
+     const isUserAdmin = user?.uid === chamber?.creatorId;
+
      const handleCopyId = () => {
          if(!chamber) return;
          navigator.clipboard.writeText(chamber.id);
          toast({ title: "Chamber ID Copied!", description: chamber.id });
+     }
+     
+     const handleLeaveChamber = async () => {
+         if (!user || !chamber) return;
+         try {
+             await removeMember(chamber.id, user.uid);
+             toast({ title: 'Left Chamber', description: `You have left ${chamber.name}.` });
+         } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Error Leaving', description: error.message });
+         }
+     }
+     
+     const handleDeleteChamber = async () => {
+         if (!chamber) return;
+         try {
+             await deleteChamber(chamber.id);
+             toast({ title: 'Chamber Deleted', description: `${chamber.name} has been permanently deleted.` });
+         } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Error Deleting', description: error.message });
+         }
      }
 
      return (
@@ -157,16 +190,6 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
             <header className="p-4 font-bold text-lg border-b shadow-sm h-16 flex items-center justify-between">
                 <span className="truncate">{chamber?.name || 'Parivartan'}</span>
                 <div className="flex items-center">
-                    {chamber && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={handleCopyId} className="h-8 w-8">
-                                    <Copy className="h-4 h-4"/>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Copy Chamber ID</p></TooltipContent>
-                        </Tooltip>
-                    )}
                     {onClose && (
                         <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden h-8 w-8">
                             <X className="h-5 w-5"/>
@@ -204,7 +227,57 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                             </Avatar>
                             <span className="text-sm font-semibold truncate">{user.displayName}</span>
                         </div>
-                        <Settings className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent side="top">
+                                <DropdownMenuItem onClick={handleCopyId}><Copy className="mr-2"/> Copy Chamber ID</DropdownMenuItem>
+                                {isUserAdmin ? (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                    <Trash2 className="mr-2"/> Delete Chamber
+                                                 </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>This will permanently delete the chamber and all its content for everyone. This action cannot be undone.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleDeleteChamber} className={cn(buttonVariants({variant: "destructive"}))}>Delete Chamber</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </>
+                                ) : (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                    <LogOut className="mr-2"/> Leave Chamber
+                                                 </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                             <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Leave Chamber?</AlertDialogTitle>
+                                                    <AlertDialogDescription>Are you sure you want to leave this chamber?</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleLeaveChamber} className={cn(buttonVariants({variant: "destructive"}))}>Leave</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
              )}
@@ -213,11 +286,27 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
 };
 
 
-const MemberList = ({ members, className, onClose }: { members: Chamber['members'], className?: string, onClose?: () => void }) => {
+const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, className?: string, onClose?: () => void }) => {
+    const { user } = useAuth();
+    const { toast } = useToast();
+
+    const handleRemoveMember = async (memberId: string) => {
+        if (!chamber) return;
+        try {
+            await removeMember(chamber.id, memberId);
+            toast({title: "Member Removed"});
+        } catch (error: any) {
+            toast({variant: 'destructive', title: "Error Removing Member", description: error.message });
+        }
+    }
+    
+    if (!chamber || !user) return null;
+    const isUserAdmin = user.uid === chamber.creatorId;
+
     return (
         <div className={cn("bg-card flex-col p-4 border-l w-full max-w-xs md:w-64 md:flex", className)}>
              <header className="font-bold text-muted-foreground uppercase text-sm mb-4 flex items-center justify-between">
-                <h3>Online — {members.length}</h3>
+                <h3>Online — {chamber.members.length}</h3>
                  {onClose && (
                     <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden">
                         <X className="h-5 w-5"/>
@@ -225,13 +314,33 @@ const MemberList = ({ members, className, onClose }: { members: Chamber['members
                 )}
             </header>
             <div className="space-y-3">
-                {members.map(member => (
-                     <div key={member.uid} className="flex items-center gap-3">
+                {chamber.members.map(member => (
+                     <div key={member.uid} className="flex items-center gap-3 group">
                         <Avatar className="w-8 h-8">
                             <AvatarImage src={member.photoURL || ''} />
                             <AvatarFallback>{member.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
-                        <span className="font-semibold text-sm">{member.displayName}</span>
+                        <div className="flex-grow">
+                             <span className="font-semibold text-sm">{member.displayName}</span>
+                             {member.uid === chamber.creatorId && <p className="text-xs text-amber-500 font-bold flex items-center gap-1"><Crown className="w-3 h-3"/>Admin</p>}
+                        </div>
+                        {isUserAdmin && user.uid !== member.uid && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Remove {member.displayName}?</AlertDialogTitle>
+                                        <AlertDialogDescription>Are you sure you want to remove this member from the chamber?</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleRemoveMember(member.uid)} className={cn(buttonVariants({variant: 'destructive'}))}>Remove</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
                     </div>
                 ))}
             </div>
@@ -463,7 +572,7 @@ const ParivartanChamberPage = () => {
                 {isMemberListOpen && (
                     <div className="absolute inset-0 z-40 md:hidden">
                          <MemberList 
-                            members={activeChamber?.members || []}
+                            chamber={activeChamber || null}
                             className="h-full animate-in slide-in-from-right-full duration-300 ml-auto"
                             onClose={() => setIsMemberListOpen(false)}
                          />
@@ -479,7 +588,7 @@ const ParivartanChamberPage = () => {
                         className="hidden md:flex" 
                     />
                     <ChatArea chamber={activeChamber} channel={activeChannel || null} />
-                    <MemberList members={activeChamber.members} className="hidden md:flex" />
+                    <MemberList chamber={activeChamber} className="hidden md:flex" />
                   </>
                 ) : (
                      <Dialog open={isCreateJoinDialogOpen} onOpenChange={setIsCreateJoinDialogOpen}>

@@ -16,6 +16,9 @@ import {
   Timestamp,
   writeBatch,
   setDoc,
+  deleteDoc,
+  arrayRemove,
+  runTransaction,
 } from "firebase/firestore";
 import type { Chamber, ChamberMessage, Channel, RoomMember } from "@/types";
 
@@ -127,7 +130,6 @@ export const listenForUserChambers = (
     callback: (chambers: Chamber[]) => void
 ): (() => void) => {
     const chambersCol = collection(db, 'chambers');
-    // REMOVED: orderBy("createdAt", "desc") to prevent index error. Sorting will be handled client-side.
     const q = query(chambersCol, where("memberIds", "array-contains", userId));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -136,11 +138,10 @@ export const listenForUserChambers = (
             ...doc.data()
         } as Chamber));
         
-        // Sort chambers by creation date in the application code
         chambers.sort((a, b) => {
             const timeA = a.createdAt?.toMillis() || 0;
             const timeB = b.createdAt?.toMillis() || 0;
-            return timeB - timeA; // Sort descending (newest first)
+            return timeB - timeA;
         });
 
         callback(chambers);
@@ -150,6 +151,67 @@ export const listenForUserChambers = (
     });
 
     return unsubscribe;
+}
+
+export const removeMember = async (chamberId: string, memberIdToRemove: string) => {
+  const chamberRef = doc(db, 'chambers', chamberId);
+  const userRef = doc(db, 'users', memberIdToRemove);
+
+  await runTransaction(db, async (transaction) => {
+    const chamberDoc = await transaction.get(chamberRef);
+    if (!chamberDoc.exists()) {
+      throw new Error("Chamber doesn't exist!");
+    }
+
+    const chamberData = chamberDoc.data() as Chamber;
+    const updatedMembers = chamberData.members.filter(m => m.uid !== memberIdToRemove);
+    const updatedMemberIds = chamberData.memberIds.filter(id => id !== memberIdToRemove);
+
+    if (chamberData.creatorId === memberIdToRemove) {
+      if (updatedMembers.length > 0) {
+        transaction.update(chamberRef, {
+          members: updatedMembers,
+          memberIds: updatedMemberIds,
+          creatorId: updatedMembers[0].uid, // Transfer ownership
+        });
+      } else {
+        transaction.delete(chamberRef); // Delete if last member
+      }
+    } else {
+      transaction.update(chamberRef, {
+        members: updatedMembers,
+        memberIds: updatedMemberIds,
+      });
+    }
+    
+    transaction.update(userRef, {
+        chambers: arrayRemove(chamberId)
+    });
+  });
+};
+
+export const deleteChamber = async (chamberId: string) => {
+    const chamberRef = doc(db, 'chambers', chamberId);
+    const chamberSnap = await getDoc(chamberRef);
+
+    if (!chamberSnap.exists()) {
+        throw new Error("Chamber not found.");
+    }
+    
+    const chamberData = chamberSnap.data() as Chamber;
+    
+    // Use a batch to remove the chamber from all members' profiles
+    const batch = writeBatch(db);
+    chamberData.memberIds.forEach(memberId => {
+        const userRef = doc(db, 'users', memberId);
+        batch.update(userRef, {
+            chambers: arrayRemove(chamberId)
+        });
+    });
+    
+    batch.delete(chamberRef);
+    
+    await batch.commit();
 }
 
 
