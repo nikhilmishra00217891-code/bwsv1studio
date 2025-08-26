@@ -268,12 +268,13 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                     <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                     <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                 </DialogHeader>
-                <div className="flex-grow p-6 grid md:grid-cols-3 gap-6 overflow-y-auto">
-                    {/* Roles Column */}
-                    <div className="md:col-span-1 flex flex-col gap-4">
-                        <h3 className="font-bold text-lg">Roles</h3>
-                        <div className="space-y-2">
-                           {chamber.roles?.map(role => (
+                <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 min-h-0">
+                    <Card className="md:w-1/3 flex flex-col">
+                        <CardHeader>
+                            <CardTitle>Roles</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow space-y-2 overflow-y-auto">
+                           {(chamber.roles || []).map(role => (
                                 <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted">
                                     <span className="font-semibold">{role.name}</span>
                                     {role.name !== 'Admin' && (
@@ -283,48 +284,51 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                     )}
                                 </div>
                             ))}
-                        </div>
-                        <div className="flex gap-2 mt-auto pt-4">
-                            <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
-                            <Button onClick={handleCreateRole} disabled={isCreatingRole}>
-                                {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Members Column */}
-                    <div className="md:col-span-2 flex flex-col gap-4">
-                        <h3 className="font-bold text-lg">Members ({chamber.members.length})</h3>
-                        <div className="space-y-4">
-                        {chamber.members.map(member => (
-                            <div key={member.uid} className="border-b pb-4 last:border-b-0">
-                                <p className="font-bold">{member.displayName}</p>
-                                <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-                                    {chamber.roles?.map(role => {
-                                            const isAbsoluteAdmin = member.uid === chamber.creatorId && role.name === 'Admin';
-                                        return (
-                                            <div key={role.id} className="flex items-center space-x-2">
-                                                <Checkbox
-                                                    id={`${member.uid}-${role.id}`}
-                                                    checked={member.roleIds?.includes(role.id)}
-                                                    onCheckedChange={(checked) => handleAssignRole(member.uid, role.id, !!checked)}
-                                                    disabled={isAbsoluteAdmin}
-                                                />
-                                                <label
-                                                    htmlFor={`${member.uid}-${role.id}`}
-                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                                >
-                                                    {role.name}
-                                                    {isAbsoluteAdmin && <Crown className="w-3 h-3 ml-1 inline text-amber-500"/>}
-                                                </label>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
+                        </CardContent>
+                        <div className="p-4 border-t mt-auto">
+                             <div className="flex gap-2">
+                                <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
+                                <Button onClick={handleCreateRole} disabled={isCreatingRole}>
+                                    {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
+                                </Button>
                             </div>
-                        ))}
                         </div>
-                    </div>
+                    </Card>
+
+                    <Card className="md:w-2/3 flex flex-col">
+                         <CardHeader>
+                            <CardTitle>Members ({chamber.members.length})</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow space-y-4 overflow-y-auto">
+                            {(chamber.members || []).map(member => (
+                                <div key={member.uid} className="border-b pb-4 last:border-b-0">
+                                    <p className="font-bold">{member.displayName}</p>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                                        {(chamber.roles || []).map(role => {
+                                                const isAbsoluteAdmin = member.uid === chamber.creatorId && role.name === 'Admin';
+                                            return (
+                                                <div key={role.id} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id={`${member.uid}-${role.id}`}
+                                                        checked={(member.roleIds || []).includes(role.id)}
+                                                        onCheckedChange={(checked) => handleAssignRole(member.uid, role.id, !!checked)}
+                                                        disabled={isAbsoluteAdmin}
+                                                    />
+                                                    <label
+                                                        htmlFor={`${member.uid}-${role.id}`}
+                                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                    >
+                                                        {role.name}
+                                                        {isAbsoluteAdmin && <Crown className="w-3 h-3 ml-1 inline text-amber-500"/>}
+                                                    </label>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
                 </div>
                  <DialogFooter className="p-6 border-t bg-background">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
@@ -342,7 +346,22 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
      const [isSettingsOpen, setIsSettingsOpen] = useState(false);
      const [channelToEdit, setChannelToEdit] = useState<Channel | undefined>(undefined);
 
-     const isUserAdmin = user?.uid === chamber?.creatorId;
+     const isAbsoluteAdmin = user?.uid === chamber?.creatorId;
+
+     const getMemberRoles = (member: RoomMember | undefined): (Role | {id: string, name: string})[] => {
+        if (!member || !chamber) return [];
+        const roles: (Role | {id: string, name: string})[] = [];
+        if (member.uid === chamber.creatorId) {
+            roles.push({ id: 'creator', name: 'Absolute Admin' });
+        }
+        const assignedRoles = member.roleIds?.map(roleId => (chamber.roles || []).find(r => r.id === roleId)).filter(Boolean) as Role[] || [];
+        return [...roles, ...assignedRoles];
+    }
+    
+    const currentUserMemberInfo = chamber?.members.find(m => m.uid === user?.uid);
+    const currentUserRoles = getMemberRoles(currentUserMemberInfo).map(r => r.name);
+    const hasAdminRole = currentUserRoles.includes('Admin') || currentUserRoles.includes('Absolute Admin');
+
 
      const handleCopyId = () => {
          if(!chamber) return;
@@ -376,7 +395,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
     };
      
     const handleDeleteChamber = async () => {
-        if (!chamber || !isUserAdmin) return;
+        if (!chamber || !isAbsoluteAdmin) return;
         try {
             await deleteChamber(chamber.id);
             toast({ title: 'Chamber Deleted', description: `${chamber.name} has been permanently deleted.` });
@@ -414,7 +433,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                     <div className="p-4 space-y-1">
                         <div className="flex items-center justify-between text-xs font-bold uppercase text-muted-foreground px-2 mb-2">
                              <span>Text Channels</span>
-                             {isUserAdmin && (
+                             {hasAdminRole && (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <button onClick={() => setIsCreateChannelOpen(true)} className="hover:text-foreground">
@@ -435,7 +454,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                                 >
                                     <Hash className="w-5 h-5" /> {channel.name}
                                 </button>
-                                {isUserAdmin && (
+                                {hasAdminRole && (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100">
@@ -482,7 +501,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                                 </div>
                             </DropdownMenuTrigger>
                              <DropdownMenuContent side="top" className="w-56">
-                                {isUserAdmin && (
+                                {isAbsoluteAdmin && (
                                     <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
                                         <UserCog className="mr-2 h-4 w-4"/> Chamber Settings
                                     </DropdownMenuItem>
@@ -492,12 +511,12 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                            {isUserAdmin ? <Trash2 className="mr-2 h-4 w-4"/> : <LogOut className="mr-2 h-4 w-4"/>}
-                                            {isUserAdmin ? 'Delete Chamber' : 'Leave Chamber'}
+                                            {isAbsoluteAdmin ? <Trash2 className="mr-2 h-4 w-4"/> : <LogOut className="mr-2 h-4 w-4"/>}
+                                            {isAbsoluteAdmin ? 'Delete Chamber' : 'Leave Chamber'}
                                         </DropdownMenuItem>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
-                                        {isUserAdmin && otherMembers.length > 0 ? (
+                                        {isAbsoluteAdmin && otherMembers.length > 0 ? (
                                             <>
                                                  <AlertDialogHeader>
                                                     <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
@@ -542,13 +561,13 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        {isUserAdmin ? 'This will permanently delete the chamber and all its content for everyone. This action cannot be undone.' : 'Are you sure you want to leave this chamber?'}
+                                                        {isAbsoluteAdmin ? 'This will permanently delete the chamber and all its content for everyone. This action cannot be undone.' : 'Are you sure you want to leave this chamber?'}
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={isUserAdmin ? handleDeleteChamber : handleLeaveChamber} className={cn(buttonVariants({variant: "destructive"}))}>
-                                                        {isUserAdmin ? 'Delete Chamber' : 'Leave'}
+                                                    <AlertDialogAction onClick={isAbsoluteAdmin ? handleDeleteChamber : handleLeaveChamber} className={cn(buttonVariants({variant: "destructive"}))}>
+                                                        {isAbsoluteAdmin ? 'Delete Chamber' : 'Leave'}
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </>
@@ -564,7 +583,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                 <>
                     <ChannelDialog mode="create" chamberId={chamber.id} isOpen={isCreateChannelOpen} onOpenChange={setIsCreateChannelOpen} />
                     <ChannelDialog mode="rename" chamberId={chamber.id} channel={channelToEdit} isOpen={isRenameChannelOpen} onOpenChange={setIsRenameChannelOpen} />
-                    {isUserAdmin && <ChamberSettingsDialog chamber={chamber} isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />}
+                    {isAbsoluteAdmin && <ChamberSettingsDialog chamber={chamber} isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />}
                 </>
             )}
         </>
@@ -575,6 +594,20 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
 const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, className?: string, onClose?: () => void }) => {
     const { user } = useAuth();
     const { toast } = useToast();
+
+    const getMemberRoles = (member: RoomMember | undefined): (Role | {id: string, name: string})[] => {
+        if (!member || !chamber) return [];
+        const roles: (Role | {id: string, name: string})[] = [];
+        if (member.uid === chamber.creatorId) {
+            roles.push({ id: 'creator', name: 'Absolute Admin' });
+        }
+        const assignedRoles = member.roleIds?.map(roleId => (chamber.roles || []).find(r => r.id === roleId)).filter(Boolean) as Role[] || [];
+        return [...roles, ...assignedRoles];
+    }
+    
+    const currentUserMemberInfo = chamber?.members.find(m => m.uid === user?.uid);
+    const currentUserRoles = getMemberRoles(currentUserMemberInfo).map(r => r.name);
+    const hasAdminRole = currentUserRoles.includes('Admin') || currentUserRoles.includes('Absolute Admin');
 
     const handleRemoveMember = async (memberId: string) => {
         if (!chamber) return;
@@ -587,17 +620,6 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
     }
     
     if (!chamber || !user) return null;
-    const isUserAdmin = user.uid === chamber.creatorId;
-
-    const getMemberRoles = (member: RoomMember): (Role | {id: string, name: string})[] => {
-        if (!member) return [];
-        const roles: (Role | {id: string, name: string})[] = [];
-        if (member.uid === chamber.creatorId) {
-            roles.push({ id: 'creator', name: 'Absolute Admin' });
-        }
-        const assignedRoles = member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter(Boolean) as Role[] || [];
-        return [...roles, ...assignedRoles];
-    }
 
     return (
         <div className={cn("bg-card flex-col p-4 border-l w-full max-w-xs md:w-64 md:flex", className)}>
@@ -621,7 +643,7 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
                             <div className="flex-grow overflow-hidden">
                                  <p className="font-semibold text-sm truncate">{member.displayName}</p>
                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {roles.map(role => (
+                                     {(roles || []).map(role => (
                                          <span key={role.id} className="text-xs text-muted-foreground font-bold flex items-center gap-1">
                                             {role.name === 'Absolute Admin' && <Crown className="w-3 h-3 text-amber-500" />}
                                             {role.name === 'Admin' && <ShieldCheck className="w-3 h-3 text-blue-500" />}
@@ -630,7 +652,7 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
                                     ))}
                                  </div>
                             </div>
-                            {isUserAdmin && user.uid !== member.uid && (
+                            {hasAdminRole && user.uid !== member.uid && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4 text-destructive"/></Button>
@@ -956,3 +978,5 @@ const ParivartanChamberPage = () => {
 };
 
 export default ParivartanChamberPage;
+
+    
