@@ -331,19 +331,19 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
+                 <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
                     <DialogHeader className="p-6 pb-4 border-b shrink-0">
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                     </DialogHeader>
-                    
-                    <div className="flex-grow p-6 overflow-y-auto">
-                        <div className="grid md:grid-cols-2 gap-6">
-                             {/* Roles Section */}
+
+                    <div className="flex-grow p-6 overflow-y-auto min-h-0">
+                        <div className="grid md:grid-cols-2 gap-6 h-full">
+                            {/* Roles Section */}
                             <Card className="flex flex-col">
                                 <CardHeader><CardTitle className="text-lg">Roles</CardTitle></CardHeader>
                                 <CardContent className="flex-grow flex flex-col gap-2">
-                                    <div className="space-y-2 flex-grow">
+                                    <div className="space-y-2 flex-grow overflow-y-auto">
                                         {(chamber.roles || []).map(role => (
                                             <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted group">
                                                 <span className="font-semibold">{role.name}</span>
@@ -382,7 +382,6 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                     </div>
                                 </CardContent>
                             </Card>
-
                              {/* Members Section */}
                             <Card className="flex flex-col">
                                 <CardHeader><CardTitle className="text-lg">Members ({chamber.members.length})</CardTitle></CardHeader>
@@ -422,7 +421,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                         </div>
                     </div>
                     
-                    <DialogFooter className="p-6 pt-4 border-t mt-auto shrink-0">
+                    <DialogFooter className="p-6 pt-4 border-t shrink-0">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -792,7 +791,7 @@ const PinnedMessagesBar = ({ pinnedMessages, isExpanded, onToggle, onPinClick }:
                                 {isExpanded ? (
                                     pinnedMessages.map(msg => (
                                         <button key={msg.id} onClick={() => onPinClick(msg.id)} className="text-xs text-left w-full hover:bg-muted p-1 rounded">
-                                            <strong className="text-primary/80">{msg.senderName}:</strong> <span className="text-muted-foreground">{msg.text}</span>
+                                            <strong className="text-primary/80">{msg.senderName}:</strong> <span className="text-muted-foreground line-clamp-1">{msg.text}</span>
                                         </button>
                                     ))
                                 ) : (
