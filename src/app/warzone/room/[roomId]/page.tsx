@@ -277,8 +277,9 @@ const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: Gen
     }, [settings]);
 
     useEffect(() => {
+        // Debounced update to Firestore
         const handler = setTimeout(() => {
-            if (quizSettings.topic) {
+            if (JSON.stringify(quizSettings) !== JSON.stringify(settings)) {
                 updateQuizSettings(roomId, quizSettings);
             }
         }, 500);
@@ -286,7 +287,7 @@ const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: Gen
         return () => {
             clearTimeout(handler);
         };
-    }, [quizSettings, roomId]);
+    }, [quizSettings, roomId, settings]);
 
     const handleSettingChange = (field: keyof GenerateQuizInput, value: string | number) => {
         setQuizSettings(prev => ({ ...prev, [field]: value }));
@@ -684,19 +685,6 @@ const WarzoneUI = () => {
             return () => unsubscribe();
         }
     }, [roomId, user]);
-
-    const handleAttemptToLeave = async () => {
-        if (!user || !room) return;
-        
-        const isHost = room.hostId === user.uid;
-        const hasOtherMembers = room.members.length > 1;
-
-        if (isHost && hasOtherMembers) {
-            setShowHostLeaveDialog(true);
-        } else {
-             handleConfirmLeave();
-        }
-    };
     
     const handleConfirmLeave = async () => {
         if (!user || !room) return;
@@ -737,9 +725,10 @@ const WarzoneUI = () => {
             });
         }
     }, [roomId, toast]);
-
+    
     const isHost = room?.hostId === user?.uid;
     const currentUser = room?.members.find(m => m.uid === user?.uid);
+    const hasOtherMembers = room ? room.members.length > 1 : false;
 
     if (removedMessage) {
         return (
@@ -783,16 +772,64 @@ const WarzoneUI = () => {
                         <Button variant="outline">Leave Warzone</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This will remove you from the current battle.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Stay</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleAttemptToLeave}>Leave</AlertDialogAction>
-                        </AlertDialogFooter>
+                       {isHost && hasOtherMembers ? (
+                            <>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        You are the host. To leave, you must first transfer the host role to another member. Or, you can delete the room for everyone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <Label>Transfer Host & Leave</Label>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                                        {room.members.filter(m => m.uid !== user?.uid).map(member => (
+                                            <div key={member.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                                                <span className="font-semibold">{member.displayName}</span>
+                                                <Button size="sm" variant="outline" onClick={() => handleHostTransfer(member.uid)}>
+                                                    <Crown className="mr-2 h-4 w-4"/> Make Host & Leave
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
+                                    <Button variant="secondary" onClick={() => (document.querySelector('[data-radix-alert-dialog-cancel]') as HTMLElement)?.click()} className="w-full sm:w-auto">Cancel</Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" className="w-full sm:w-auto">Disband Warzone</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                This will permanently delete the room for all members. This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleHostDeleteRoom} className={cn(buttonVariants({variant: "destructive"}))}>
+                                                    Yes, Disband
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </AlertDialogFooter>
+                            </>
+                        ) : (
+                             <>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        {isHost && !hasOtherMembers ? "Since you are the last one here, the room will be deleted." : "This will remove you from the current battle."}
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Stay</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleConfirmLeave}>Leave</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </>
+                        )}
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
@@ -814,34 +851,6 @@ const WarzoneUI = () => {
                     </div>
                 </div>
             </div>
-
-            <AlertDialog open={showHostLeaveDialog} onOpenChange={setShowHostLeaveDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            As the host, if you leave, another member will become the host. To delete the room for everyone, you must be the last member to leave.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="space-y-4 py-4">
-                        <Label>Transfer Host Role</Label>
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                            {room.members.filter(m => m.uid !== user?.uid).map(member => (
-                                <div key={member.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
-                                    <span className="font-semibold">{member.displayName}</span>
-                                    <Button size="sm" variant="outline" onClick={() => handleHostTransfer(member.uid)}>
-                                        <Crown className="mr-2 h-4 w-4"/> Make Host & Leave
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
-                         <Button variant="secondary" onClick={() => setShowHostLeaveDialog(false)} className="w-full sm:w-auto">Cancel</Button>
-                         <Button variant="destructive" onClick={handleConfirmLeave} className="w-full sm:w-auto">Leave & Assign New Host</Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
     );
 };

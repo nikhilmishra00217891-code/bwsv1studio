@@ -23,7 +23,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setIsMounted(true);
     }, []);
 
-    const isFocusZone = pathname.startsWith('/focus-zone');
+    const isFocusOrWarZone = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone');
 
     if (!isMounted) {
         return (
@@ -33,7 +33,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         )
     }
 
-    if (isFocusZone) {
+    if (isFocusOrWarZone) {
          return (
              <div className="flex min-h-screen flex-col">
                 <main className="flex-1">{children}</main>
@@ -43,7 +43,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     const isOnboarding = pathname === '/onboarding';
     const isHomepage = pathname === '/';
-    const isGamePage = pathname.startsWith('/games/') || pathname.startsWith('/warzone');
+    const isGamePage = pathname.startsWith('/games/');
     const isAdminPage = pathname.startsWith('/admin/');
 
     if (userProfile?.suspension?.isSuspended) {

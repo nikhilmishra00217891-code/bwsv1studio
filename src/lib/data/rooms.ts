@@ -102,11 +102,13 @@ export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: str
             const updatedMembers = roomData.members.filter(m => m.uid !== memberIdToRemove);
             
             if (updatedMembers.length === 0) {
+                // If the last member is leaving, delete the room
                 transaction.delete(roomRef);
             } else {
                 let newHostId = roomData.hostId;
                 let newHostName = roomData.hostName;
-                if (roomData.hostId === memberIdToRemove && updatedMembers.length > 0) {
+                // If the host is leaving and there are others, make the next person host
+                if (roomData.hostId === memberIdToRemove) {
                     newHostId = updatedMembers[0].uid;
                     newHostName = updatedMembers[0].displayName;
                 }
@@ -115,7 +117,7 @@ export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: str
         });
     } catch (error) {
         console.error("Error removing member from room: ", error);
-        throw error;
+        throw error; // Re-throw so the client knows something went wrong
     }
 };
 
@@ -195,39 +197,40 @@ export const submitAnswer = async (roomId: string, userId: string, questionIndex
 export const finishQuizForMember = async (roomId: string, userId: string, score: number, accuracy: number, timeTaken: number) => {
     const roomRef = doc(db, "rooms", roomId);
     try {
-      await runTransaction(db, async (transaction) => {
-        const roomSnap = await transaction.get(roomRef);
-        if (!roomSnap.exists()) {
-          return;
-        }
+        await runTransaction(db, async (transaction) => {
+            const roomSnap = await transaction.get(roomRef);
+            if (!roomSnap.exists()) return;
 
-        const roomData = roomSnap.data() as Room;
-        const memberIndex = roomData.members.findIndex(m => m.uid === userId);
+            const roomData = roomSnap.data() as Room;
+            const members = roomData.members;
+            const memberIndex = members.findIndex(m => m.uid === userId);
+            if (memberIndex === -1) return;
 
-        if (memberIndex !== -1) {
-            const updatedMembers = [...roomData.members];
-            updatedMembers[memberIndex] = { 
-                ...updatedMembers[memberIndex], 
+            // Update just the specific member's status
+            const updatedMember = {
+                ...members[memberIndex],
                 status: 'finished',
                 score,
                 accuracy,
-                timeTaken
+                timeTaken,
             };
-            
-            const allFinished = updatedMembers.every(m => m.status === 'finished');
+            members[memberIndex] = updatedMember;
 
-            transaction.update(roomRef, { 
-                members: updatedMembers,
-                ...(allFinished && { status: 'finished' }) // Conditionally update status
+            // Check if all members are finished
+            const allFinished = members.every(m => m.status === 'finished');
+
+            // Update the document
+            transaction.update(roomRef, {
+                members: members,
+                ...(allFinished && { status: 'finished' }) // Conditionally update room status
             });
-        }
-      });
+        });
     } catch (error) {
         console.error("Failed to finish quiz for member:", error);
-        // Re-throw the error so the client can handle it if needed
         throw error;
     }
 };
+
 
 export const updateQuizSettings = async (roomId: string, settings: Partial<GenerateQuizInput>) => {
     const roomRef = doc(db, "rooms", roomId);
