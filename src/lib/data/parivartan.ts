@@ -21,7 +21,7 @@ import {
   arrayRemove,
   runTransaction,
 } from "firebase/firestore";
-import type { Chamber, ChamberMessage, Channel, RoomMember } from "@/types";
+import type { Chamber, ChamberMessage, Channel, RoomMember, Role } from "@/types";
 
 // --- Chamber Functions ---
 
@@ -42,21 +42,29 @@ export const createChamber = async (
   description: string,
   creatorId: string,
   creatorName: string,
+  creatorAvatar: string
 ): Promise<string> => {
   const chamberId = generateChamberId();
   const chamberRef = doc(db, "chambers", chamberId);
 
   const defaultChannel: Channel = {
-    id: "general",
+    id: "kuch-bhi-pucho",
     name: "kuch-bhi-pucho",
     type: "text",
   };
   
+  const adminRole: Role = {
+      id: 'admin',
+      name: 'Admin',
+      permissions: ['*'], // Future use
+  };
+
   const creatorMember: RoomMember = {
       uid: creatorId,
       displayName: creatorName,
-      photoURL: '', 
+      photoURL: creatorAvatar, 
       avatar: 'brain',
+      roleIds: ['admin'], // Assign admin role by default
   }
 
   const newChamberData: Omit<Chamber, 'id'> = {
@@ -66,6 +74,7 @@ export const createChamber = async (
     members: [creatorMember],
     memberIds: [creatorId],
     channels: [defaultChannel],
+    roles: [adminRole],
     createdAt: serverTimestamp() as any,
   };
 
@@ -104,6 +113,7 @@ export const joinChamber = async (
             displayName: userName,
             photoURL: userAvatar,
             avatar: 'brain',
+            roleIds: [], // New members have no roles by default
         }
 
         const userRef = doc(db, 'users', userId);
@@ -162,31 +172,58 @@ export const removeMember = async (chamberId: string, memberIdToRemove: string) 
     }
 
     const chamberData = chamberDoc.data() as Chamber;
-    const updatedMembers = chamberData.members.filter(m => m.uid !== memberIdToRemove);
-    const updatedMemberIds = chamberData.memberIds.filter(id => id !== memberIdToRemove);
-
     if (chamberData.creatorId === memberIdToRemove) {
-      if (updatedMembers.length > 0) {
-        transaction.update(chamberRef, {
-          members: updatedMembers,
-          memberIds: updatedMemberIds,
-          creatorId: updatedMembers[0].uid, // Transfer ownership
-        });
-      } else {
-        transaction.delete(chamberRef); // Delete if last member
-      }
-    } else {
-      transaction.update(chamberRef, {
-        members: updatedMembers,
-        memberIds: updatedMemberIds,
-      });
+      throw new Error("The Absolute Admin cannot be removed.");
     }
     
+    const updatedMembers = chamberData.members.filter(m => m.uid !== memberIdToRemove);
+    
+    transaction.update(chamberRef, { members: updatedMembers });
     transaction.update(userRef, {
         chambers: arrayRemove(chamberId)
     });
   });
 };
+
+export const transferHost = async (chamberId: string, newHostId: string) => {
+    const chamberRef = doc(db, 'chambers', chamberId);
+    
+    await runTransaction(db, async (transaction) => {
+        const chamberDoc = await transaction.get(chamberRef);
+        if (!chamberDoc.exists()) throw new Error("Chamber not found.");
+        const chamberData = chamberDoc.data() as Chamber;
+        
+        const newHost = chamberData.members.find(m => m.uid === newHostId);
+        if (!newHost) throw new Error("New host not found in chamber.");
+
+        // Remove old creator from members array and memberIds array
+        const oldCreatorId = chamberData.creatorId;
+        const membersWithoutOldCreator = chamberData.members.filter(m => m.uid !== oldCreatorId);
+        const memberIdsWithoutOldCreator = chamberData.memberIds.filter(id => id !== oldCreatorId);
+
+        // Update the new host's roles to include 'admin' if they don't have it
+        const newHostMemberIndex = membersWithoutOldCreator.findIndex(m => m.uid === newHostId);
+        if (newHostMemberIndex !== -1) {
+            const newHostMember = membersWithoutOldCreator[newHostMemberIndex];
+            if (!newHostMember.roleIds?.includes('admin')) {
+                newHostMember.roleIds = [...(newHostMember.roleIds || []), 'admin'];
+            }
+        }
+
+        transaction.update(chamberRef, {
+            creatorId: newHostId,
+            members: membersWithoutOldCreator,
+            memberIds: memberIdsWithoutOldCreator
+        });
+
+        // Remove chamber from old creator's user document
+        const oldCreatorUserRef = doc(db, 'users', oldCreatorId);
+        transaction.update(oldCreatorUserRef, {
+            chambers: arrayRemove(chamberId)
+        });
+    });
+}
+
 
 export const deleteChamber = async (chamberId: string) => {
     const chamberRef = doc(db, 'chambers', chamberId);
@@ -331,3 +368,85 @@ export const sendChannelMessage = async (
         timestamp: serverTimestamp()
     });
 };
+
+
+// --- Role Management Functions ---
+
+export const createRole = async (chamberId: string, roleName: string) => {
+    const chamberRef = doc(db, "chambers", chamberId);
+    
+    const newRole: Role = {
+        id: generateChannelId(roleName), // Re-use channel ID logic for simplicity
+        name: roleName,
+        permissions: [], // Empty permissions by default
+    };
+
+    const chamberSnap = await getDoc(chamberRef);
+    if (chamberSnap.exists()) {
+        const chamberData = chamberSnap.data() as Chamber;
+        if (chamberData.roles?.some(r => r.name.toLowerCase() === roleName.toLowerCase())) {
+            throw new Error("A role with this name already exists.");
+        }
+    }
+
+    await updateDoc(chamberRef, {
+        roles: arrayUnion(newRole)
+    });
+}
+
+export const deleteRole = async (chamberId: string, roleId: string) => {
+    const chamberRef = doc(db, 'chambers', chamberId);
+    
+    await runTransaction(db, async (transaction) => {
+        const chamberDoc = await transaction.get(chamberRef);
+        if (!chamberDoc.exists()) throw new Error("Chamber not found.");
+
+        const chamberData = chamberDoc.data() as Chamber;
+        
+        // Remove the role itself
+        const updatedRoles = chamberData.roles?.filter(r => r.id !== roleId) || [];
+        
+        // Remove the roleId from all members
+        const updatedMembers = chamberData.members.map(member => {
+            return {
+                ...member,
+                roleIds: member.roleIds?.filter(id => id !== roleId) || []
+            };
+        });
+
+        transaction.update(chamberRef, { 
+            roles: updatedRoles,
+            members: updatedMembers 
+        });
+    });
+}
+
+export const assignRole = async (chamberId: string, memberId: string, roleId: string, shouldAssign: boolean) => {
+    const chamberRef = doc(db, 'chambers', chamberId);
+
+    await runTransaction(db, async (transaction) => {
+        const chamberDoc = await transaction.get(chamberRef);
+        if (!chamberDoc.exists()) throw new Error("Chamber not found.");
+        
+        const chamberData = chamberDoc.data() as Chamber;
+        const memberIndex = chamberData.members.findIndex(m => m.uid === memberId);
+        
+        if (memberIndex === -1) throw new Error("Member not found.");
+
+        const member = chamberData.members[memberIndex];
+        const currentRoles = member.roleIds || [];
+        
+        let newRoles;
+        if (shouldAssign) {
+            newRoles = [...currentRoles, roleId];
+        } else {
+            newRoles = currentRoles.filter(id => id !== roleId);
+        }
+        member.roleIds = [...new Set(newRoles)]; // Ensure no duplicates
+        
+        const updatedMembers = [...chamberData.members];
+        updatedMembers[memberIndex] = member;
+        
+        transaction.update(chamberRef, { members: updatedMembers });
+    });
+}

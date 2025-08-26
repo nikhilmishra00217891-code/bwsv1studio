@@ -4,10 +4,10 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle } from 'lucide-react';
+import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -17,10 +17,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel } from '@/lib/data/parivartan';
-import type { Chamber, ChamberMessage, Channel, RoomMember } from '@/types';
+import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel, createRole, deleteRole, assignRole, transferHost } from '@/lib/data/parivartan';
+import type { Chamber, ChamberMessage, Channel, RoomMember, Role } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) => void }) => {
     const { user, userProfile } = useAuth();
@@ -37,7 +38,7 @@ const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) =
         if (!user || !userProfile || !chamberName) return;
         setIsLoading(true);
         try {
-            const newChamberId = await createChamber(chamberName, chamberDescription, user.uid, userProfile.displayName || 'Anonymous');
+            const newChamberId = await createChamber(chamberName, chamberDescription, user.uid, userProfile.displayName || 'Anonymous', user.photoURL || '');
             toast({ title: "Chamber Created!", description: `Invite friends with ID: ${newChamberId}` });
             onChamberSelect(newChamberId);
         } catch (error: any) {
@@ -225,11 +226,127 @@ const ChannelDialog = ({
 };
 
 
+const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Chamber, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
+    const { toast } = useToast();
+    const [newRoleName, setNewRoleName] = useState('');
+    const [isCreatingRole, setIsCreatingRole] = useState(false);
+    
+    const handleCreateRole = async () => {
+        if (!newRoleName.trim()) return;
+        setIsCreatingRole(true);
+        try {
+            await createRole(chamber.id, newRoleName.trim());
+            toast({ title: "Role Created!" });
+            setNewRoleName('');
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Failed to create role", description: error.message });
+        } finally {
+            setIsCreatingRole(false);
+        }
+    };
+    
+    const handleDeleteRole = async (roleId: string) => {
+        try {
+            await deleteRole(chamber.id, roleId);
+            toast({ title: "Role Deleted" });
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Failed to delete role", description: error.message });
+        }
+    }
+
+    const handleAssignRole = async (memberId: string, roleId: string, shouldAssign: boolean) => {
+        try {
+            await assignRole(chamber.id, memberId, roleId, shouldAssign);
+        } catch (error: any) {
+             toast({ variant: "destructive", title: "Failed to update role", description: error.message });
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
+                    <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
+                </DialogHeader>
+                <div className="grid md:grid-cols-3 gap-6 flex-grow min-h-0">
+                    <Card className="md:col-span-1 flex flex-col">
+                        <CardHeader>
+                            <CardTitle>Roles</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow space-y-2 overflow-y-auto">
+                            {chamber.roles?.map(role => (
+                                <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                                    <span className="font-semibold">{role.name}</span>
+                                    {role.name !== 'Admin' && (
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteRole(role.id)}>
+                                            <Trash2 className="w-4 h-4 text-destructive"/>
+                                        </Button>
+                                    )}
+                                </div>
+                            ))}
+                        </CardContent>
+                        <CardContent>
+                            <div className="flex gap-2">
+                                <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
+                                <Button onClick={handleCreateRole} disabled={isCreatingRole}>
+                                    {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="md:col-span-2 flex flex-col">
+                        <CardHeader><CardTitle>Members ({chamber.members.length})</CardTitle></CardHeader>
+                        <ScrollArea className="flex-grow">
+                             <CardContent>
+                                <div className="space-y-4">
+                                {chamber.members.map(member => (
+                                    <div key={member.uid}>
+                                        <p className="font-bold">{member.displayName}</p>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {chamber.roles?.map(role => {
+                                                 const isAbsoluteAdmin = member.uid === chamber.creatorId && role.name === 'Admin';
+                                                return (
+                                                    <div key={role.id} className="flex items-center space-x-2">
+                                                        <Checkbox
+                                                            id={`${member.uid}-${role.id}`}
+                                                            checked={member.roleIds?.includes(role.id)}
+                                                            onCheckedChange={(checked) => handleAssignRole(member.uid, role.id, !!checked)}
+                                                            disabled={isAbsoluteAdmin}
+                                                        />
+                                                        <label
+                                                            htmlFor={`${member.uid}-${role.id}`}
+                                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                        >
+                                                            {role.name}
+                                                            {isAbsoluteAdmin && <Crown className="w-3 h-3 ml-1 inline text-amber-500"/>}
+                                                        </label>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                                </div>
+                            </CardContent>
+                        </ScrollArea>
+                    </Card>
+                </div>
+                 <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, onClose }: { chamber: Chamber | null, activeChannelId: string | null, onChannelSelect: (id: string) => void, className?: string, onClose?: () => void }) => {
      const { user } = useAuth();
      const { toast } = useToast();
      const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
      const [isRenameChannelOpen, setIsRenameChannelOpen] = useState(false);
+     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
      const [channelToEdit, setChannelToEdit] = useState<Channel | undefined>(undefined);
 
      const isUserAdmin = user?.uid === chamber?.creatorId;
@@ -240,35 +357,52 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
          toast({ title: "Chamber ID Copied!", description: chamber.id });
      }
      
-     const handleLeaveChamber = async () => {
-         if (!user || !chamber) return;
-         try {
-             await removeMember(chamber.id, user.uid);
-             toast({ title: 'Left Chamber', description: `You have left ${chamber.name}.` });
-         } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Error Leaving', description: error.message });
-         }
-     }
+    const handleLeaveChamber = async () => {
+        if (!user || !chamber) return;
+        try {
+            await removeMember(chamber.id, user.uid);
+            toast({ title: 'Left Chamber', description: `You have left ${chamber.name}.` });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error Leaving', description: error.message });
+        }
+    }
      
-     const handleDeleteChamber = async () => {
-         if (!chamber) return;
-         try {
-             await deleteChamber(chamber.id);
-             toast({ title: 'Chamber Deleted', description: `${chamber.name} has been permanently deleted.` });
-         } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Error Deleting', description: error.message });
-         }
-     }
+    const handleHostLeave = async (newHostId?: string) => {
+        if (!user || !chamber) return;
 
-     const handleDeleteChannel = async (channelId: string) => {
-         if(!chamber) return;
-         try {
-             await deleteChannel(chamber.id, channelId);
-             toast({title: "Channel Deleted"});
-         } catch (error: any) {
-             toast({variant: 'destructive', title: "Error", description: error.message});
-         }
-     }
+        if (newHostId) {
+             try {
+                await transferHost(chamber.id, newHostId);
+                toast({ title: 'Host Transferred!', description: 'You have successfully left the chamber.' });
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Error Transferring', description: error.message });
+            }
+        } else {
+            handleDeleteChamber();
+        }
+    };
+     
+    const handleDeleteChamber = async () => {
+        if (!chamber || !isUserAdmin) return;
+        try {
+            await deleteChamber(chamber.id);
+            toast({ title: 'Chamber Deleted', description: `${chamber.name} has been permanently deleted.` });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error Deleting', description: error.message });
+        }
+    }
+
+    const handleDeleteChannel = async (channelId: string) => {
+        if(!chamber) return;
+        try {
+            await deleteChannel(chamber.id, channelId);
+            toast({title: "Channel Deleted"});
+        } catch (error: any) {
+            toast({variant: 'destructive', title: "Error", description: error.message});
+        }
+    }
+    
+    const otherMembers = chamber?.members.filter(m => m.uid !== user?.uid) || [];
 
      return (
         <>
@@ -355,50 +489,67 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                                 </div>
                             </DropdownMenuTrigger>
                              <DropdownMenuContent side="top" className="w-56">
+                                {isUserAdmin && (
+                                    <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
+                                        <UserCog className="mr-2 h-4 w-4"/> Chamber Settings
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={handleCopyId}><Copy className="mr-2 h-4 w-4"/> Copy Chamber ID</DropdownMenuItem>
-                                {isUserAdmin ? (
-                                    <>
-                                        <DropdownMenuSeparator />
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                    <Trash2 className="mr-2 h-4 w-4"/> Delete Chamber
-                                                 </DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
+                                <DropdownMenuSeparator />
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                            {isUserAdmin ? <Trash2 className="mr-2 h-4 w-4"/> : <LogOut className="mr-2 h-4 w-4"/>}
+                                            {isUserAdmin ? 'Delete Chamber' : 'Leave Chamber'}
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        {isUserAdmin && otherMembers.length > 0 ? (
+                                            <>
+                                                 <AlertDialogHeader>
+                                                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
+                                                    <AlertDialogDescription>As the Absolute Admin, you must transfer ownership before leaving. Or, you can delete the chamber for everyone.</AlertDialogDescription>
+                                                 </AlertDialogHeader>
+                                                 <div className="space-y-4 py-4">
+                                                    <Label>Transfer Ownership & Leave</Label>
+                                                    <ScrollArea className="max-h-48">
+                                                        <div className="space-y-2 pr-2">
+                                                            {otherMembers.map(member => (
+                                                                <div key={member.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                                                                    <span className="font-semibold">{member.displayName}</span>
+                                                                    <Button size="sm" variant="outline" onClick={() => handleHostLeave(member.uid)}>
+                                                                        <Crown className="mr-2 h-4 w-4"/> Make Admin
+                                                                    </Button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </ScrollArea>
+                                                 </div>
+                                                 <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleHostLeave()} className={cn(buttonVariants({variant: "destructive"}))}>
+                                                        Delete Chamber
+                                                    </AlertDialogAction>
+                                                 </AlertDialogFooter>
+                                            </>
+                                        ) : (
+                                            <>
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>This will permanently delete the chamber and all its content for everyone. This action cannot be undone.</AlertDialogDescription>
+                                                    <AlertDialogDescription>
+                                                        {isUserAdmin ? 'This will permanently delete the chamber and all its content for everyone. This action cannot be undone.' : 'Are you sure you want to leave this chamber?'}
+                                                    </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={handleDeleteChamber} className={cn(buttonVariants({variant: "destructive"}))}>Delete Chamber</AlertDialogAction>
+                                                    <AlertDialogAction onClick={isUserAdmin ? handleDeleteChamber : handleLeaveChamber} className={cn(buttonVariants({variant: "destructive"}))}>
+                                                        {isUserAdmin ? 'Delete Chamber' : 'Leave'}
+                                                    </AlertDialogAction>
                                                 </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </>
-                                ) : (
-                                    <>
-                                        <DropdownMenuSeparator />
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                    <LogOut className="mr-2 h-4 w-4"/> Leave Chamber
-                                                 </DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                             <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Leave Chamber?</AlertDialogTitle>
-                                                    <AlertDialogDescription>Are you sure you want to leave this chamber?</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={handleLeaveChamber} className={cn(buttonVariants({variant: "destructive"}))}>Leave</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </>
-                                )}
+                                            </>
+                                        )}
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -408,6 +559,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                 <>
                     <ChannelDialog mode="create" chamberId={chamber.id} isOpen={isCreateChannelOpen} onOpenChange={setIsCreateChannelOpen} />
                     <ChannelDialog mode="rename" chamberId={chamber.id} channel={channelToEdit} isOpen={isRenameChannelOpen} onOpenChange={setIsRenameChannelOpen} />
+                    {isUserAdmin && <ChamberSettingsDialog chamber={chamber} isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />}
                 </>
             )}
         </>
@@ -432,6 +584,13 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
     if (!chamber || !user) return null;
     const isUserAdmin = user.uid === chamber.creatorId;
 
+    const getMemberRoles = (member: RoomMember) => {
+        if (member.uid === chamber.creatorId) {
+            return [{ id: 'creator', name: 'Absolute Admin' }];
+        }
+        return member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter(Boolean) as Role[];
+    }
+
     return (
         <div className={cn("bg-card flex-col p-4 border-l w-full max-w-xs md:w-64 md:flex", className)}>
              <header className="font-bold text-muted-foreground uppercase text-sm mb-4 flex items-center justify-between">
@@ -443,35 +602,46 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
                 )}
             </header>
             <div className="space-y-3">
-                {chamber.members.map(member => (
-                     <div key={member.uid} className="flex items-center gap-3 group">
-                        <Avatar className="w-8 h-8">
-                            <AvatarImage src={member.photoURL || ''} />
-                            <AvatarFallback>{member.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-grow">
-                             <span className="font-semibold text-sm">{member.displayName}</span>
-                             {member.uid === chamber.creatorId && <p className="text-xs text-amber-500 font-bold flex items-center gap-1"><Crown className="w-3 h-3"/>Admin</p>}
+                {chamber.members.map(member => {
+                    const roles = getMemberRoles(member);
+                     return (
+                         <div key={member.uid} className="flex items-center gap-3 group">
+                            <Avatar className="w-8 h-8">
+                                <AvatarImage src={member.photoURL || ''} />
+                                <AvatarFallback>{member.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-grow overflow-hidden">
+                                 <p className="font-semibold text-sm truncate">{member.displayName}</p>
+                                 <div className="flex flex-wrap gap-1 mt-1">
+                                    {roles.map(role => (
+                                         <span key={role.id} className="text-xs text-muted-foreground font-bold flex items-center gap-1">
+                                            {role.name === 'Absolute Admin' && <Crown className="w-3 h-3 text-amber-500" />}
+                                            {role.name === 'Admin' && <ShieldCheck className="w-3 h-3 text-blue-500" />}
+                                            {role.name}
+                                        </span>
+                                    ))}
+                                 </div>
+                            </div>
+                            {isUserAdmin && user.uid !== member.uid && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Remove {member.displayName}?</AlertDialogTitle>
+                                            <AlertDialogDescription>Are you sure you want to remove this member from the chamber?</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleRemoveMember(member.uid)} className={cn(buttonVariants({variant: 'destructive'}))}>Remove</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            )}
                         </div>
-                        {isUserAdmin && user.uid !== member.uid && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4 text-destructive"/></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Remove {member.displayName}?</AlertDialogTitle>
-                                        <AlertDialogDescription>Are you sure you want to remove this member from the chamber?</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleRemoveMember(member.uid)} className={cn(buttonVariants({variant: 'destructive'}))}>Remove</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
-                    </div>
-                ))}
+                    )
+                })}
             </div>
         </div>
     )

@@ -105,6 +105,7 @@ export interface RoomMember {
     displayName: string;
     photoURL: string;
     avatar: string;
+    roleIds?: string[];
     status?: 'playing' | 'finished';
     // Inspectable properties
     focusStats?: FocusStats;
@@ -134,14 +135,6 @@ export interface Room {
     quizData?: GenerateQuizOutput;
 }
 
-export interface ChatMessage {
-    id: string;
-    senderId: string;
-    senderName: string;
-    text: string;
-    timestamp: Timestamp;
-}
-
 export interface Question {
     questionText: string;
     options: string[];
@@ -150,6 +143,13 @@ export interface Question {
 }
 
 // --- Parivartan Chamber Types ---
+
+export interface Role {
+    id: string;
+    name: string;
+    // permissions will be added in Phase 3.2
+    permissions: string[]; 
+}
 
 export interface ChamberMessage {
     id: string;
@@ -175,5 +175,6 @@ export interface Chamber {
     members: RoomMember[]; // Now uses RoomMember for consistency
     memberIds: string[]; // For efficient querying
     channels: Channel[];
+    roles?: Role[];
     createdAt: Timestamp;
 }
