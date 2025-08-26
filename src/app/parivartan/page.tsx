@@ -330,20 +330,20 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
 
     return (
         <>
-             <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
                     <DialogHeader className="p-6 pb-4 border-b shrink-0">
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                     </DialogHeader>
-
-                    <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 min-h-0">
-                        {/* Roles Section */}
-                        <Card className="w-full md:w-1/3 flex flex-col">
-                            <CardHeader><CardTitle className="text-lg">Roles</CardTitle></CardHeader>
-                            <CardContent className="flex-grow flex flex-col gap-2 overflow-hidden">
-                                <ScrollArea className="flex-grow pr-2 -mr-2">
-                                    <div className="space-y-2">
+                    
+                    <div className="flex-grow p-6 overflow-y-auto">
+                        <div className="grid md:grid-cols-2 gap-6">
+                             {/* Roles Section */}
+                            <Card className="flex flex-col">
+                                <CardHeader><CardTitle className="text-lg">Roles</CardTitle></CardHeader>
+                                <CardContent className="flex-grow flex flex-col gap-2">
+                                    <div className="space-y-2 flex-grow">
                                         {(chamber.roles || []).map(role => (
                                             <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted group">
                                                 <span className="font-semibold">{role.name}</span>
@@ -374,21 +374,19 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                             </div>
                                         ))}
                                     </div>
-                                </ScrollArea>
-                                <div className="flex gap-2 pt-4 border-t mt-auto shrink-0">
-                                    <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
-                                    <Button onClick={handleCreateRole} disabled={isCreatingRole}>
-                                        {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        
-                        {/* Members Section */}
-                        <Card className="w-full md:w-2/3 flex flex-col">
-                            <CardHeader><CardTitle className="text-lg">Members ({chamber.members.length})</CardTitle></CardHeader>
-                            <CardContent className="flex-grow overflow-hidden">
-                                <ScrollArea className="h-full pr-2 -mr-2">
+                                    <div className="flex gap-2 pt-4 border-t mt-auto shrink-0">
+                                        <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
+                                        <Button onClick={handleCreateRole} disabled={isCreatingRole}>
+                                            {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                             {/* Members Section */}
+                            <Card className="flex flex-col">
+                                <CardHeader><CardTitle className="text-lg">Members ({chamber.members.length})</CardTitle></CardHeader>
+                                <CardContent className="flex-grow overflow-y-auto">
                                     <div className="space-y-4">
                                         {(chamber.members || []).map(member => (
                                             <div key={member.uid} className="border-b last:border-b-0 pb-4">
@@ -419,9 +417,9 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                             </div>
                                         ))}
                                     </div>
-                                </ScrollArea>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                     
                     <DialogFooter className="p-6 pt-4 border-t mt-auto shrink-0">
