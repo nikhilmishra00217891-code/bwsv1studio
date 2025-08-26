@@ -584,11 +584,11 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
     if (!chamber || !user) return null;
     const isUserAdmin = user.uid === chamber.creatorId;
 
-    const getMemberRoles = (member: RoomMember) => {
+    const getMemberRoles = (member: RoomMember): Role[] => {
         if (member.uid === chamber.creatorId) {
-            return [{ id: 'creator', name: 'Absolute Admin' }];
+            return [{ id: 'creator', name: 'Absolute Admin', permissions: ['*'] }];
         }
-        return member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter(Boolean) as Role[];
+        return member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter(Boolean) as Role[] || [];
     }
 
     return (
