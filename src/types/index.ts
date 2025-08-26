@@ -1,5 +1,4 @@
 
-
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -96,6 +95,7 @@ export interface UserProfile {
         suspendedAt: string | null;
     };
     enrolledCourses?: string[];
+    chambers?: string[]; // IDs of chambers the user is in
     progress?: { [courseId: string]: number };
     focusStats?: FocusStats;
 }
@@ -172,9 +172,7 @@ export interface Chamber {
     name: string;
     description: string;
     creatorId: string;
-    members: string[]; // array of user UIDs
+    members: RoomMember[]; // Now uses RoomMember for consistency
     channels: Channel[];
     createdAt: Timestamp;
 }
-
-
