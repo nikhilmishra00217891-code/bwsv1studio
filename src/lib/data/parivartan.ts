@@ -14,10 +14,21 @@ import {
   arrayUnion,
   getDoc,
   Timestamp,
+  writeBatch,
+  setDoc,
 } from "firebase/firestore";
 import type { Chamber, ChamberMessage, Channel, RoomMember } from "@/types";
 
 // --- Chamber Functions ---
+
+const generateChamberId = (length: number = 8): string => {
+    const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
 
 /**
  * Creates a new Parivartan Chamber (study group).
@@ -28,7 +39,8 @@ export const createChamber = async (
   creatorId: string,
   creatorName: string,
 ): Promise<string> => {
-  const chambersCol = collection(db, "chambers");
+  const chamberId = generateChamberId();
+  const chamberRef = doc(db, "chambers", chamberId);
 
   const defaultChannel: Channel = {
     id: "general",
@@ -47,23 +59,22 @@ export const createChamber = async (
     name,
     description,
     creatorId,
-    members: [creatorMember], // Creator is the first member
+    members: [creatorMember],
+    memberIds: [creatorId],
     channels: [defaultChannel],
     createdAt: serverTimestamp() as any,
   };
 
-  const docRef = await addDoc(chambersCol, newChamberData);
-
-  // Also add this chamber to the user's list of chambers
   const userRef = doc(db, 'users', creatorId);
+
+  // Use a batch to ensure atomicity
+  const batch = writeBatch(db);
+  batch.set(chamberRef, newChamberData);
+  batch.update(userRef, { chambers: arrayUnion(chamberId) });
   
-  // Use setDoc with merge: true to create the user doc if it doesn't exist,
-  // or update it if it does. This is safer than just updateDoc.
-  await setDoc(userRef, {
-      chambers: arrayUnion(docRef.id)
-  }, { merge: true });
+  await batch.commit();
   
-  return docRef.id;
+  return chamberId;
 };
 
 export const joinChamber = async (
@@ -92,14 +103,18 @@ export const joinChamber = async (
         avatar: 'brain',
     }
 
-    await updateDoc(chamberRef, {
-        members: arrayUnion(newMember)
-    });
-    
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
+    
+    const batch = writeBatch(db);
+    batch.update(chamberRef, {
+        members: arrayUnion(newMember),
+        memberIds: arrayUnion(userId)
+    });
+    batch.update(userRef, {
         chambers: arrayUnion(chamberId)
     });
+    
+    await batch.commit();
 
     return { id: chamberId, ...chamberData, members: [...chamberData.members, newMember] };
 }
@@ -112,38 +127,14 @@ export const listenForUserChambers = (
     callback: (chambers: Chamber[]) => void
 ): (() => void) => {
     const chambersCol = collection(db, 'chambers');
-    
-    // We need to query for the user's UID within the 'members' array of objects.
-    const q = query(chambersCol, where('members', 'array-contains', { 
-        uid: userId, 
-        // We need to provide all fields of the RoomMember object that we are querying against.
-        // The values don't matter as much as the structure, but let's be safe.
-        // Firestore doesn't support partial object matches in array-contains.
-        // This is a limitation. A better structure would be a subcollection of members.
-        // Given the current structure, we'll have to filter on the client.
-    }));
+    const q = query(chambersCol, where("memberIds", "array-contains", userId), orderBy("createdAt", "desc"));
 
-    const userChambersQuery = query(chambersCol, where("memberIds", "array-contains", userId));
-
-    
-    const unsubscribe = onSnapshot(chambersCol, (snapshot) => {
-        const allChambers = snapshot.docs.map(doc => ({
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const chambers = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Chamber));
-
-        const userChambers = allChambers.filter(chamber => 
-            chamber.members.some(member => member.uid === userId)
-        );
-        
-        // Sort by creation date on the client side
-        userChambers.sort((a, b) => {
-            const timeA = a.createdAt?.toMillis() || 0;
-            const timeB = b.createdAt?.toMillis() || 0;
-            return timeB - timeA; // Descending order
-        });
-
-        callback(userChambers);
+        callback(chambers);
     }, (error) => {
         console.error("Error listening for user chambers:", error);
         callback([]);

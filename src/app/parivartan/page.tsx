@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,7 +35,7 @@ const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) =
         setIsLoading(true);
         try {
             const newChamberId = await createChamber(chamberName, chamberDescription, user.uid, user.displayName || 'Anonymous');
-            toast({ title: "Chamber Created!", description: "Invite your friends to join." });
+            toast({ title: "Chamber Created!", description: `Invite friends with ID: ${newChamberId}` });
             onChamberSelect(newChamberId);
         } catch (error: any) {
             toast({ variant: "destructive", title: "Creation Failed", description: error.message });
@@ -149,7 +149,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
      const handleCopyId = () => {
          if(!chamber) return;
          navigator.clipboard.writeText(chamber.id);
-         toast({ title: "Chamber ID Copied!" });
+         toast({ title: "Chamber ID Copied!", description: chamber.id });
      }
 
      return (
@@ -247,7 +247,10 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
     const scrollAreaRef = useState<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!chamber || !channel) return;
+        if (!chamber || !channel) {
+            setMessages([]);
+            return;
+        };
         const unsubscribe = listenForChannelMessages(chamber.id, channel.id, setMessages);
         return () => unsubscribe();
     }, [chamber, channel]);
@@ -311,11 +314,16 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
                             </div>
                         </div>
                     ))}
-                     {!messages.length && (
+                     {!messages.length && channel && (
                         <div className="text-center text-muted-foreground py-16">
                             <p>This is the beginning of the #{channel?.name} channel.</p>
                             <p className="text-sm">Be the first to say something!</p>
                         </div>
+                     )}
+                     {!channel && chamber && (
+                         <div className="text-center text-muted-foreground py-16">
+                            <p>Select a channel to start chatting.</p>
+                         </div>
                      )}
                 </div>
             </ScrollArea>
@@ -353,6 +361,22 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
     )
 }
 
+const WelcomePlaceholder = () => (
+    <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+        <h2 className="text-2xl font-bold font-headline">Welcome to Parivartan Chamber!</h2>
+        <p className="text-muted-foreground mt-2 max-w-md">Your new space for collaborative learning. Create a new chamber or join an existing one using an ID to get started.</p>
+        <div className="mt-6">
+            <Dialog>
+                 <DialogTrigger asChild>
+                    <Button>Create or Join a Chamber</Button>
+                 </DialogTrigger>
+                 {/* This reuses the dialog component, but needs a dummy onChamberSelect */}
+                 <CreateJoinDialog onChamberSelect={() => {}} />
+            </Dialog>
+        </div>
+    </div>
+)
+
 const ParivartanChamberPage = () => {
     const { user, loading } = useAuth();
     const [userChambers, setUserChambers] = useState<Chamber[]>([]);
@@ -366,9 +390,15 @@ const ParivartanChamberPage = () => {
         if (!user) return;
         const unsubscribe = listenForUserChambers(user.uid, (chambers) => {
             setUserChambers(chambers);
-            if (!activeChamberId && chambers.length > 0) {
-                setActiveChamberId(chambers[0].id);
-                setActiveChannelId(chambers[0].channels[0]?.id || null);
+            // If there's no active chamber, or the active one is no longer available, set a new one.
+            if ((!activeChamberId || !chambers.some(c => c.id === activeChamberId)) && chambers.length > 0) {
+                const firstChamber = chambers[0];
+                setActiveChamberId(firstChamber.id);
+                setActiveChannelId(firstChamber.channels[0]?.id || null);
+            } else if (chambers.length === 0) {
+                // No chambers left, reset state
+                setActiveChamberId(null);
+                setActiveChannelId(null);
             }
         });
         return () => unsubscribe();
@@ -391,10 +421,12 @@ const ParivartanChamberPage = () => {
         if (selectedChamber) {
             setActiveChannelId(selectedChamber.channels[0]?.id || null);
         }
+        setIsChannelPanelOpen(false); // Close mobile panel on select
     };
     
     const handleChannelSelect = (channelId: string) => {
         setActiveChannelId(channelId);
+        setIsChannelPanelOpen(false); // Close mobile panel on select
     }
 
     if (loading) {
@@ -442,16 +474,20 @@ const ParivartanChamberPage = () => {
                     </div>
                 )}
 
-                <ChannelPanel 
-                    chamber={activeChamber || null}
-                    activeChannelId={activeChannelId}
-                    onChannelSelect={handleChannelSelect}
-                    className="hidden md:flex" 
-                />
-
-                <ChatArea chamber={activeChamber || null} channel={activeChannel || null} />
-
-                <MemberList members={activeChamber?.members || []} className="hidden md:flex" />
+                {activeChamber ? (
+                  <>
+                    <ChannelPanel 
+                        chamber={activeChamber}
+                        activeChannelId={activeChannelId}
+                        onChannelSelect={handleChannelSelect}
+                        className="hidden md:flex" 
+                    />
+                    <ChatArea chamber={activeChamber} channel={activeChannel || null} />
+                    <MemberList members={activeChamber.members} className="hidden md:flex" />
+                  </>
+                ) : (
+                    <WelcomePlaceholder />
+                )}
             </div>
         </TooltipProvider>
     );

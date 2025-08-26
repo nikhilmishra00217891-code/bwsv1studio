@@ -173,6 +173,7 @@ export interface Chamber {
     description: string;
     creatorId: string;
     members: RoomMember[]; // Now uses RoomMember for consistency
+    memberIds: string[]; // For efficient querying
     channels: Channel[];
     createdAt: Timestamp;
 }
