@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -477,7 +477,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
         try {
             await deleteChamber(chamber.id);
             toast({ title: 'Chamber Deleted', description: `${chamber.name} has been permanently deleted.` });
-        } catch (error: any) => {
+        } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error Deleting', description: error.message });
         }
     }
@@ -689,7 +689,7 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
 
     const getMemberRoles = (member: RoomMember | undefined): (Role)[] => {
         if (!member || !chamber || !chamber.roles) return [];
-        return member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter(Boolean) as Role[] || [];
+        return member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter((r): r is Role => !!r) || [];
     }
     
 
