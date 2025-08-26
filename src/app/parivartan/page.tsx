@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -330,7 +330,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                 <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+                <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
                     <DialogHeader className="p-6 pb-4 border-b">
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
@@ -376,7 +376,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                         ))}
                                     </div>
                                 </ScrollArea>
-                                 <div className="flex gap-2 pt-4 border-t">
+                                 <div className="flex gap-2 pt-4 border-t mt-auto">
                                     <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
                                     <Button onClick={handleCreateRole} disabled={isCreatingRole}>
                                         {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
@@ -427,7 +427,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                         </Card>
                     </div>
                     
-                    <DialogFooter className="p-6 pt-4 border-t mt-auto">
+                     <DialogFooter className="p-6 pt-4 border-t mt-auto">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -667,12 +667,8 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                     </div>
                 )}
             </div>
-            {chamber && (
-                <>
-                    <ChannelDialog mode="create" chamberId={chamber.id} isOpen={isCreateChannelOpen} onOpenChange={setIsCreateChannelOpen} />
-                    <ChannelDialog mode="rename" chamberId={chamber.id} channel={channelToEdit} isOpen={isRenameChannelOpen} onOpenChange={setIsRenameChannelOpen} />
-                    {isAbsoluteAdmin && <ChamberSettingsDialog chamber={chamber} isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />}
-                </>
+            {chamber && isAbsoluteAdmin && (
+                <ChamberSettingsDialog chamber={chamber} isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
             )}
         </>
     )
@@ -777,6 +773,7 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
 
 const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Channel | null }) => {
     const { user } = useAuth();
+    const { toast } = useToast();
     const [messages, setMessages] = useState<ChamberMessage[]>([]);
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -818,46 +815,67 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
         }
     };
     
-    const MessageBubble = ({ msg, isSelf }: { msg: ChamberMessage, isSelf: boolean }) => (
-        <div className={cn("flex items-start gap-3", isSelf && "justify-end")}>
-            {!isSelf && (
-                 <Avatar className="w-8 h-8">
-                    <AvatarImage src={msg.senderAvatar}/>
-                    <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
-                </Avatar>
-            )}
-            <div className={cn("flex flex-col", isSelf ? "items-end" : "items-start")}>
-                {!isSelf && <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>}
-                <div className={cn("group relative flex items-center", isSelf ? "flex-row-reverse" : "flex-row")}>
-                     <div className={cn(
-                        "p-3 rounded-xl max-w-md", 
-                        isSelf ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none",
-                        msg.isAiResponse && "border border-primary/50"
-                     )}>
-                        {msg.text}
-                     </div>
-                     <div className="flex items-center gap-1 self-start opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6"><Smile className="w-4 h-4"/></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6"><Reply className="w-4 h-4"/></Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6"><Pin className="w-4 h-4"/></Button>
-                     </div>
+    const MessageBubble = ({ msg, isSelf }: { msg: ChamberMessage, isSelf: boolean }) => {
+        const { toast } = useToast();
+        const [isExpanded, setIsExpanded] = useState(false);
+
+        const lines = msg.text.split('\n');
+        const isLongMessage = lines.length > 5 || msg.text.length > 350;
+        const canExpand = isLongMessage && !isExpanded;
+        const canCollapse = isLongMessage && isExpanded;
+
+        const handleActionClick = (action: string) => {
+            toast({
+                title: `${action} Clicked!`,
+                description: `Functionality for "${action}" is coming soon.`,
+            });
+        };
+
+        return (
+            <div className={cn("flex items-start gap-3", isSelf ? "flex-row-reverse" : "flex-row")}>
+                {!isSelf && (
+                    <Avatar className="w-8 h-8">
+                        <AvatarImage src={msg.senderAvatar}/>
+                        <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                )}
+                <div className={cn("flex flex-col", isSelf ? "items-end" : "items-start")}>
+                    {!isSelf && <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>}
+                    <div className={cn("group relative flex items-center", isSelf ? "flex-row-reverse" : "flex-row")}>
+                        <div className={cn(
+                            "p-3 rounded-xl max-w-md", 
+                            isSelf ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none",
+                            msg.isAiResponse && "border border-primary/50"
+                        )}>
+                            <p className={cn("whitespace-pre-wrap break-words", canExpand && "line-clamp-5")}>
+                                {msg.text}
+                            </p>
+                            {canExpand && <Button variant="link" size="sm" className="p-0 h-auto text-current" onClick={() => setIsExpanded(true)}>See more</Button>}
+                            {canCollapse && <Button variant="link" size="sm" className="p-0 h-auto text-current" onClick={() => setIsExpanded(false)}>See less</Button>}
+                        </div>
+                        <div className="flex items-center gap-1 self-start opacity-0 group-hover:opacity-100 transition-opacity p-1">
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleActionClick('React')}><Smile className="w-4 h-4"/></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleActionClick('Reply')}><Reply className="w-4 h-4"/></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleActionClick('Pin')}><Pin className="w-4 h-4"/></Button>
+                        </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 px-3">
+                        {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), {addSuffix: true}) : 'sending...'}
+                    </p>
                 </div>
-                 <p className="text-xs text-muted-foreground mt-1 px-3">
-                    {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), {addSuffix: true}) : 'sending...'}
-                 </p>
+                {isSelf && (
+                    <Avatar className="w-8 h-8">
+                        <AvatarImage src={msg.senderAvatar}/>
+                        <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                )}
             </div>
-            {isSelf && (
-                 <Avatar className="w-8 h-8">
-                    <AvatarImage src={msg.senderAvatar}/>
-                    <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
-                </Avatar>
-            )}
-        </div>
-    )
+        )
+    }
 
     return (
          <div className="flex-1 flex flex-col">
-            <header className="p-4 border-b shadow-sm h-16 flex items-center justify-between">
+            <header className="p-4 border-b shadow-sm h-14 flex items-center justify-between">
                  <Button variant="ghost" size="icon" className="md:hidden" onClick={() => document.dispatchEvent(new CustomEvent('toggle-channel-panel'))}>
                     <Menu/>
                 </Button>
