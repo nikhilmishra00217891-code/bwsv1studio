@@ -21,7 +21,8 @@ import {
   arrayRemove,
   runTransaction,
 } from "firebase/firestore";
-import type { Chamber, ChamberMessage, Channel, RoomMember, Role } from "@/types";
+import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission } from "@/types";
+import { PERMISSIONS } from "@/types";
 
 // --- Chamber Functions ---
 
@@ -56,7 +57,13 @@ export const createChamber = async (
   const adminRole: Role = {
       id: 'admin',
       name: 'Admin',
-      permissions: ['*'], // Future use
+      permissions: Object.keys(PERMISSIONS) as Permission[],
+  };
+  
+  const memberRole: Role = {
+      id: 'member',
+      name: 'Member',
+      permissions: [],
   };
 
   const creatorMember: RoomMember = {
@@ -64,7 +71,7 @@ export const createChamber = async (
       displayName: creatorName,
       photoURL: creatorAvatar, 
       avatar: 'brain',
-      roleIds: ['admin'], // Assign admin role by default
+      roleIds: ['admin'], // Assign admin role by default to the creator
   }
 
   const newChamberData: Omit<Chamber, 'id'> = {
@@ -74,7 +81,7 @@ export const createChamber = async (
     members: [creatorMember],
     memberIds: [creatorId],
     channels: [defaultChannel],
-    roles: [adminRole],
+    roles: [adminRole, memberRole],
     createdAt: serverTimestamp() as any,
   };
 
@@ -113,7 +120,7 @@ export const joinChamber = async (
             displayName: userName,
             photoURL: userAvatar,
             avatar: 'brain',
-            roleIds: [], // New members have no roles by default
+            roleIds: ['member'], // New members get the default 'member' role
         }
 
         const userRef = doc(db, 'users', userId);
@@ -453,3 +460,22 @@ export const assignRole = async (chamberId: string, memberId: string, roleId: st
         transaction.update(chamberRef, { members: updatedMembers });
     });
 }
+
+export const updateRolePermissions = async (chamberId: string, roleId: string, permissions: Permission[]) => {
+    const chamberRef = doc(db, 'chambers', chamberId);
+    
+    await runTransaction(db, async (transaction) => {
+        const chamberDoc = await transaction.get(chamberRef);
+        if (!chamberDoc.exists()) throw new Error("Chamber not found.");
+        
+        const chamberData = chamberDoc.data() as Chamber;
+        const roleIndex = chamberData.roles?.findIndex(r => r.id === roleId);
+
+        if (roleIndex === undefined || roleIndex === -1) throw new Error("Role not found.");
+
+        const updatedRoles = [...(chamberData.roles || [])];
+        updatedRoles[roleIndex].permissions = permissions;
+        
+        transaction.update(chamberRef, { roles: updatedRoles });
+    });
+};

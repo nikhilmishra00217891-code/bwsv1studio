@@ -145,11 +145,19 @@ export interface Question {
 
 // --- Parivartan Chamber Types ---
 
+export const PERMISSIONS = {
+    manageChannels: "Manage Channels",
+    manageRoles: "Manage Roles",
+    removeMembers: "Remove Members",
+} as const;
+
+export type Permission = keyof typeof PERMISSIONS;
+
+
 export interface Role {
     id: string;
     name: string;
-    // permissions will be added in Phase 3.2
-    permissions?: string[]; 
+    permissions: Permission[];
 }
 
 export interface ChamberMessage {
