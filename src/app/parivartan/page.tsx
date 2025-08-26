@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -330,7 +330,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
+                 <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
                     <DialogHeader className="p-6 pb-4 border-b">
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
@@ -343,8 +343,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                 <CardTitle className="text-lg">Roles</CardTitle>
                             </CardHeader>
                             <CardContent className="flex-grow flex flex-col gap-2">
-                                <ScrollArea className="flex-grow">
-                                    <div className="space-y-2 pr-4">
+                                <div className="flex-grow space-y-2 pr-2 overflow-y-auto">
                                         {(chamber.roles || []).map(role => (
                                             <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted group">
                                                 <span className="font-semibold">{role.name}</span>
@@ -374,8 +373,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                                 </div>
                                             </div>
                                         ))}
-                                    </div>
-                                </ScrollArea>
+                                </div>
                                  <div className="flex gap-2 pt-4 border-t mt-auto">
                                     <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
                                     <Button onClick={handleCreateRole} disabled={isCreatingRole}>
