@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -336,13 +336,13 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                     </DialogHeader>
                     
-                    <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 min-h-0">
+                     <div className="flex-grow flex flex-col md:flex-row gap-6 p-6 min-h-0">
                         {/* Roles Section */}
                         <Card className="md:w-1/3 flex flex-col">
                             <CardHeader>
                                 <CardTitle>Roles</CardTitle>
                             </CardHeader>
-                            <CardContent className="flex-grow overflow-y-auto pr-2">
+                             <CardContent className="flex-grow overflow-y-auto pr-2">
                                 <div className="space-y-2">
                                 {(chamber.roles || []).map(role => (
                                     <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted group">
@@ -378,7 +378,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                             <CardHeader>
                                 <CardTitle>Members ({chamber.members.length})</CardTitle>
                             </CardHeader>
-                            <CardContent className="flex-grow overflow-y-auto pr-2">
+                             <CardContent className="flex-grow overflow-y-auto pr-2">
                                  <div className="space-y-4">
                                 {(chamber.members || []).map(member => (
                                     <div key={member.uid} className="border-b last:border-b-0 pb-4">
@@ -413,7 +413,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                         </Card>
                     </div>
                     
-                    <DialogFooter className="p-6 border-t bg-background flex-shrink-0">
+                     <DialogFooter className="p-6 border-t bg-background flex-shrink-0">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -696,7 +696,8 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
              // Ensure "Absolute Admin" is always shown for the creator
             const hasAbsoluteAdmin = memberRoles.some(r => r.name === 'Admin' && member.uid === chamber.creatorId);
             if (!hasAbsoluteAdmin) {
-                return [{id: 'creator-admin', name: 'Admin', permissions: []}, ...memberRoles]
+                const adminRole = chamber.roles.find(r => r.id === 'admin');
+                if (adminRole) return [adminRole, ...memberRoles.filter(r => r.id !== 'admin')]
             }
         }
         return memberRoles;
@@ -743,15 +744,12 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
                                             Absolute Admin
                                         </span>
                                      )}
-                                     {roles.map(role => {
-                                        if (role.id === 'creator-admin') return null;
-                                        return (
-                                             <span key={role.id} className="text-xs text-muted-foreground font-bold flex items-center gap-1">
-                                                {role.name === 'Admin' && <ShieldCheck className="w-3 h-3 text-blue-500" />}
-                                                {role.name}
-                                            </span>
-                                        )
-                                     })}
+                                     {roles.filter(r => r.name !== 'Admin' || member.uid !== chamber.creatorId).map(role => (
+                                         <span key={role.id} className="text-xs text-muted-foreground font-bold flex items-center gap-1">
+                                            {role.name === 'Admin' && <ShieldCheck className="w-3 h-3 text-blue-500" />}
+                                            {role.name}
+                                        </span>
+                                     ))}
                                  </div>
                             </div>
                             {hasPermission('removeMembers') && user.uid !== member.uid && (
@@ -1080,3 +1078,5 @@ const ParivartanChamberPage = () => {
 };
 
 export default ParivartanChamberPage;
+
+    
