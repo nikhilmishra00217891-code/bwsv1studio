@@ -79,7 +79,7 @@ export const joinChamber = async (
     const chamberData = chamberSnap.data() as Chamber;
 
     if (chamberData.members.some(m => m.uid === userId)) {
-        return chamberData; // Already a member
+        return {id: chamberId, ...chamberData}; // Already a member
     }
 
     const newMember: RoomMember = {
@@ -109,13 +109,22 @@ export const listenForUserChambers = (
     callback: (chambers: Chamber[]) => void
 ): (() => void) => {
     const chambersCol = collection(db, 'chambers');
-    const q = query(chambersCol, where('members', 'array-contains-any', [{uid: userId}]), orderBy('createdAt', 'desc'));
+    // The query was causing an index error. We will filter and then sort client-side.
+    const q = query(chambersCol, where('members', 'array-contains-any', [{uid: userId}]));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const chambers = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Chamber));
+        
+        // Sort by creation date on the client side
+        chambers.sort((a, b) => {
+            const timeA = a.createdAt?.toMillis() || 0;
+            const timeB = b.createdAt?.toMillis() || 0;
+            return timeB - timeA; // Descending order
+        });
+
         callback(chambers);
     }, (error) => {
         console.error("Error listening for user chambers:", error);
