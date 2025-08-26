@@ -331,7 +331,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
-                    <DialogHeader className="p-6 border-b flex-shrink-0">
+                    <DialogHeader className="p-6 border-b shrink-0">
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                     </DialogHeader>
@@ -363,7 +363,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                 ))}
                                 </div>
                             </CardContent>
-                            <div className="p-4 border-t mt-auto flex-shrink-0">
+                            <div className="p-4 border-t mt-auto shrink-0">
                                 <div className="flex gap-2">
                                     <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
                                     <Button onClick={handleCreateRole} disabled={isCreatingRole}>
@@ -413,7 +413,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                         </Card>
                     </div>
                     
-                     <DialogFooter className="p-6 border-t bg-background flex-shrink-0">
+                     <DialogFooter className="p-6 border-t bg-background shrink-0">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -437,7 +437,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
         if (chamber.creatorId === user.uid) return true;
 
         const member = chamber.members.find(m => m.uid === user.uid);
-        if (!member) return false;
+        if (!member || !member.roleIds) return false;
 
         // Check if any of the member's assigned roles have the required permission.
         return chamber.roles?.some(role => 
@@ -682,7 +682,7 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
         if (chamber.creatorId === user.uid) return true;
         
         const member = chamber.members.find(m => m.uid === user.uid);
-        if (!member) return false;
+        if (!member || !member.roleIds) return false;
 
         return chamber.roles?.some(role => 
             member.roleIds?.includes(role.id) && role.permissions.includes(permission)
@@ -693,11 +693,9 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
         if (!member || !chamber || !chamber.roles) return [];
         const memberRoles = member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter((r): r is Role => !!r) || [];
         if (member.uid === chamber.creatorId) {
-             // Ensure "Absolute Admin" is always shown for the creator
-            const hasAbsoluteAdmin = memberRoles.some(r => r.name === 'Admin' && member.uid === chamber.creatorId);
-            if (!hasAbsoluteAdmin) {
-                const adminRole = chamber.roles.find(r => r.id === 'admin');
-                if (adminRole) return [adminRole, ...memberRoles.filter(r => r.id !== 'admin')]
+            const adminRole = chamber.roles.find(r => r.id === 'admin');
+            if (adminRole && !memberRoles.some(r => r.id === 'admin')) {
+                return [adminRole, ...memberRoles];
             }
         }
         return memberRoles;
@@ -1078,5 +1076,3 @@ const ParivartanChamberPage = () => {
 };
 
 export default ParivartanChamberPage;
-
-    
