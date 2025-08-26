@@ -1,4 +1,5 @@
 
+
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -54,7 +55,7 @@ export const createChamber = async (
   const creatorMember: RoomMember = {
       uid: creatorId,
       displayName: creatorName,
-      photoURL: '', // This should be updated from user profile later if available
+      photoURL: '', 
       avatar: 'brain',
   }
 
@@ -70,7 +71,6 @@ export const createChamber = async (
 
   const userRef = doc(db, 'users', creatorId);
 
-  // Use a batch to ensure atomicity
   const batch = writeBatch(db);
   batch.set(chamberRef, newChamberData);
   batch.update(userRef, { chambers: arrayUnion(chamberId) });
@@ -87,39 +87,37 @@ export const joinChamber = async (
     userAvatar: string
 ): Promise<Chamber | null> => {
     const chamberRef = doc(db, 'chambers', chamberId);
-    const chamberSnap = await getDoc(chamberRef);
-
-    if (!chamberSnap.exists()) {
-        throw new Error("Chamber not found.");
-    }
     
-    const chamberData = chamberSnap.data() as Chamber;
+    return runTransaction(db, async (transaction) => {
+        const chamberSnap = await transaction.get(chamberRef);
+        if (!chamberSnap.exists()) {
+            throw new Error("Chamber not found.");
+        }
 
-    if (chamberData.members.some(m => m.uid === userId)) {
-        return {id: chamberId, ...chamberData}; // Already a member
-    }
+        const chamberData = chamberSnap.data() as Chamber;
+        if (chamberData.memberIds.includes(userId)) {
+            return {id: chamberId, ...chamberData}; // Already a member
+        }
 
-    const newMember: RoomMember = {
-        uid: userId,
-        displayName: userName,
-        photoURL: userAvatar,
-        avatar: 'brain',
-    }
+        const newMember: RoomMember = {
+            uid: userId,
+            displayName: userName,
+            photoURL: userAvatar,
+            avatar: 'brain',
+        }
 
-    const userRef = doc(db, 'users', userId);
-    
-    const batch = writeBatch(db);
-    batch.update(chamberRef, {
-        members: arrayUnion(newMember),
-        memberIds: arrayUnion(userId)
+        const userRef = doc(db, 'users', userId);
+        
+        transaction.update(chamberRef, {
+            members: arrayUnion(newMember),
+            memberIds: arrayUnion(userId)
+        });
+        transaction.update(userRef, {
+            chambers: arrayUnion(chamberId)
+        });
+
+        return { id: chamberId, ...chamberData, members: [...chamberData.members, newMember] };
     });
-    batch.update(userRef, {
-        chambers: arrayUnion(chamberId)
-    });
-    
-    await batch.commit();
-
-    return { id: chamberId, ...chamberData, members: [...chamberData.members, newMember] };
 }
 
 /**
@@ -200,7 +198,6 @@ export const deleteChamber = async (chamberId: string) => {
     
     const chamberData = chamberSnap.data() as Chamber;
     
-    // Use a batch to remove the chamber from all members' profiles
     const batch = writeBatch(db);
     chamberData.memberIds.forEach(memberId => {
         const userRef = doc(db, 'users', memberId);
@@ -209,6 +206,8 @@ export const deleteChamber = async (chamberId: string) => {
         });
     });
     
+    // Note: This does not delete subcollections (like messages).
+    // For a production app, a Cloud Function would be needed for cascading deletes.
     batch.delete(chamberRef);
     
     await batch.commit();
@@ -216,6 +215,78 @@ export const deleteChamber = async (chamberId: string) => {
 
 
 // --- Channel & Message Functions ---
+
+const generateChannelId = (name: string): string => {
+    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+export const createChannel = async (chamberId: string, channelName: string) => {
+    const chamberRef = doc(db, 'chambers', chamberId);
+    const newChannel: Channel = {
+        id: generateChannelId(channelName),
+        name: channelName.toLowerCase(),
+        type: 'text'
+    };
+
+    // Check for duplicate channel names/IDs before adding
+    const chamberSnap = await getDoc(chamberRef);
+    if (chamberSnap.exists()) {
+        const chamberData = chamberSnap.data() as Chamber;
+        if (chamberData.channels.some(c => c.id === newChannel.id || c.name === newChannel.name)) {
+            throw new Error("A channel with this name already exists.");
+        }
+    }
+
+    await updateDoc(chamberRef, {
+        channels: arrayUnion(newChannel)
+    });
+};
+
+export const updateChannel = async (chamberId: string, channelId: string, newName: string) => {
+    const chamberRef = doc(db, 'chambers', chamberId);
+    
+    await runTransaction(db, async (transaction) => {
+        const chamberDoc = await transaction.get(chamberRef);
+        if (!chamberDoc.exists()) throw new Error("Chamber not found.");
+
+        const chamberData = chamberDoc.data() as Chamber;
+        const channels = chamberData.channels;
+
+        const newChannelId = generateChannelId(newName);
+        if (channels.some(c => (c.name === newName.toLowerCase() || c.id === newChannelId) && c.id !== channelId)) {
+            throw new Error("Another channel with this name already exists.");
+        }
+
+        const channelIndex = channels.findIndex(c => c.id === channelId);
+        if (channelIndex === -1) throw new Error("Channel not found.");
+        
+        channels[channelIndex].name = newName.toLowerCase();
+        // It's often better not to change the ID, as it can break references.
+        // If IDs must change, it requires migrating message subcollections, which is complex for the client.
+        // channels[channelIndex].id = newChannelId;
+
+        transaction.update(chamberRef, { channels: channels });
+    });
+};
+
+export const deleteChannel = async (chamberId: string, channelId: string) => {
+    const chamberRef = doc(db, 'chambers', chamberId);
+
+    await runTransaction(db, async (transaction) => {
+        const chamberDoc = await transaction.get(chamberRef);
+        if (!chamberDoc.exists()) throw new Error("Chamber not found.");
+
+        const chamberData = chamberDoc.data() as Chamber;
+        if (chamberData.channels.length <= 1) {
+            throw new Error("You cannot delete the last channel in a chamber.");
+        }
+        
+        const updatedChannels = chamberData.channels.filter(c => c.id !== channelId);
+        transaction.update(chamberRef, { channels: updatedChannels });
+        // Note: Does not delete message subcollection.
+    });
+};
+
 
 /**
  * Listens for real-time messages in a specific channel.

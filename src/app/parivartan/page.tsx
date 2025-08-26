@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber } from '@/lib/data/parivartan';
+import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel } from '@/lib/data/parivartan';
 import type { Chamber, ChamberMessage, Channel, RoomMember } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -108,7 +109,7 @@ const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) =
 }
 
 const ChamberList = ({ userChambers, activeChamberId, onChamberSelect }: { userChambers: Chamber[], activeChamberId: string | null, onChamberSelect: (id: string) => void }) => (
-    <div className="w-20 bg-card/50 p-3 flex flex-col items-center gap-4 border-r">
+    <div className="w-20 bg-card/50 p-3 flex-col items-center gap-4 border-r hidden md:flex">
         <Tooltip>
             <TooltipTrigger asChild>
                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center font-bold text-lg text-primary">
@@ -153,9 +154,83 @@ const ChamberList = ({ userChambers, activeChamberId, onChamberSelect }: { userC
     </div>
 );
 
+const ChannelDialog = ({
+  mode,
+  chamberId,
+  channel,
+  isOpen,
+  onOpenChange,
+}: {
+  mode: "create" | "rename";
+  chamberId: string;
+  channel?: Channel;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const { toast } = useToast();
+  const [name, setName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (mode === "rename" && channel) {
+      setName(channel.name);
+    } else {
+      setName("");
+    }
+  }, [mode, channel, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    setIsLoading(true);
+    try {
+      if (mode === "create") {
+        await createChannel(chamberId, name);
+        toast({ title: "Channel created!" });
+      } else if (mode === "rename" && channel) {
+        await updateChannel(chamberId, channel.id, name);
+        toast({ title: "Channel renamed!" });
+      }
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{mode === "create" ? "Create New Channel" : "Rename Channel"}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <Label htmlFor="channelName">Channel Name</Label>
+                <div className="flex items-center gap-2">
+                     <Hash className="w-5 h-5 text-muted-foreground" />
+                    <Input id="channelName" value={name} onChange={(e) => setName(e.target.value)} required autoFocus/>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <Button type="submit" disabled={isLoading}>{isLoading ? <LoaderCircle className="animate-spin" /> : "Save"}</Button>
+            </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
 const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, onClose }: { chamber: Chamber | null, activeChannelId: string | null, onChannelSelect: (id: string) => void, className?: string, onClose?: () => void }) => {
      const { user } = useAuth();
      const { toast } = useToast();
+     const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+     const [isRenameChannelOpen, setIsRenameChannelOpen] = useState(false);
+     const [channelToEdit, setChannelToEdit] = useState<Channel | undefined>(undefined);
 
      const isUserAdmin = user?.uid === chamber?.creatorId;
 
@@ -185,61 +260,109 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
          }
      }
 
+     const handleDeleteChannel = async (channelId: string) => {
+         if(!chamber) return;
+         try {
+             await deleteChannel(chamber.id, channelId);
+             toast({title: "Channel Deleted"});
+         } catch (error: any) {
+             toast({variant: 'destructive', title: "Error", description: error.message});
+         }
+     }
+
      return (
-        <div className={cn("bg-card flex-col border-r w-full max-w-xs md:w-64 md:flex", className)}>
-            <header className="p-4 font-bold text-lg border-b shadow-sm h-16 flex items-center justify-between">
-                <span className="truncate">{chamber?.name || 'Parivartan'}</span>
-                <div className="flex items-center">
-                    {onClose && (
-                        <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden h-8 w-8">
-                            <X className="h-5 w-5"/>
-                        </Button>
-                    )}
-                </div>
-            </header>
-            <ScrollArea className="flex-grow">
-                <div className="p-4 space-y-2">
-                    <p className="text-xs font-bold uppercase text-muted-foreground px-2 mb-2">Text Channels</p>
-                    {chamber?.channels.map(channel => (
-                        <button 
-                            key={channel.id}
-                            onClick={() => onChannelSelect(channel.id)}
-                            className={cn("w-full text-left flex items-center gap-2 p-2 rounded hover:bg-muted font-semibold",
-                                activeChannelId === channel.id && "bg-primary/10 text-primary"
-                            )}
-                        >
-                            <Hash className="w-5 h-5" /> {channel.name}
-                        </button>
-                    ))}
-                    <p className="text-xs font-bold uppercase text-muted-foreground px-2 mb-2 mt-4">Tools</p>
-                    <button className="w-full text-left flex items-center gap-2 p-2 rounded hover:bg-muted">
-                        <BrainCircuit className="w-5 h-5" /> Whiteboard
-                    </button>
-                </div>
-            </ScrollArea>
-             {user && (
-                 <div className="p-2 border-t mt-auto bg-card/50">
-                    <div className="flex items-center justify-between p-2 rounded hover:bg-muted cursor-pointer">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <Avatar className="w-8 h-8">
-                                <AvatarImage src={user.photoURL || ''} />
-                                <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-semibold truncate">{user.displayName}</span>
+        <>
+            <div className={cn("bg-card flex-col border-r w-full max-w-xs md:w-64 md:flex", className)}>
+                <header className="p-4 font-bold text-lg border-b shadow-sm h-16 flex items-center justify-between">
+                    <span className="truncate">{chamber?.name || 'Parivartan'}</span>
+                    <div className="flex items-center">
+                        {onClose && (
+                            <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden h-8 w-8">
+                                <X className="h-5 w-5"/>
+                            </Button>
+                        )}
+                    </div>
+                </header>
+                <ScrollArea className="flex-grow">
+                    <div className="p-4 space-y-1">
+                        <div className="flex items-center justify-between text-xs font-bold uppercase text-muted-foreground px-2 mb-2">
+                             <span>Text Channels</span>
+                             {isUserAdmin && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button onClick={() => setIsCreateChannelOpen(true)} className="hover:text-foreground">
+                                            <Plus className="w-4 h-4"/>
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Create Channel</p></TooltipContent>
+                                </Tooltip>
+                             )}
                         </div>
+                        {chamber?.channels.map(channel => (
+                            <div key={channel.id} className="group flex items-center gap-1">
+                                <button 
+                                    onClick={() => onChannelSelect(channel.id)}
+                                    className={cn("w-full text-left flex items-center gap-2 p-2 rounded hover:bg-muted font-semibold",
+                                        activeChannelId === channel.id && "bg-primary/10 text-primary"
+                                    )}
+                                >
+                                    <Hash className="w-5 h-5" /> {channel.name}
+                                </button>
+                                {isUserAdmin && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100">
+                                                <Settings className="w-4 h-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onSelect={() => { setChannelToEdit(channel); setIsRenameChannelOpen(true);}}>
+                                                Rename
+                                            </DropdownMenuItem>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-destructive focus:text-destructive">Delete</DropdownMenuItem>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader><AlertDialogTitle>Delete #{channel.name}?</AlertDialogTitle></AlertDialogHeader>
+                                                    <AlertDialogDescription>This cannot be undone. All messages in this channel will be lost.</AlertDialogDescription>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteChannel(channel.id)} className={buttonVariants({variant: 'destructive'})}>Delete</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+                {user && (
+                    <div className="p-2 border-t mt-auto bg-card/50">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                                <div className="flex items-center justify-between p-2 rounded hover:bg-muted cursor-pointer">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <Avatar className="w-8 h-8">
+                                            <AvatarImage src={user.photoURL || ''} />
+                                            <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-sm font-semibold truncate">{user.displayName}</span>
+                                    </div>
+                                    <MoreVertical className="h-4 w-4" />
+                                </div>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent side="top">
-                                <DropdownMenuItem onClick={handleCopyId}><Copy className="mr-2"/> Copy Chamber ID</DropdownMenuItem>
+                             <DropdownMenuContent side="top" className="w-56">
+                                <DropdownMenuItem onClick={handleCopyId}><Copy className="mr-2 h-4 w-4"/> Copy Chamber ID</DropdownMenuItem>
                                 {isUserAdmin ? (
                                     <>
                                         <DropdownMenuSeparator />
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                    <Trash2 className="mr-2"/> Delete Chamber
+                                                    <Trash2 className="mr-2 h-4 w-4"/> Delete Chamber
                                                  </DropdownMenuItem>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
@@ -260,7 +383,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                    <LogOut className="mr-2"/> Leave Chamber
+                                                    <LogOut className="mr-2 h-4 w-4"/> Leave Chamber
                                                  </DropdownMenuItem>
                                             </AlertDialogTrigger>
                                              <AlertDialogContent>
@@ -279,9 +402,15 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
-                </div>
-             )}
-        </div>
+                )}
+            </div>
+            {chamber && (
+                <>
+                    <ChannelDialog mode="create" chamberId={chamber.id} isOpen={isCreateChannelOpen} onOpenChange={setIsCreateChannelOpen} />
+                    <ChannelDialog mode="rename" chamberId={chamber.id} channel={channelToEdit} isOpen={isRenameChannelOpen} onOpenChange={setIsRenameChannelOpen} />
+                </>
+            )}
+        </>
     )
 };
 
@@ -494,19 +623,27 @@ const ParivartanChamberPage = () => {
         if (!user) return;
         const unsubscribe = listenForUserChambers(user.uid, (chambers) => {
             setUserChambers(chambers);
-            // If there's no active chamber, or the active one is no longer available, set a new one.
-            if ((!activeChamberId || !chambers.some(c => c.id === activeChamberId)) && chambers.length > 0) {
+            
+            const currentActiveChamberExists = chambers.some(c => c.id === activeChamberId);
+
+            if ((!activeChamberId || !currentActiveChamberExists) && chambers.length > 0) {
                 const firstChamber = chambers[0];
                 setActiveChamberId(firstChamber.id);
                 setActiveChannelId(firstChamber.channels[0]?.id || null);
             } else if (chambers.length === 0) {
-                // No chambers left, reset state
                 setActiveChamberId(null);
                 setActiveChannelId(null);
+            } else if (currentActiveChamberExists) {
+                // If active chamber still exists, check if active channel does
+                const activeChamber = chambers.find(c => c.id === activeChamberId);
+                const currentActiveChannelExists = activeChamber?.channels.some(c => c.id === activeChannelId);
+                if (!currentActiveChannelExists && activeChamber) {
+                     setActiveChannelId(activeChamber.channels[0]?.id || null);
+                }
             }
         });
         return () => unsubscribe();
-    }, [user, activeChamberId]);
+    }, [user, activeChamberId, activeChannelId]);
 
     useEffect(() => {
         const toggleChannel = () => setIsChannelPanelOpen(p => !p);
@@ -520,13 +657,17 @@ const ParivartanChamberPage = () => {
     }, []);
 
     const handleChamberSelect = (chamberId: string) => {
+        const previouslyActiveChamberId = activeChamberId;
         setActiveChamberId(chamberId);
         const selectedChamber = userChambers.find(c => c.id === chamberId);
         if (selectedChamber) {
-            setActiveChannelId(selectedChamber.channels[0]?.id || null);
+            // Only change channel if switching chambers
+            if (previouslyActiveChamberId !== chamberId) {
+                setActiveChannelId(selectedChamber.channels[0]?.id || null);
+            }
         }
-        setIsChannelPanelOpen(false); // Close mobile panel on select
-        setIsCreateJoinDialogOpen(false); // Close dialog on select
+        setIsChannelPanelOpen(false);
+        setIsCreateJoinDialogOpen(false);
     };
     
     const handleChannelSelect = (channelId: string) => {
@@ -555,7 +696,42 @@ const ParivartanChamberPage = () => {
     return (
         <TooltipProvider>
             <div className="flex h-screen bg-background text-foreground">
+                <div className="flex w-20 flex-col items-center gap-4 border-r bg-card/50 p-3 md:hidden">
+                    {userChambers.map(chamber => (
+                         <Tooltip key={chamber.id}>
+                            <TooltipTrigger asChild>
+                                <button 
+                                    onClick={() => handleChamberSelect(chamber.id)}
+                                    className={cn("w-14 h-14 rounded-full bg-muted flex items-center justify-center font-bold text-lg transition-all hover:rounded-2xl",
+                                        activeChamberId === chamber.id && "rounded-2xl bg-primary text-primary-foreground"
+                                    )}
+                                >
+                                    {chamber.name.charAt(0)}
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                                <p>{chamber.name}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    ))}
+                     <Dialog>
+                        <Tooltip>
+                            <DialogTrigger asChild>
+                                <TooltipTrigger asChild>
+                                    <button className="w-14 h-14 rounded-full bg-muted flex items-center justify-center transition-all hover:bg-primary hover:rounded-2xl">
+                                        <Plus />
+                                    </button>
+                                </TooltipTrigger>
+                            </DialogTrigger>
+                            <TooltipContent side="right">
+                                <p>Create or Join a Chamber</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <CreateJoinDialog onChamberSelect={handleChamberSelect} />
+                    </Dialog>
+                </div>
                 <ChamberList userChambers={userChambers} activeChamberId={activeChamberId} onChamberSelect={handleChamberSelect} />
+
 
                 {/* --- Mobile Sidebars (Absolute Positioned) --- */}
                 {isChannelPanelOpen && (
@@ -564,7 +740,7 @@ const ParivartanChamberPage = () => {
                             chamber={activeChamber || null}
                             activeChannelId={activeChannelId}
                             onChannelSelect={handleChannelSelect}
-                            className="h-full animate-in slide-in-from-left-full duration-300" 
+                            className="h-full animate-in slide-in-from-left duration-300" 
                             onClose={() => setIsChannelPanelOpen(false)}
                         />
                     </div>
@@ -573,7 +749,7 @@ const ParivartanChamberPage = () => {
                     <div className="absolute inset-0 z-40 md:hidden">
                          <MemberList 
                             chamber={activeChamber || null}
-                            className="h-full animate-in slide-in-from-right-full duration-300 ml-auto"
+                            className="h-full animate-in slide-in-from-right duration-300 ml-auto"
                             onClose={() => setIsMemberListOpen(false)}
                          />
                     </div>
