@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, 'useState, useEffect, useCallback, Suspense, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, useRef, useMemo } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -273,14 +273,14 @@ const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: Gen
     const { toast } = useToast();
     
     useEffect(() => {
-        if(settings){
-            setQuizSettings(settings);
-        }
+        setQuizSettings(settings || defaultSettings);
     }, [settings]);
 
     useEffect(() => {
         const handler = setTimeout(() => {
-            updateQuizSettings(roomId, quizSettings);
+            if (quizSettings.topic) {
+                updateQuizSettings(roomId, quizSettings);
+            }
         }, 500);
 
         return () => {
