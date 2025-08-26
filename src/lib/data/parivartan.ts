@@ -127,13 +127,22 @@ export const listenForUserChambers = (
     callback: (chambers: Chamber[]) => void
 ): (() => void) => {
     const chambersCol = collection(db, 'chambers');
-    const q = query(chambersCol, where("memberIds", "array-contains", userId), orderBy("createdAt", "desc"));
+    // REMOVED: orderBy("createdAt", "desc") to prevent index error. Sorting will be handled client-side.
+    const q = query(chambersCol, where("memberIds", "array-contains", userId));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const chambers = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Chamber));
+        
+        // Sort chambers by creation date in the application code
+        chambers.sort((a, b) => {
+            const timeA = a.createdAt?.toMillis() || 0;
+            const timeB = b.createdAt?.toMillis() || 0;
+            return timeB - timeA; // Sort descending (newest first)
+        });
+
         callback(chambers);
     }, (error) => {
         console.error("Error listening for user chambers:", error);
