@@ -199,24 +199,24 @@ export const transferHost = async (chamberId: string, newHostId: string) => {
         const newHost = chamberData.members.find(m => m.uid === newHostId);
         if (!newHost) throw new Error("New host not found in chamber.");
 
-        // Remove old creator from members array and memberIds array
         const oldCreatorId = chamberData.creatorId;
-        const membersWithoutOldCreator = chamberData.members.filter(m => m.uid !== oldCreatorId);
-        const memberIdsWithoutOldCreator = chamberData.memberIds.filter(id => id !== oldCreatorId);
 
         // Update the new host's roles to include 'admin' if they don't have it
-        const newHostMemberIndex = membersWithoutOldCreator.findIndex(m => m.uid === newHostId);
+        const newHostMemberIndex = chamberData.members.findIndex(m => m.uid === newHostId);
         if (newHostMemberIndex !== -1) {
-            const newHostMember = membersWithoutOldCreator[newHostMemberIndex];
+            const newHostMember = chamberData.members[newHostMemberIndex];
             if (!newHostMember.roleIds?.includes('admin')) {
                 newHostMember.roleIds = [...(newHostMember.roleIds || []), 'admin'];
             }
         }
 
+        // Remove old creator from members array
+        const membersWithoutOldCreator = chamberData.members.filter(m => m.uid !== oldCreatorId);
+
         transaction.update(chamberRef, {
             creatorId: newHostId,
             members: membersWithoutOldCreator,
-            memberIds: memberIdsWithoutOldCreator
+            memberIds: arrayRemove(oldCreatorId),
         });
 
         // Remove chamber from old creator's user document
