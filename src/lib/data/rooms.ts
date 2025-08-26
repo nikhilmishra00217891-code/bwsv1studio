@@ -78,7 +78,6 @@ export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room |
         return { id: roomSnap.id, ...roomData };
     }
     
-    // Ensure you don't exceed a reasonable member limit
     if (roomData.members.length >= 20) {
         throw new Error("This room is full.");
     }
@@ -170,7 +169,6 @@ export const updateMemberStatusInRoom = async (roomId: string, memberId: string,
 
 export const submitAnswer = async (roomId: string, userId: string, questionIndex: number, answer: string) => {
     const roomRef = doc(db, 'rooms', roomId);
-    const answerPath = `members.${userId}.answers.${questionIndex}`;
 
     try {
         await runTransaction(db, async (transaction) => {
@@ -191,6 +189,41 @@ export const submitAnswer = async (roomId: string, userId: string, questionIndex
         });
     } catch(e) {
         console.error("Error submitting answer: ", e);
+    }
+}
+
+export const finishQuizForMember = async (roomId: string, userId: string, score: number, accuracy: number, timeTaken: number) => {
+     const roomRef = doc(db, "rooms", roomId);
+    try {
+      await runTransaction(db, async (transaction) => {
+        const roomSnap = await transaction.get(roomRef);
+        if (!roomSnap.exists()) {
+          return;
+        }
+
+        const roomData = roomSnap.data() as Room;
+        const memberIndex = roomData.members.findIndex(m => m.uid === userId);
+
+        if (memberIndex !== -1) {
+            const updatedMembers = [...roomData.members];
+            updatedMembers[memberIndex] = { 
+                ...updatedMembers[memberIndex], 
+                status: 'finished',
+                score,
+                accuracy,
+                timeTaken
+            };
+            
+            const allFinished = updatedMembers.every(m => m.status === 'finished');
+
+            transaction.update(roomRef, { 
+                members: updatedMembers,
+                status: allFinished ? 'finished' : 'in-progress'
+            });
+        }
+      });
+    } catch (error) {
+        console.error("Failed to finish quiz for member:", error);
     }
 }
 
@@ -216,17 +249,20 @@ export const startQuiz = async (roomId: string): Promise<void> => {
 
     const quizData = await generateQuiz(roomData.quizSettings);
     
-    // Clear previous quiz answers/scores for all members
-    const batch = writeBatch(db);
-    const updatedMembers = roomData.members.map(member => ({ ...member, answers: {}, score: 0 }));
+    const updatedMembers = roomData.members.map(member => ({ 
+        ...member, 
+        answers: {}, 
+        score: 0, 
+        accuracy: 0, 
+        timeTaken: 0,
+        status: 'playing' 
+    }));
 
-    batch.update(roomRef, {
+    await updateDoc(roomRef, {
         quizData,
         status: 'in-progress',
         members: updatedMembers
     });
-    
-    await batch.commit();
 }
 
 
@@ -280,4 +316,3 @@ export const listenForChatMessages = (roomId: string, callback: (messages: ChatM
 
     return unsubscribe;
 };
-

@@ -105,6 +105,7 @@ export interface RoomMember {
     displayName: string;
     photoURL: string;
     avatar: string;
+    status?: 'playing' | 'finished';
     // Inspectable properties
     focusStats?: FocusStats;
     currentCycle?: 'work' | 'break' | 'transition';
@@ -117,6 +118,8 @@ export interface RoomMember {
     // Warzone specific
     answers?: { [questionIndex: number]: string };
     score?: number;
+    accuracy?: number;
+    timeTaken?: number;
 }
 
 export interface Room {
@@ -145,5 +148,6 @@ export interface Question {
     correctAnswer: string;
     explanation: string;
 }
+
 
 

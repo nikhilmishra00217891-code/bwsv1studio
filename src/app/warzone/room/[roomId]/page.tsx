@@ -34,15 +34,19 @@ import {
     ArrowRight,
     ShieldCheck,
     ShieldX,
+    Timer,
+    Percent,
+    Eye,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useParams, useRouter } from 'next/navigation';
 import type { Room, RoomMember, ChatMessage, Question } from '@/types';
-import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateQuizSettings, startQuiz, submitAnswer } from '@/lib/data/rooms';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateQuizSettings, startQuiz, submitAnswer, finishQuizForMember } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -50,6 +54,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { GenerateQuizInput } from '@/ai/flows';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -392,11 +398,137 @@ const WaitingForHost = ({ settings }: { settings?: GenerateQuizInput }) => (
     </Card>
 );
 
+const AnswerReviewDialog = ({ member, quizData }: { member: RoomMember, quizData: NonNullable<Room['quizData']> }) => (
+    <DialogContent className="max-w-3xl">
+        <DialogHeader>
+            <DialogTitle>Answer Sheet: {member.displayName}</DialogTitle>
+            <DialogDescription>Reviewing {member.displayName}'s performance.</DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="max-h-[70vh]">
+             <div className="space-y-4 pr-6">
+                {quizData.questions.map((q, index) => {
+                    const userAnswer = member.answers?.[index];
+                    const isCorrect = userAnswer === q.correctAnswer;
+                    return (
+                        <Card key={index}>
+                            <CardHeader>
+                                <CardTitle className="text-base">Q{index+1}: {q.questionText}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-2">
+                                    {q.options.map((option, i) => {
+                                        const isCorrectOption = option === q.correctAnswer;
+                                        const isUserChoice = option === userAnswer;
+                                        return (
+                                            <div key={i} className={cn(
+                                                "flex items-center gap-3 p-2 text-sm rounded-md border",
+                                                isCorrectOption ? "bg-green-100/50 border-green-400" : "",
+                                                isUserChoice && !isCorrectOption ? "bg-red-100/50 border-red-400" : ""
+                                            )}>
+                                                {isCorrectOption ? <Check className="w-4 h-4 text-green-600" /> : isUserChoice ? <X className="w-4 h-4 text-red-600" /> : <div className="w-4 h-4"/>}
+                                                <span>{option}</span>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                <Alert className="mt-4">
+                                    <BookOpen className="h-4 w-4" />
+                                    <AlertTitle>Explanation</AlertTitle>
+                                    <AlertDescription>{q.explanation}</AlertDescription>
+                                </Alert>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+            </div>
+        </ScrollArea>
+    </DialogContent>
+)
+
+
+const QuizResults = ({ room }: { room: Room }) => {
+    const sortedMembers = useMemo(() => {
+        return [...room.members].sort((a,b) => (b.score ?? 0) - (a.score ?? 0) || (a.timeTaken ?? Infinity) - (b.timeTaken ?? Infinity));
+    }, [room.members]);
+
+    return (
+        <div className="bg-card/50 min-h-screen flex items-center justify-center p-4">
+             <div className="w-full max-w-4xl mx-auto animate-fade-in">
+                <Card className="shadow-2xl border-primary/20">
+                    <CardHeader className="text-center">
+                        <Trophy className="h-16 w-16 mx-auto text-amber-400 mb-4"/>
+                        <CardTitle className="text-4xl font-headline">Battle Report</CardTitle>
+                        <CardDescription>The warzone has concluded. Here are the results!</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[50px]">Rank</TableHead>
+                                    <TableHead>Player</TableHead>
+                                    <TableHead className="text-center">Score</TableHead>
+                                    <TableHead className="text-center">Accuracy</TableHead>
+                                    <TableHead className="text-center">Time</TableHead>
+                                    <TableHead className="text-right">Answers</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedMembers.map((member, index) => (
+                                    <TableRow key={member.uid}>
+                                        <TableCell className="font-bold text-lg text-center">{index + 1}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="w-8 h-8">
+                                                    <AvatarFallback><Brain className="w-4 h-4"/></AvatarFallback>
+                                                </Avatar>
+                                                <span className="font-semibold">{member.displayName}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center font-semibold">
+                                            {member.status === 'finished' ? `${member.score}/${room.quizData?.questions.length}` : <Badge variant="outline">Playing...</Badge>}
+                                        </TableCell>
+                                        <TableCell className="text-center font-semibold">
+                                            {member.status === 'finished' ? `${member.accuracy?.toFixed(0)}%` : '-'}
+                                        </TableCell>
+                                        <TableCell className="text-center font-semibold">
+                                            {member.status === 'finished' ? `${member.timeTaken}s` : '-'}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {member.status === 'finished' ? (
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                         <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4"/> View</Button>
+                                                    </DialogTrigger>
+                                                    <AnswerReviewDialog member={member} quizData={room.quizData!} />
+                                                </Dialog>
+                                            ) : (
+                                                <Button variant="outline" size="sm" disabled>View</Button>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                         <div className="text-center mt-6">
+                            <Button size="lg" asChild>
+                                <Link href="/warzone/lobby">
+                                    New Warzone <ChevronsRight className="ml-2 h-5 w-5" />
+                                </Link>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+             </div>
+        </div>
+    )
+}
+
 const MultiplayerQuizUI = ({ room }: { room: Room }) => {
     const { user } = useAuth();
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
+    const startTimeRef = useRef<number>(Date.now());
     
     const quizData = room.quizData!;
     const quizParams = room.quizSettings!;
@@ -424,11 +556,25 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
     const handleNext = () => {
         if (currentQuestionIndex < quizData.questions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
-        } else {
-            // Handle quiz finish
-            // This will be implemented in a future step.
         }
     };
+
+    const handleFinish = async () => {
+        if (!user || !currentUser?.answers) return;
+
+        const timeTaken = Math.round((Date.now() - startTimeRef.current) / 1000);
+        
+        let score = 0;
+        quizData.questions.forEach((q, index) => {
+            if (currentUser.answers?.[index] === q.correctAnswer) {
+                score++;
+            }
+        });
+        
+        const accuracy = (score / quizData.questions.length) * 100;
+        
+        await finishQuizForMember(room.id, user.uid, score, accuracy, timeTaken);
+    }
 
     const handlePrevious = () => {
         if (currentQuestionIndex > 0) {
@@ -487,9 +633,15 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
                      <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
                         <ArrowLeft className="mr-2 h-4 w-4"/> Previous
                      </Button>
-                      <Button onClick={handleNext} disabled={currentQuestionIndex === quizData.questions.length - 1}>
-                        Next <ArrowRight className="ml-2 h-4 w-4"/>
-                     </Button>
+                      {currentQuestionIndex === quizData.questions.length - 1 ? (
+                         <Button onClick={handleFinish} disabled={!isAnswered} className="bg-green-600 hover:bg-green-700">
+                           Finish Battle <ChevronsRight className="ml-2 h-4 w-4"/>
+                         </Button>
+                      ) : (
+                         <Button onClick={handleNext} disabled={!isAnswered}>
+                            Next <ArrowRight className="ml-2 h-4 w-4"/>
+                         </Button>
+                      )}
                  </div>
             </div>
         </div>
@@ -578,6 +730,7 @@ const WarzoneUI = () => {
     }, [roomId, toast]);
 
     const isHost = room?.hostId === user?.uid;
+    const currentUser = room?.members.find(m => m.uid === user?.uid);
 
     if (removedMessage) {
         return (
@@ -604,6 +757,10 @@ const WarzoneUI = () => {
         );
     }
     
+    if (room.status === 'finished' || currentUser?.status === 'finished') {
+        return <QuizResults room={room} />
+    }
+
     if (room.status === 'in-progress' && room.quizData) {
         return <MultiplayerQuizUI room={room} />
     }
