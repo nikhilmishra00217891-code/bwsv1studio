@@ -166,16 +166,11 @@ export default function Header() {
              )}
         </div>
         
-        <nav className="hidden md:flex items-center gap-1 text-sm font-medium mx-auto">
-            {navLinksData.map((link) => (
-                <NavLink key={link.href} {...link} isDesktop />
-            ))}
-        </nav>
+        <div className="flex-1 justify-center hidden lg:flex">
+             <SmartSearch />
+        </div>
         
         <div className="flex items-center gap-2 md:gap-4 ml-auto">
-          <div className="hidden lg:block">
-            <SmartSearch />
-          </div>
           <ThemeToggle />
           
           {loading ? null : user ? (
@@ -192,14 +187,28 @@ export default function Header() {
               )}
             </div>
           ) : (
-            <Button asChild size="sm" className="hidden md:flex">
-              <Link href="/login">Login / Signup</Link>
-            </Button>
+             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Open navigation menu</span>
+                  </Button>
+                </SheetTrigger>
+                {/* Fallback login for users without profile */}
+                <SheetContent side="right" className="flex flex-col p-0">
+                    <SheetTitle className="sr-only">Menu</SheetTitle>
+                    <div className="p-6 mt-auto">
+                         <Button asChild className="w-full" onClick={() => handleLinkClick()}>
+                            <Link href="/login">Login / Signup</Link>
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
           )}
 
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden">
+              <Button variant="outline" size="icon">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Open navigation menu</span>
               </Button>
