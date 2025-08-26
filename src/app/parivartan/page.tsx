@@ -274,18 +274,20 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                         <CardHeader>
                             <CardTitle>Roles</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex-grow space-y-2 overflow-y-auto">
-                            {chamber.roles?.map(role => (
-                                <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted">
-                                    <span className="font-semibold">{role.name}</span>
-                                    {role.name !== 'Admin' && (
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteRole(role.id)}>
-                                            <Trash2 className="w-4 h-4 text-destructive"/>
-                                        </Button>
-                                    )}
-                                </div>
-                            ))}
-                        </CardContent>
+                        <ScrollArea className="flex-grow">
+                            <CardContent className="space-y-2">
+                                {chamber.roles?.map(role => (
+                                    <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                                        <span className="font-semibold">{role.name}</span>
+                                        {role.name !== 'Admin' && (
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteRole(role.id)}>
+                                                <Trash2 className="w-4 h-4 text-destructive"/>
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </ScrollArea>
                         <CardContent>
                             <div className="flex gap-2">
                                 <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
@@ -584,11 +586,13 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
     if (!chamber || !user) return null;
     const isUserAdmin = user.uid === chamber.creatorId;
 
-    const getMemberRoles = (member: RoomMember): Role[] => {
+    const getMemberRoles = (member: RoomMember): (Role | {id: string, name: string})[] => {
+        const roles: (Role | {id: string, name: string})[] = [];
         if (member.uid === chamber.creatorId) {
-            return [{ id: 'creator', name: 'Absolute Admin', permissions: ['*'] }];
+            roles.push({ id: 'creator', name: 'Absolute Admin' });
         }
-        return member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter(Boolean) as Role[] || [];
+        const assignedRoles = member.roleIds?.map(roleId => chamber.roles?.find(r => r.id === roleId)).filter(Boolean) as Role[] || [];
+        return [...roles, ...assignedRoles];
     }
 
     return (

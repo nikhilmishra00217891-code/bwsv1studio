@@ -178,7 +178,10 @@ export const removeMember = async (chamberId: string, memberIdToRemove: string) 
     
     const updatedMembers = chamberData.members.filter(m => m.uid !== memberIdToRemove);
     
-    transaction.update(chamberRef, { members: updatedMembers });
+    transaction.update(chamberRef, { 
+        members: updatedMembers,
+        memberIds: arrayRemove(memberIdToRemove)
+    });
     transaction.update(userRef, {
         chambers: arrayRemove(chamberId)
     });

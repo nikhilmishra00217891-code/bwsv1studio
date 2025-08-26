@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -148,7 +149,7 @@ export interface Role {
     id: string;
     name: string;
     // permissions will be added in Phase 3.2
-    permissions: string[]; 
+    permissions?: string[]; 
 }
 
 export interface ChamberMessage {
