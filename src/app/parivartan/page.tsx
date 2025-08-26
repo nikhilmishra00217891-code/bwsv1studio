@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage } from '@/lib/data/parivartan';
-import type { Chamber, Channel, ChamberMessage } from '@/types';
+import type { Chamber, ChamberMessage, Channel } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 
 const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) => void }) => {
@@ -161,7 +161,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" onClick={handleCopyId} className="h-8 w-8">
-                                    <Copy className="h-4 w-4"/>
+                                    <Copy className="h-4 h-4"/>
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>Copy Chamber ID</p></TooltipContent>
@@ -361,18 +361,12 @@ const ChatArea = ({ chamber, channel }: { chamber: Chamber | null, channel: Chan
     )
 }
 
-const WelcomePlaceholder = () => (
+const WelcomePlaceholder = ({ onActionClick }: { onActionClick: () => void }) => (
     <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
         <h2 className="text-2xl font-bold font-headline">Welcome to Parivartan Chamber!</h2>
         <p className="text-muted-foreground mt-2 max-w-md">Your new space for collaborative learning. Create a new chamber or join an existing one using an ID to get started.</p>
         <div className="mt-6">
-            <Dialog>
-                 <DialogTrigger asChild>
-                    <Button>Create or Join a Chamber</Button>
-                 </DialogTrigger>
-                 {/* This reuses the dialog component, but needs a dummy onChamberSelect */}
-                 <CreateJoinDialog onChamberSelect={() => {}} />
-            </Dialog>
+            <Button onClick={onActionClick}>Create or Join a Chamber</Button>
         </div>
     </div>
 )
@@ -385,6 +379,7 @@ const ParivartanChamberPage = () => {
 
     const [isChannelPanelOpen, setIsChannelPanelOpen] = useState(false);
     const [isMemberListOpen, setIsMemberListOpen] = useState(false);
+    const [isCreateJoinDialogOpen, setIsCreateJoinDialogOpen] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -422,6 +417,7 @@ const ParivartanChamberPage = () => {
             setActiveChannelId(selectedChamber.channels[0]?.id || null);
         }
         setIsChannelPanelOpen(false); // Close mobile panel on select
+        setIsCreateJoinDialogOpen(false); // Close dialog on select
     };
     
     const handleChannelSelect = (channelId: string) => {
@@ -486,7 +482,10 @@ const ParivartanChamberPage = () => {
                     <MemberList members={activeChamber.members} className="hidden md:flex" />
                   </>
                 ) : (
-                    <WelcomePlaceholder />
+                     <Dialog open={isCreateJoinDialogOpen} onOpenChange={setIsCreateJoinDialogOpen}>
+                        <WelcomePlaceholder onActionClick={() => setIsCreateJoinDialogOpen(true)} />
+                        <CreateJoinDialog onChamberSelect={handleChamberSelect} />
+                     </Dialog>
                 )}
             </div>
         </TooltipProvider>
