@@ -225,7 +225,6 @@ const ChannelDialog = ({
   );
 };
 
-
 const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Chamber, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
     const { toast } = useToast();
     const [newRoleName, setNewRoleName] = useState('');
@@ -264,30 +263,32 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-                <DialogHeader>
+            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-0">
                     <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                     <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                 </DialogHeader>
-                <div className="grid md:grid-cols-3 gap-6 flex-grow min-h-0">
+                <div className="grid md:grid-cols-3 gap-6 flex-grow min-h-0 p-6">
                     <Card className="md:col-span-1 flex flex-col">
                         <CardHeader>
                             <CardTitle>Roles</CardTitle>
                         </CardHeader>
-                        <ScrollArea className="flex-grow">
-                            <CardContent className="space-y-2">
-                                {chamber.roles?.map(role => (
-                                    <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted">
-                                        <span className="font-semibold">{role.name}</span>
-                                        {role.name !== 'Admin' && (
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteRole(role.id)}>
-                                                <Trash2 className="w-4 h-4 text-destructive"/>
-                                            </Button>
-                                        )}
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </ScrollArea>
+                        <CardContent className="flex-grow space-y-2 overflow-hidden">
+                            <ScrollArea className="h-full">
+                                <div className="space-y-2 pr-4">
+                                    {chamber.roles?.map(role => (
+                                        <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                                            <span className="font-semibold">{role.name}</span>
+                                            {role.name !== 'Admin' && (
+                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteRole(role.id)}>
+                                                    <Trash2 className="w-4 h-4 text-destructive"/>
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </CardContent>
                         <CardContent>
                             <div className="flex gap-2">
                                 <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
@@ -300,9 +301,9 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
 
                     <Card className="md:col-span-2 flex flex-col">
                         <CardHeader><CardTitle>Members ({chamber.members.length})</CardTitle></CardHeader>
-                        <ScrollArea className="flex-grow">
-                             <CardContent>
-                                <div className="space-y-4">
+                        <CardContent className="flex-grow overflow-hidden">
+                             <ScrollArea className="h-full">
+                                <div className="space-y-4 pr-4">
                                 {chamber.members.map(member => (
                                     <div key={member.uid}>
                                         <p className="font-bold">{member.displayName}</p>
@@ -331,11 +332,11 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                                     </div>
                                 ))}
                                 </div>
-                            </CardContent>
-                        </ScrollArea>
+                            </ScrollArea>
+                        </CardContent>
                     </Card>
                 </div>
-                 <DialogFooter>
+                 <DialogFooter className="p-6 pt-0">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
                 </DialogFooter>
             </DialogContent>
@@ -902,7 +903,7 @@ const ParivartanChamberPage = () => {
                             </TooltipContent>
                         </Tooltip>
                         <CreateJoinDialog onChamberSelect={handleChamberSelect} />
-                    </Dialog>
+                     </Dialog>
                 </div>
                 <ChamberList userChambers={userChambers} activeChamberId={activeChamberId} onChamberSelect={handleChamberSelect} />
 
