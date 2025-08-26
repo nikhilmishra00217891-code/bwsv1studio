@@ -56,9 +56,12 @@ export const createChamber = async (
 
   // Also add this chamber to the user's list of chambers
   const userRef = doc(db, 'users', creatorId);
-  await updateDoc(userRef, {
+  
+  // Use setDoc with merge: true to create the user doc if it doesn't exist,
+  // or update it if it does. This is safer than just updateDoc.
+  await setDoc(userRef, {
       chambers: arrayUnion(docRef.id)
-  });
+  }, { merge: true });
   
   return docRef.id;
 };
@@ -109,23 +112,38 @@ export const listenForUserChambers = (
     callback: (chambers: Chamber[]) => void
 ): (() => void) => {
     const chambersCol = collection(db, 'chambers');
-    // The query was causing an index error. We will filter and then sort client-side.
-    const q = query(chambersCol, where('members', 'array-contains-any', [{uid: userId}]));
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        const chambers = snapshot.docs.map(doc => ({
+    // We need to query for the user's UID within the 'members' array of objects.
+    const q = query(chambersCol, where('members', 'array-contains', { 
+        uid: userId, 
+        // We need to provide all fields of the RoomMember object that we are querying against.
+        // The values don't matter as much as the structure, but let's be safe.
+        // Firestore doesn't support partial object matches in array-contains.
+        // This is a limitation. A better structure would be a subcollection of members.
+        // Given the current structure, we'll have to filter on the client.
+    }));
+
+    const userChambersQuery = query(chambersCol, where("memberIds", "array-contains", userId));
+
+    
+    const unsubscribe = onSnapshot(chambersCol, (snapshot) => {
+        const allChambers = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Chamber));
+
+        const userChambers = allChambers.filter(chamber => 
+            chamber.members.some(member => member.uid === userId)
+        );
         
         // Sort by creation date on the client side
-        chambers.sort((a, b) => {
+        userChambers.sort((a, b) => {
             const timeA = a.createdAt?.toMillis() || 0;
             const timeB = b.createdAt?.toMillis() || 0;
             return timeB - timeA; // Descending order
         });
 
-        callback(chambers);
+        callback(userChambers);
     }, (error) => {
         console.error("Error listening for user chambers:", error);
         callback([]);
