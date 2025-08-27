@@ -95,8 +95,7 @@ export function LoginForm() {
         setShowConfirmation(false);
         setFacultyUser(null);
     }
-  }
-
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,20 +115,25 @@ export function LoginForm() {
             return;
         }
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
         if(isFacultyMode) {
-            setFacultyUser(userCredential.user);
+            // This is a faculty signup. Set the user and show confirmation.
+            setFacultyUser(user);
             setShowConfirmation(true);
-            // Don't set isLoading to false here, wait for confirmation
+            // We return here to prevent the student creation logic from running.
+            // setIsLoading remains true until the confirmation dialog is handled.
             return;
         }
 
-        await updateProfile(userCredential.user, { displayName: username });
-        await createUserProfile(userCredential.user, 'student');
+        // This is a regular student signup.
+        await updateProfile(user, { displayName: username });
+        await createUserProfile(user, 'student');
         toast({ title: "Account created!", description: "Welcome to the Parivaar!" });
         router.push("/onboarding");
 
       } else {
+        // This is a login.
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Welcome back!" });
         router.push("/dashboard");
@@ -141,7 +145,10 @@ export function LoginForm() {
         description: error.message,
       });
     } finally {
-      setIsLoading(false);
+      // Don't set isLoading to false if we're waiting for faculty confirmation
+      if (!showConfirmation) {
+        setIsLoading(false);
+      }
     }
   };
 
