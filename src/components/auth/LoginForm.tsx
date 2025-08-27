@@ -28,7 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { KeyRound, Mail, User as UserIcon, LoaderCircle, Sparkles, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { createUserProfile } from "@/lib/data";
+import { createStudentProfile, createFacultyProfile } from "@/lib/data";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -43,7 +43,6 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isFacultyMode, setIsFacultyMode] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -76,6 +75,7 @@ export function LoginForm() {
 
 
   const handleStudentSignup = async () => {
+    setIsLoading(true);
     if(!username) {
         toast({ variant: 'destructive', title: 'Username is required.' });
         setIsLoading(false);
@@ -85,7 +85,7 @@ export function LoginForm() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         await updateProfile(user, { displayName: username });
-        await createUserProfile(user, 'student');
+        await createStudentProfile(user);
         toast({ title: "Account created!", description: "Welcome to the Parivaar!" });
         router.push("/onboarding");
     } catch (error: any) {
@@ -94,10 +94,13 @@ export function LoginForm() {
             title: "Sign Up Failed",
             description: error.message,
         });
+    } finally {
+        setIsLoading(false);
     }
   }
 
   const handleFacultySignup = async () => {
+     setIsLoading(true);
      if (secretKey !== FACULTY_SECRET_KEY) {
         toast({ variant: 'destructive', title: 'Invalid Secret Key.' });
         setIsLoading(false);
@@ -112,7 +115,7 @@ export function LoginForm() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         await updateProfile(user, { displayName: username });
-        await createUserProfile(user, 'faculty');
+        await createFacultyProfile(user);
         toast({ title: "Faculty Account created!", description: "Welcome to the team!" });
         router.push("/dashboard");
     } catch(error: any) {
@@ -121,21 +124,13 @@ export function LoginForm() {
             title: "Faculty Sign Up Failed",
             description: error.message,
         });
+    } finally {
+        setIsLoading(false);
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    if (isSignUp) {
-        if(isFacultyMode) {
-            await handleFacultySignup();
-        } else {
-            await handleStudentSignup();
-        }
-    } else {
-      // This is a login.
+  const handleEmailLogin = async () => {
+      setIsLoading(true);
       try {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Welcome back!" });
@@ -146,9 +141,22 @@ export function LoginForm() {
             title: "Login Failed",
             description: error.message,
         });
+      } finally {
+        setIsLoading(false);
       }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSignUp) {
+        if(isFacultyMode) {
+            await handleFacultySignup();
+        } else {
+            await handleStudentSignup();
+        }
+    } else {
+      await handleEmailLogin();
     }
-    setIsLoading(false);
   };
 
   return (

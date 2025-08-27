@@ -172,7 +172,7 @@ export const getEnrolledCoursesForUser = async (userId: string): Promise<Enrolle
   }
 };
 
-export const createUserProfile = async (user: User, role: 'student' | 'faculty' = 'student') => {
+export const createStudentProfile = async (user: User) => {
     const userDocRef = doc(db, "users", user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
@@ -185,8 +185,7 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
                 uid,
                 email,
                 displayName,
-                // Do not set photoURL here, it will be handled by avatar selection
-                role,
+                role: 'student',
                 createdAt,
                 onboardingComplete: false,
                 enrolledCourses: [],
@@ -195,6 +194,31 @@ export const createUserProfile = async (user: User, role: 'student' | 'faculty' 
             });
         } catch (error) {
             console.error("Error creating user document:", error);
+        }
+    }
+};
+
+export const createFacultyProfile = async (user: User) => {
+    const userDocRef = doc(db, "users", user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+        const { uid, email, displayName } = user;
+        const createdAt = new Date();
+
+        try {
+            await setDoc(userDocRef, {
+                uid,
+                email,
+                displayName,
+                role: 'faculty',
+                createdAt,
+                onboardingComplete: true, // Key difference: faculty are onboarded by default
+                avatar: 'brain',
+                theme: 'dark'
+            });
+        } catch (error) {
+            console.error("Error creating faculty user document:", error);
         }
     }
 };
