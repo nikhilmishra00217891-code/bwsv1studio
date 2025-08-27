@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight, PinOff, ChevronsDown, ChevronsUp, XCircle, Library, Paperclip, BarChart3, FolderKanban, Target, Swords } from 'lucide-react';
+import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight, PinOff, ChevronsDown, ChevronsUp, XCircle, Library, Paperclip, BarChart3, FolderKanban, Target, Swords, Check } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -818,7 +819,7 @@ const PinnedMessagesBar = ({ pinnedMessages, isExpanded, onToggle, onPinClick }:
                                     ))
                                 ) : (
                                     <button onClick={() => onPinClick(pinnedMessages[0].id)} className="text-xs text-left w-full truncate">
-                                        <strong className="text-primary/80">{pinnedMessages[0].senderName}:</strong> <span className="text-muted-foreground line-clamp-1">{msg.text || msg.poll?.question}</span>
+                                        <strong className="text-primary/80">{pinnedMessages[0].senderName}:</strong> <span className="text-muted-foreground line-clamp-1">{pinnedMessages[0].text || pinnedMessages[0].poll?.question}</span>
                                     </button>
                                 )}
                             </motion.div>
@@ -1023,11 +1024,11 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
         const poll = msg.poll;
         const { user } = useAuth();
         const { toast } = useToast();
-        const totalVotes = useMemo(() => poll?.options.reduce((acc, opt) => acc + opt.voterIds.length, 0) || 0, [poll]);
-        const userVoteIndex = useMemo(() => poll?.options.findIndex(opt => opt.voterIds.includes(user?.uid || '')), [poll, user]);
+        const totalVotes = useMemo(() => poll?.options.reduce((acc, opt) => acc + (opt.voterIds?.length || 0), 0) || 0, [poll]);
+        const userVoteIndex = useMemo(() => poll?.options.findIndex(opt => opt.voterIds?.includes(user?.uid || '')), [poll, user]);
 
         const handleVote = async (optionIndex: number) => {
-            if (!user || !chamber || !channel || userVoteIndex === optionIndex) return;
+            if (!user || !chamber || !channel || userVoteIndex !== undefined) return;
             try {
                 await voteOnPoll(chamber.id, channel.id, msg.id, optionIndex, user.uid);
             } catch (error: any) {
@@ -1045,7 +1046,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                         <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
                     </Avatar>
                 )}
-                 <div className={cn("flex flex-col group max-w-md", isSelf ? "items-end" : "items-start")}>
+                 <div className={cn("flex flex-col group max-w-md w-full", isSelf ? "items-end" : "items-start")}>
                     {!isSelf && <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>}
                      <div className={cn(
                         "p-4 rounded-xl w-full", 
@@ -1054,28 +1055,33 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                         <p className="font-bold mb-4">{poll.question}</p>
                         <div className="space-y-3">
                             {poll.options.map((option, index) => {
-                                const voteCount = option.voterIds.length;
+                                const voteCount = option.voterIds?.length || 0;
                                 const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
                                 const hasVotedForThis = userVoteIndex === index;
 
                                 return (
-                                    <button key={index} onClick={() => handleVote(index)} className="w-full text-left" disabled={userVoteIndex !== undefined}>
-                                        <div className="text-sm flex justify-between mb-1 font-semibold">
-                                            <span>{option.text}</span>
-                                            <span>{voteCount} vote(s)</span>
-                                        </div>
+                                    <button 
+                                        key={index} 
+                                        onClick={() => handleVote(index)} 
+                                        className="w-full text-left group/option"
+                                        disabled={userVoteIndex !== undefined}
+                                    >
                                         <div className="relative h-8 w-full rounded-full border border-primary/20 overflow-hidden bg-primary/10">
-                                            <motion.div
+                                             <motion.div
                                                 className="absolute top-0 left-0 h-full bg-primary/50"
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${percentage}%` }}
                                                 transition={{ ease: "easeInOut" }}
                                             />
-                                            <div className="absolute inset-0 flex items-center px-3 justify-between">
-                                                <span className={cn(hasVotedForThis ? "font-bold" : "")}>{hasVotedForThis && <Check className="inline-block w-4 h-4 mr-1"/>} {option.text}</span>
-                                                <span className="font-mono text-xs">{percentage.toFixed(0)}%</span>
+                                            <div className="absolute inset-0 flex items-center px-3 justify-between text-sm">
+                                                <span className={cn("font-semibold", hasVotedForThis && "font-bold")}>
+                                                    {hasVotedForThis && <Check className="inline-block w-4 h-4 mr-1"/>}
+                                                    {option.text}
+                                                </span>
+                                                <span className="font-mono text-xs tabular-nums">{percentage.toFixed(0)}%</span>
                                             </div>
                                         </div>
+                                         <p className="text-xs text-right mt-1 opacity-70 group-hover/option:opacity-100">{voteCount} vote(s)</p>
                                     </button>
                                 );
                             })}
