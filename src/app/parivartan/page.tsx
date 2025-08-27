@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogOverlay } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -332,7 +332,7 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                 <DialogContent className="max-w-4xl h-[85vh] flex flex-col">
+                 <DialogContent className="max-w-4xl flex flex-col h-[calc(100%-4rem)]">
                     <DialogHeader>
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
@@ -810,7 +810,7 @@ const PinnedMessagesBar = ({ pinnedMessages, isExpanded, onToggle, onPinClick }:
                                     ))
                                 ) : (
                                     <button onClick={() => onPinClick(pinnedMessages[0].id)} className="text-xs text-left w-full truncate">
-                                        <strong className="text-primary/80">{pinnedMessages[0].senderName}:</strong> <span className="text-muted-foreground">{pinnedMessages[0].text}</span>
+                                        <strong className="text-primary/80">{pinnedMessages[0].senderName}:</strong> <span className="text-muted-foreground line-clamp-1">{pinnedMessages[0].text}</span>
                                     </button>
                                 )}
                             </motion.div>
@@ -1203,10 +1203,8 @@ const ParivartanChamberPage = () => {
                 
                 {/* Mobile Chamber List Drawer */}
                 <Dialog open={isChamberListOpen} onOpenChange={setIsChamberListOpen}>
-                    <DialogContent className="p-0 w-80 h-full max-h-screen left-0 top-0 translate-x-0 translate-y-0 rounded-none border-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left">
-                        <DialogHeader className="sr-only">
-                            <DialogTitle>Chambers</DialogTitle>
-                        </DialogHeader>
+                    <DialogContent className="p-0 w-full max-w-xs h-full max-h-screen left-0 top-0 translate-x-0 translate-y-0 rounded-none border-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left">
+                         <DialogOverlay />
                         <ChamberList 
                             userChambers={userChambers} 
                             activeChamberId={activeChamberId} 
