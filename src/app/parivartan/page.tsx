@@ -1020,79 +1020,74 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
         }
     };
     
-    const PollMessage = ({ msg, isSelf }: { msg: ChamberMessage, isSelf: boolean }) => {
+    const PollMessage = ({ msg }: { msg: ChamberMessage }) => {
         const poll = msg.poll;
         const { user } = useAuth();
         const { toast } = useToast();
         const totalVotes = useMemo(() => poll?.options.reduce((acc, opt) => acc + (opt.voterIds?.length || 0), 0) || 0, [poll]);
         const userVoteIndex = useMemo(() => poll?.options.findIndex(opt => opt.voterIds?.includes(user?.uid || '')), [poll, user]);
-
+    
         const handleVote = async (optionIndex: number) => {
-            if (!user || !chamber || !channel || userVoteIndex !== undefined) return;
+            if (!user || !chamber || !channel || userVoteIndex !== -1) return;
             try {
                 await voteOnPoll(chamber.id, channel.id, msg.id, optionIndex, user.uid);
             } catch (error: any) {
                 toast({ variant: 'destructive', title: 'Vote Failed', description: error.message });
             }
         };
-
+    
         if (!poll) return null;
-
+    
         return (
-             <div ref={(el) => { if (el) messageRefs.current.set(msg.id, el); }} className={cn("flex items-start gap-3", isSelf ? "flex-row-reverse" : "flex-row")}>
-                {!isSelf && (
-                    <Avatar className="w-8 h-8">
-                        <AvatarImage src={msg.senderAvatar}/>
-                        <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                )}
-                 <div className={cn("flex flex-col group max-w-md w-full", isSelf ? "items-end" : "items-start")}>
-                    {!isSelf && <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>}
-                     <div className={cn(
-                        "p-4 rounded-xl w-full", 
-                        isSelf ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none"
-                    )}>
+            <div ref={(el) => { if (el) messageRefs.current.set(msg.id, el); }} className="flex items-start gap-3">
+                <Avatar className="w-8 h-8">
+                    <AvatarImage src={msg.senderAvatar}/>
+                    <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-grow max-w-md">
+                    <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>
+                    <div className="bg-card rounded-xl rounded-bl-none p-4 w-full">
                         <p className="font-bold mb-4">{poll.question}</p>
                         <div className="space-y-3">
                             {poll.options.map((option, index) => {
                                 const voteCount = option.voterIds?.length || 0;
                                 const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
                                 const hasVotedForThis = userVoteIndex === index;
-
+    
                                 return (
-                                    <button 
-                                        key={index} 
-                                        onClick={() => handleVote(index)} 
-                                        className="w-full text-left group/option"
-                                        disabled={userVoteIndex !== undefined}
+                                    <button
+                                        key={index}
+                                        onClick={() => handleVote(index)}
+                                        className={cn(
+                                            "w-full text-left p-2 rounded-lg border-2 transition-all",
+                                            userVoteIndex !== -1 ? "cursor-default" : "hover:border-primary/50",
+                                            hasVotedForThis ? "border-primary bg-primary/10" : "border-border"
+                                        )}
+                                        disabled={userVoteIndex !== -1}
                                     >
-                                        <div className="relative border border-primary/20 rounded-full overflow-hidden bg-primary/10 group-hover/option:border-primary/50 transition-colors">
-                                             <motion.div
-                                                className="absolute top-0 left-0 h-full bg-primary/50"
+                                        <div className="flex justify-between items-center text-sm mb-1">
+                                            <span className="font-semibold">{option.text}</span>
+                                            <span className="font-mono">{voteCount}</span>
+                                        </div>
+                                        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                                            <motion.div
+                                                className="h-full bg-primary rounded-full"
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${percentage}%` }}
                                                 transition={{ ease: "easeInOut" }}
                                             />
-                                            <div className="relative flex items-center p-2 justify-between text-sm">
-                                                <span className={cn("font-semibold", hasVotedForThis && "font-bold")}>
-                                                    {hasVotedForThis && <Check className="inline-block w-4 h-4 mr-1"/>}
-                                                    {option.text}
-                                                </span>
-                                                <span className="font-mono text-xs tabular-nums">{percentage.toFixed(0)}%</span>
-                                            </div>
                                         </div>
-                                         <p className="text-xs text-right mt-1 opacity-70">{voteCount} vote(s)</p>
                                     </button>
                                 );
                             })}
                         </div>
-                        <p className="text-xs text-right mt-2 opacity-70">{totalVotes} total votes</p>
+                        <p className="text-xs text-muted-foreground text-right mt-2">{totalVotes} total votes</p>
                     </div>
                      <p className="text-xs text-muted-foreground mt-1 px-3">
                         {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), {addSuffix: true}) : 'sending...'}
                     </p>
-                 </div>
-             </div>
+                </div>
+            </div>
         );
     };
     
@@ -1101,7 +1096,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
         const [isExpanded, setIsExpanded] = useState(false);
         
         if (msg.messageType === 'poll') {
-            return <PollMessage msg={msg} isSelf={isSelf} />
+            return <PollMessage msg={msg} />
         }
 
         const lines = msg.text?.split('\n') || [];
