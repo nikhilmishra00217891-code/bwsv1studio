@@ -44,8 +44,7 @@ export function LoginForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isFacultyMode, setIsFacultyMode] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [facultyUser, setFacultyUser] = useState<User | null>(null);
-
+  
   const router = useRouter();
   const { toast } = useToast();
   const { theme } = useTheme();
@@ -76,80 +75,80 @@ export function LoginForm() {
   }, [theme, toast]);
 
 
-  const handleFacultySignup = async () => {
-    if (!facultyUser) return;
-    setIsLoading(true);
+  const handleStudentSignup = async () => {
+    if(!username) {
+        toast({ variant: 'destructive', title: 'Username is required.' });
+        setIsLoading(false);
+        return;
+    }
     try {
-        await updateProfile(facultyUser, { displayName: username });
-        await createUserProfile(facultyUser, 'faculty');
-        toast({ title: "Account created!", description: "You've been successfully signed up as faculty." });
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        await updateProfile(user, { displayName: username });
+        await createUserProfile(user, 'student');
+        toast({ title: "Account created!", description: "Welcome to the Parivaar!" });
+        router.push("/onboarding");
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Sign Up Failed",
+            description: error.message,
+        });
+    }
+  }
+
+  const handleFacultySignup = async () => {
+     if (secretKey !== FACULTY_SECRET_KEY) {
+        toast({ variant: 'destructive', title: 'Invalid Secret Key.' });
+        setIsLoading(false);
+        return;
+    }
+    if(!username) {
+        toast({ variant: 'destructive', title: 'Username is required.' });
+        setIsLoading(false);
+        return;
+    }
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        await updateProfile(user, { displayName: username });
+        await createUserProfile(user, 'faculty');
+        toast({ title: "Faculty Account created!", description: "Welcome to the team!" });
         router.push("/dashboard");
     } catch(error: any) {
         toast({
             variant: "destructive",
-            title: "Creation failed",
+            title: "Faculty Sign Up Failed",
             description: error.message,
         });
-    } finally {
-        setIsLoading(false);
-        setShowConfirmation(false);
-        setFacultyUser(null);
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    if (isSignUp && isFacultyMode && secretKey !== FACULTY_SECRET_KEY) {
-        toast({ variant: 'destructive', title: 'Invalid Secret Key.' });
-        setIsLoading(false);
-        return;
-    }
-
-    try {
-      if (isSignUp) {
-        if(!username) {
-            toast({ variant: 'destructive', title: 'Username is required.' });
-            setIsLoading(false);
-            return;
-        }
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
+    if (isSignUp) {
         if(isFacultyMode) {
-            // This is a faculty signup. Set the user and show confirmation.
-            setFacultyUser(user);
-            setShowConfirmation(true);
-            // We return here to prevent the student creation logic from running.
-            // setIsLoading remains true until the confirmation dialog is handled.
-            return;
+            await handleFacultySignup();
+        } else {
+            await handleStudentSignup();
         }
-
-        // This is a regular student signup.
-        await updateProfile(user, { displayName: username });
-        await createUserProfile(user, 'student');
-        toast({ title: "Account created!", description: "Welcome to the Parivaar!" });
-        router.push("/onboarding");
-
-      } else {
-        // This is a login.
+    } else {
+      // This is a login.
+      try {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Welcome back!" });
         router.push("/dashboard");
-      }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: isSignUp ? "Sign Up Failed" : "Login Failed",
-        description: error.message,
-      });
-    } finally {
-      // Don't set isLoading to false if we're waiting for faculty confirmation
-      if (!showConfirmation) {
-        setIsLoading(false);
+      } catch (error: any) {
+         toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: error.message,
+        });
       }
     }
+    setIsLoading(false);
   };
 
   return (
@@ -260,29 +259,6 @@ export function LoginForm() {
           </CardFooter>
         </form>
       </Card>
-
-      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-center text-2xl font-headline">Ready to Revolutionize?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
-              Confirm your commitment to change the face of education.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-center">
-             <Button variant="outline" onClick={() => {
-                setShowConfirmation(false);
-                setIsLoading(false);
-                setFacultyUser(null);
-             }}>
-                Cancel
-             </Button>
-            <Button onClick={handleFacultySignup} disabled={isLoading}>
-              {isLoading ? <LoaderCircle className="animate-spin" /> : "Confirm"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
