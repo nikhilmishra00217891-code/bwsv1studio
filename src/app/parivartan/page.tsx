@@ -1066,14 +1066,14 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                                         className="w-full text-left group/option"
                                         disabled={userVoteIndex !== undefined}
                                     >
-                                        <div className="relative h-8 w-full rounded-full border border-primary/20 overflow-hidden bg-primary/10">
+                                        <div className="relative border border-primary/20 rounded-full overflow-hidden bg-primary/10 group-hover/option:border-primary/50 transition-colors">
                                              <motion.div
                                                 className="absolute top-0 left-0 h-full bg-primary/50"
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${percentage}%` }}
                                                 transition={{ ease: "easeInOut" }}
                                             />
-                                            <div className="absolute inset-0 flex items-center px-3 justify-between text-sm">
+                                            <div className="relative flex items-center p-2 justify-between text-sm">
                                                 <span className={cn("font-semibold", hasVotedForThis && "font-bold")}>
                                                     {hasVotedForThis && <Check className="inline-block w-4 h-4 mr-1"/>}
                                                     {option.text}
@@ -1081,7 +1081,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                                                 <span className="font-mono text-xs tabular-nums">{percentage.toFixed(0)}%</span>
                                             </div>
                                         </div>
-                                         <p className="text-xs text-right mt-1 opacity-70 group-hover/option:opacity-100">{voteCount} vote(s)</p>
+                                         <p className="text-xs text-right mt-1 opacity-70">{voteCount} vote(s)</p>
                                     </button>
                                 );
                             })}
