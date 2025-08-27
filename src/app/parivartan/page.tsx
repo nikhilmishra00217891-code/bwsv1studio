@@ -921,6 +921,39 @@ const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean,
     );
 };
 
+const ViewVotesDialog = ({ poll, members, isOpen, onOpenChange }: { poll: Poll, members: RoomMember[], isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Votes for: "{poll.question}"</DialogTitle>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] -mx-6 px-6">
+                    <div className="space-y-4 py-4">
+                        {poll.options.map((option, index) => (
+                            <div key={index}>
+                                <h4 className="font-semibold">{option.text} ({option.voterIds?.length || 0} votes)</h4>
+                                <div className="pl-4 mt-2 space-y-2 text-sm text-muted-foreground">
+                                    {(option.voterIds?.length || 0) > 0 ? (
+                                        option.voterIds.map(voterId => {
+                                            const voter = members.find(m => m.uid === voterId);
+                                            return <p key={voterId}>- {voter?.displayName || 'A member'}</p>
+                                        })
+                                    ) : (
+                                        <p>No votes yet.</p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+                 <DialogFooter>
+                    <Button onClick={() => onOpenChange(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null, channel: Channel | null, hasPermission: (permission: Permission) => boolean }) => {
     const { user } = useAuth();
@@ -1024,15 +1057,35 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
         const poll = msg.poll;
         const { user } = useAuth();
         const { toast } = useToast();
+        const [isViewVotesOpen, setIsViewVotesOpen] = useState(false);
+    
         const totalVotes = useMemo(() => poll?.options.reduce((acc, opt) => acc + (opt.voterIds?.length || 0), 0) || 0, [poll]);
         const userVoteIndex = useMemo(() => poll?.options.findIndex(opt => opt.voterIds?.includes(user?.uid || '')), [poll, user]);
     
         const handleVote = async (optionIndex: number) => {
             if (!user || !chamber || !channel || userVoteIndex !== -1) return;
+            
+            // Optimistic UI Update
+            setMessages(prevMessages => {
+                return prevMessages.map(m => {
+                    if (m.id === msg.id && m.poll) {
+                        const newOptions = m.poll.options.map((opt, idx) => {
+                            if (idx === optionIndex) {
+                                return { ...opt, voterIds: [...(opt.voterIds || []), user.uid] };
+                            }
+                            return opt;
+                        });
+                        return { ...m, poll: { ...m.poll, options: newOptions } };
+                    }
+                    return m;
+                });
+            });
+
             try {
                 await voteOnPoll(chamber.id, channel.id, msg.id, optionIndex, user.uid);
             } catch (error: any) {
                 toast({ variant: 'destructive', title: 'Vote Failed', description: error.message });
+                // Revert optimistic update on error by re-fetching from snapshot (auto)
             }
         };
     
@@ -1059,34 +1112,41 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                                         key={index}
                                         onClick={() => handleVote(index)}
                                         className={cn(
-                                            "w-full text-left p-2 rounded-lg border-2 transition-all",
+                                            "w-full text-left p-2 rounded-lg border-2 transition-all relative overflow-hidden",
                                             userVoteIndex !== -1 ? "cursor-default" : "hover:border-primary/50",
                                             hasVotedForThis ? "border-primary bg-primary/10" : "border-border"
                                         )}
                                         disabled={userVoteIndex !== -1}
                                     >
-                                        <div className="flex justify-between items-center text-sm mb-1">
+                                        <motion.div 
+                                            className="absolute top-0 left-0 h-full bg-primary/20 -z-10"
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${percentage}%` }}
+                                            transition={{ ease: "easeInOut", duration: 0.5 }}
+                                        />
+                                        <div className="flex justify-between items-center text-sm z-10 relative">
                                             <span className="font-semibold">{option.text}</span>
-                                            <span className="font-mono">{voteCount}</span>
-                                        </div>
-                                        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                                            <motion.div
-                                                className="h-full bg-primary rounded-full"
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${percentage}%` }}
-                                                transition={{ ease: "easeInOut" }}
-                                            />
+                                            <div className="flex items-center gap-2">
+                                                {userVoteIndex !== -1 && <span className="font-mono text-xs">{percentage.toFixed(0)}%</span>}
+                                                {hasVotedForThis && <Check className="w-4 h-4 text-primary"/>}
+                                            </div>
                                         </div>
                                     </button>
                                 );
                             })}
                         </div>
-                        <p className="text-xs text-muted-foreground text-right mt-2">{totalVotes} total votes</p>
+                        <div className="flex justify-between items-center text-xs text-muted-foreground mt-3">
+                            <span>{totalVotes} total votes</span>
+                            <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setIsViewVotesOpen(true)}>
+                                View Votes
+                            </Button>
+                        </div>
                     </div>
                      <p className="text-xs text-muted-foreground mt-1 px-3">
                         {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), {addSuffix: true}) : 'sending...'}
                     </p>
                 </div>
+                {chamber && <ViewVotesDialog poll={poll} members={chamber.members} isOpen={isViewVotesOpen} onOpenChange={setIsViewVotesOpen} />}
             </div>
         );
     };
