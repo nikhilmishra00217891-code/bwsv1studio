@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -111,16 +109,23 @@ const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) =
     )
 }
 
-const ChamberList = ({ userChambers, activeChamberId, onChamberSelect, onNewClick }: { userChambers: Chamber[], activeChamberId: string | null, onChamberSelect: (id: string) => void, onNewClick: () => void }) => (
-    <div className="w-20 bg-card/50 p-3 flex flex-col items-center gap-4 border-r">
-        <Tooltip>
-            <TooltipTrigger asChild>
-                 <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center font-bold text-lg text-primary">
-                    BWS
-                </div>
-            </TooltipTrigger>
-             <TooltipContent side="right"><p>Home</p></TooltipContent>
-        </Tooltip>
+const ChamberList = ({ userChambers, activeChamberId, onChamberSelect, onNewClick, className, onClose }: { userChambers: Chamber[], activeChamberId: string | null, onChamberSelect: (id: string) => void, onNewClick: () => void, className?: string, onClose?: () => void }) => (
+    <div className={cn("w-20 bg-card/50 p-3 flex flex-col items-center gap-4 border-r", className)}>
+        <div className="flex items-center justify-between w-full">
+            <Tooltip>
+                <TooltipTrigger asChild>
+                     <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center font-bold text-lg text-primary">
+                        BWS
+                    </div>
+                </TooltipTrigger>
+                 <TooltipContent side="right"><p>Home</p></TooltipContent>
+            </Tooltip>
+            {onClose && (
+                <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden">
+                    <X />
+                </Button>
+            )}
+        </div>
         <div className="w-full h-[2px] bg-border my-2"/>
         <ScrollArea className="flex-grow w-full">
             <div className="flex flex-col items-center gap-4">
@@ -1105,7 +1110,7 @@ const ParivartanChamberPage = () => {
     const [activeChamberId, setActiveChamberId] = useState<string | null>(null);
     const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
 
-    const [isChamberListOpen, setIsChamberListOpen] = useState(false);
+    const [isChamberPanelOpen, setIsChamberPanelOpen] = useState(false);
     const [isChannelPanelOpen, setIsChannelPanelOpen] = useState(false);
     const [isMemberListOpen, setIsMemberListOpen] = useState(false);
     const [isCreateJoinDialogOpen, setIsCreateJoinDialogOpen] = useState(false);
@@ -1136,7 +1141,7 @@ const ParivartanChamberPage = () => {
     }, [user, activeChamberId, activeChannelId]);
 
     useEffect(() => {
-        const toggleChamber = () => setIsChamberListOpen(p => !p);
+        const toggleChamber = () => setIsChamberPanelOpen(p => !p);
         const toggleChannel = () => setIsChannelPanelOpen(p => !p);
         const toggleMembers = () => setIsMemberListOpen(p => !p);
         document.addEventListener('toggle-chamber-panel', toggleChamber);
@@ -1158,7 +1163,7 @@ const ParivartanChamberPage = () => {
                 setActiveChannelId(selectedChamber.channels[0]?.id || null);
             }
         }
-        setIsChamberListOpen(false);
+        setIsChamberPanelOpen(false);
         setIsCreateJoinDialogOpen(false);
     };
     
@@ -1199,61 +1204,93 @@ const ParivartanChamberPage = () => {
 
     return (
         <TooltipProvider>
-            <div className="flex h-screen bg-background text-foreground">
+            <div className="flex h-screen bg-background text-foreground overflow-hidden relative">
                 
-                {/* Mobile Chamber List Drawer */}
-                <Dialog open={isChamberListOpen} onOpenChange={setIsChamberListOpen}>
-                    <DialogContent className="p-0 w-full max-w-xs h-full left-0 top-0 translate-x-0 translate-y-0 rounded-none border-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left">
-                        <DialogHeader>
-                            <DialogTitle className="sr-only">Chamber Selection</DialogTitle>
-                        </DialogHeader>
-                        <ChamberList 
-                            userChambers={userChambers} 
-                            activeChamberId={activeChamberId} 
-                            onChamberSelect={handleChamberSelect}
-                            onNewClick={() => { setIsChamberListOpen(false); setIsCreateJoinDialogOpen(true); }}
-                         />
-                    </DialogContent>
-                </Dialog>
-
-                {/* Mobile Channel Panel Drawer */}
+                {/* Mobile Drawers */}
                 <AnimatePresence>
-                    {isChannelPanelOpen && (
-                        <motion.div 
-                            initial={{ x: "-100%" }}
-                            animate={{ x: 0 }}
-                            exit={{ x: "-100%" }}
-                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                            className="absolute inset-0 z-40 md:hidden"
-                        >
-                            <ChannelPanel 
-                                chamber={activeChamber || null}
-                                activeChannelId={activeChannelId}
-                                onChannelSelect={handleChannelSelect}
-                                hasPermission={hasPermission}
-                                className="h-full" 
-                                onClose={() => setIsChannelPanelOpen(false)}
+                    {isChamberPanelOpen && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsChamberPanelOpen(false)}
+                                className="absolute inset-0 bg-black/60 z-30 md:hidden"
                             />
-                        </motion.div>
+                            <motion.div 
+                                initial={{ x: "-100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "-100%" }}
+                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                className="absolute top-0 left-0 h-full z-40 md:hidden"
+                            >
+                                <ChamberList 
+                                    userChambers={userChambers} 
+                                    activeChamberId={activeChamberId} 
+                                    onChamberSelect={handleChamberSelect}
+                                    onNewClick={() => { setIsChamberPanelOpen(false); setIsCreateJoinDialogOpen(true); }}
+                                    className="h-full border-r"
+                                    onClose={() => setIsChamberPanelOpen(false)}
+                                />
+                            </motion.div>
+                        </>
                     )}
                 </AnimatePresence>
                 
-                {/* Mobile Member List Drawer */}
+                <AnimatePresence>
+                    {isChannelPanelOpen && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsChannelPanelOpen(false)}
+                                className="absolute inset-0 bg-black/60 z-30 md:hidden"
+                            />
+                            <motion.div 
+                                initial={{ x: "-100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "-100%" }}
+                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                className="absolute inset-0 z-40 md:hidden"
+                            >
+                                <ChannelPanel 
+                                    chamber={activeChamber || null}
+                                    activeChannelId={activeChannelId}
+                                    onChannelSelect={handleChannelSelect}
+                                    hasPermission={hasPermission}
+                                    className="h-full" 
+                                    onClose={() => setIsChannelPanelOpen(false)}
+                                />
+                            </motion.div>
+                         </>
+                    )}
+                </AnimatePresence>
+                
                 <AnimatePresence>
                      {isMemberListOpen && (
-                        <motion.div 
-                            initial={{ x: "100%" }}
-                            animate={{ x: 0 }}
-                            exit={{ x: "100%" }}
-                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                            className="absolute inset-0 z-40 md:hidden"
-                        >
-                            <MemberList 
-                                chamber={activeChamber || null}
-                                className="h-full ml-auto"
-                                onClose={() => setIsMemberListOpen(false)}
+                         <>
+                             <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsMemberListOpen(false)}
+                                className="absolute inset-0 bg-black/60 z-30 md:hidden"
                             />
-                        </motion.div>
+                            <motion.div 
+                                initial={{ x: "100%" }}
+                                animate={{ x: 0 }}
+                                exit={{ x: "100%" }}
+                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                className="absolute inset-0 z-40 md:hidden"
+                            >
+                                <MemberList 
+                                    chamber={activeChamber || null}
+                                    className="h-full ml-auto"
+                                    onClose={() => setIsMemberListOpen(false)}
+                                />
+                            </motion.div>
+                        </>
                     )}
                 </AnimatePresence>
                 
