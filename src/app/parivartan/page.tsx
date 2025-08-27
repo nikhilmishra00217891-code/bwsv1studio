@@ -1011,6 +1011,9 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
          <div className="flex-1 flex flex-col relative">
             <header className="p-4 border-b shadow-sm h-14 flex items-center justify-between z-20 bg-background">
                 <div className="flex items-center gap-2">
+                     <Button variant="ghost" size="icon" className="md:hidden" onClick={() => document.dispatchEvent(new CustomEvent('toggle-chamber-panel'))}>
+                        <Library />
+                    </Button>
                      <Button variant="ghost" size="icon" className="md:hidden" onClick={() => document.dispatchEvent(new CustomEvent('toggle-channel-panel'))}>
                         <Menu/>
                     </Button>
@@ -1133,11 +1136,14 @@ const ParivartanChamberPage = () => {
     }, [user, activeChamberId, activeChannelId]);
 
     useEffect(() => {
+        const toggleChamber = () => setIsChamberListOpen(p => !p);
         const toggleChannel = () => setIsChannelPanelOpen(p => !p);
         const toggleMembers = () => setIsMemberListOpen(p => !p);
+        document.addEventListener('toggle-chamber-panel', toggleChamber);
         document.addEventListener('toggle-channel-panel', toggleChannel);
         document.addEventListener('toggle-member-panel', toggleMembers);
         return () => {
+            document.removeEventListener('toggle-chamber-panel', toggleChamber);
             document.removeEventListener('toggle-channel-panel', toggleChannel);
             document.removeEventListener('toggle-member-panel', toggleMembers);
         }
@@ -1197,9 +1203,9 @@ const ParivartanChamberPage = () => {
                 
                 {/* Mobile Chamber List Drawer */}
                 <Dialog open={isChamberListOpen} onOpenChange={setIsChamberListOpen}>
-                    <DialogContent className="p-0 w-80 h-full max-h-screen left-0 top-0 translate-x-0 translate-y-0 rounded-none data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left">
-                        <DialogHeader>
-                            <DialogTitle className="sr-only">Chambers</DialogTitle>
+                    <DialogContent className="p-0 w-80 h-full max-h-screen left-0 top-0 translate-x-0 translate-y-0 rounded-none border-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left">
+                        <DialogHeader className="sr-only">
+                            <DialogTitle>Chambers</DialogTitle>
                         </DialogHeader>
                         <ChamberList 
                             userChambers={userChambers} 
@@ -1253,12 +1259,6 @@ const ParivartanChamberPage = () => {
                 
                 {/* Main Content */}
                 <div className="flex flex-1 overflow-hidden">
-                    <div className="flex flex-col items-center border-r bg-card/50 p-3 md:hidden">
-                        <Button variant="ghost" size="icon" onClick={() => setIsChamberListOpen(true)}>
-                            <Library />
-                        </Button>
-                    </div>
-
                     <div className="hidden md:flex">
                         <ChamberList 
                             userChambers={userChambers} 
