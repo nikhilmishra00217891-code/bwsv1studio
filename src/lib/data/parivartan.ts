@@ -21,7 +21,7 @@ import {
   arrayRemove,
   runTransaction,
 } from "firebase/firestore";
-import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission } from "@/types";
+import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission, Poll } from "@/types";
 import { PERMISSIONS } from "@/types";
 
 // --- Chamber Functions ---
@@ -372,7 +372,7 @@ export const listenForChannelMessages = (
 export const sendChannelMessage = async (
     chamberId: string,
     channelId: string,
-    messageData: Omit<ChamberMessage, 'id' | 'timestamp'>
+    messageData: Partial<ChamberMessage>
 ) => {
     const messagesCol = collection(db, `chambers/${chamberId}/channels/${channelId}/messages`);
     await addDoc(messagesCol, {
@@ -380,6 +380,34 @@ export const sendChannelMessage = async (
         timestamp: serverTimestamp()
     });
 };
+
+export const voteOnPoll = async (chamberId: string, channelId: string, messageId: string, optionIndex: number, userId: string) => {
+    const messageRef = doc(db, `chambers/${chamberId}/channels/${channelId}/messages`, messageId);
+    
+    await runTransaction(db, async (transaction) => {
+        const messageDoc = await transaction.get(messageRef);
+        if (!messageDoc.exists() || messageDoc.data().messageType !== 'poll') {
+            throw new Error("Poll not found.");
+        }
+        
+        const pollData = messageDoc.data().poll as Poll;
+        const totalVoters = new Set<string>();
+
+        // Remove user's previous vote from all options
+        pollData.options.forEach(opt => {
+            const userVoteIndex = opt.voterIds.indexOf(userId);
+            if (userVoteIndex > -1) {
+                opt.voterIds.splice(userVoteIndex, 1);
+            }
+            opt.voterIds.forEach(id => totalVoters.add(id));
+        });
+
+        // Add user's new vote
+        pollData.options[optionIndex].voterIds.push(userId);
+        
+        transaction.update(messageRef, { poll: pollData });
+    });
+}
 
 export const toggleReaction = async (
   chamberId: string,

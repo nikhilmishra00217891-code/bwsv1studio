@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight, PinOff, ChevronsDown, ChevronsUp, XCircle, Library } from 'lucide-react';
+import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight, PinOff, ChevronsDown, ChevronsUp, XCircle, Library, Paperclip, BarChart3, FolderKanban, Target, Swords } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,13 +16,15 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel, createRole, deleteRole, assignRole, transferHost, updateRolePermissions, toggleReaction, togglePinMessage } from '@/lib/data/parivartan';
-import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission } from '@/types';
+import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel, createRole, deleteRole, assignRole, transferHost, updateRolePermissions, toggleReaction, togglePinMessage, voteOnPoll } from '@/lib/data/parivartan';
+import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission, Poll, PollOption } from '@/types';
 import { PERMISSIONS } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Progress } from '@/components/ui/progress';
 
 const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) => void }) => {
     const { user, userProfile } = useAuth();
@@ -815,7 +818,7 @@ const PinnedMessagesBar = ({ pinnedMessages, isExpanded, onToggle, onPinClick }:
                                     ))
                                 ) : (
                                     <button onClick={() => onPinClick(pinnedMessages[0].id)} className="text-xs text-left w-full truncate">
-                                        <strong className="text-primary/80">{pinnedMessages[0].senderName}:</strong> <span className="text-muted-foreground line-clamp-1">{pinnedMessages[0].text}</span>
+                                        <strong className="text-primary/80">{pinnedMessages[0].senderName}:</strong> <span className="text-muted-foreground line-clamp-1">{msg.text || msg.poll?.question}</span>
                                     </button>
                                 )}
                             </motion.div>
@@ -830,6 +833,93 @@ const PinnedMessagesBar = ({ pinnedMessages, isExpanded, onToggle, onPinClick }:
     )
 }
 
+const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onSubmit: (poll: Poll) => void }) => {
+    const [question, setQuestion] = useState('');
+    const [options, setOptions] = useState<string[]>(['', '']);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setQuestion('');
+            setOptions(['', '']);
+        }
+    }, [isOpen]);
+
+    const handleOptionChange = (index: number, value: string) => {
+        const newOptions = [...options];
+        newOptions[index] = value;
+        setOptions(newOptions);
+    };
+
+    const addOption = () => {
+        if (options.length < 5) {
+            setOptions([...options, '']);
+        }
+    };
+
+    const removeOption = (index: number) => {
+        const newOptions = options.filter((_, i) => i !== index);
+        setOptions(newOptions);
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        const poll: Poll = {
+            question,
+            options: options.filter(opt => opt.trim() !== '').map(opt => ({ text: opt, voterIds: [] })),
+        };
+        onSubmit(poll);
+        setIsLoading(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create a New Poll</DialogTitle>
+                    <DialogDescription>Ask a question and let the chamber vote.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <Label htmlFor="poll-question">Poll Question</Label>
+                        <Input id="poll-question" value={question} onChange={(e) => setQuestion(e.target.value)} required />
+                    </div>
+                    <div>
+                        <Label>Options</Label>
+                        <div className="space-y-2">
+                            {options.map((option, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        value={option}
+                                        onChange={(e) => handleOptionChange(index, e.target.value)}
+                                        placeholder={`Option ${index + 1}`}
+                                        required
+                                    />
+                                    {options.length > 2 && (
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(index)} className="text-destructive">
+                                            <XCircle className="w-4 h-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        {options.length < 5 && (
+                            <Button type="button" variant="outline" size="sm" onClick={addOption} className="mt-2">
+                                <Plus className="w-4 h-4 mr-2" /> Add Option
+                            </Button>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button type="submit" disabled={isLoading}>{isLoading ? <LoaderCircle className="animate-spin" /> : "Create Poll"}</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null, channel: Channel | null, hasPermission: (permission: Permission) => boolean }) => {
     const { user } = useAuth();
@@ -842,6 +932,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
     const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
     const [isPinsExpanded, setIsPinsExpanded] = useState(false);
+    const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
     
     useEffect(() => {
         if (!chamber || !channel) {
@@ -878,7 +969,8 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
         
         setIsSending(true);
 
-        const messageData: Omit<ChamberMessage, 'id' | 'timestamp'> = {
+        const messageData: Partial<ChamberMessage> = {
+            messageType: 'text',
             text: message,
             senderId: user.uid,
             senderName: user.displayName || 'Anonymous',
@@ -889,7 +981,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
             messageData.replyTo = {
                 messageId: replyToMessage.id,
                 senderName: replyToMessage.senderName,
-                text: replyToMessage.text,
+                text: replyToMessage.text || replyToMessage.poll?.question || '',
             };
         }
 
@@ -904,12 +996,110 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
         }
     };
     
+    const handleSendPoll = async (poll: Poll) => {
+         if (!user || !chamber || !channel) return;
+        
+        setIsSending(true);
+
+        const messageData: Partial<ChamberMessage> = {
+            messageType: 'poll',
+            poll,
+            senderId: user.uid,
+            senderName: user.displayName || 'Anonymous',
+            senderAvatar: user.photoURL || '',
+        };
+
+        try {
+            await sendChannelMessage(chamber.id, channel.id, messageData);
+            setIsCreatePollOpen(false);
+        } catch (error) {
+            console.error("Failed to send poll", error);
+        } finally {
+            setIsSending(false);
+        }
+    };
+    
+    const PollMessage = ({ msg, isSelf }: { msg: ChamberMessage, isSelf: boolean }) => {
+        const poll = msg.poll;
+        const { user } = useAuth();
+        const { toast } = useToast();
+        const totalVotes = useMemo(() => poll?.options.reduce((acc, opt) => acc + opt.voterIds.length, 0) || 0, [poll]);
+        const userVoteIndex = useMemo(() => poll?.options.findIndex(opt => opt.voterIds.includes(user?.uid || '')), [poll, user]);
+
+        const handleVote = async (optionIndex: number) => {
+            if (!user || !chamber || !channel || userVoteIndex === optionIndex) return;
+            try {
+                await voteOnPoll(chamber.id, channel.id, msg.id, optionIndex, user.uid);
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Vote Failed', description: error.message });
+            }
+        };
+
+        if (!poll) return null;
+
+        return (
+             <div ref={(el) => { if (el) messageRefs.current.set(msg.id, el); }} className={cn("flex items-start gap-3", isSelf ? "flex-row-reverse" : "flex-row")}>
+                {!isSelf && (
+                    <Avatar className="w-8 h-8">
+                        <AvatarImage src={msg.senderAvatar}/>
+                        <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                )}
+                 <div className={cn("flex flex-col group max-w-md", isSelf ? "items-end" : "items-start")}>
+                    {!isSelf && <p className="text-xs text-muted-foreground font-bold px-3">{msg.senderName}</p>}
+                     <div className={cn(
+                        "p-4 rounded-xl w-full", 
+                        isSelf ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none"
+                    )}>
+                        <p className="font-bold mb-4">{poll.question}</p>
+                        <div className="space-y-3">
+                            {poll.options.map((option, index) => {
+                                const voteCount = option.voterIds.length;
+                                const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
+                                const hasVotedForThis = userVoteIndex === index;
+
+                                return (
+                                    <button key={index} onClick={() => handleVote(index)} className="w-full text-left" disabled={userVoteIndex !== undefined}>
+                                        <div className="text-sm flex justify-between mb-1 font-semibold">
+                                            <span>{option.text}</span>
+                                            <span>{voteCount} vote(s)</span>
+                                        </div>
+                                        <div className="relative h-8 w-full rounded-full border border-primary/20 overflow-hidden bg-primary/10">
+                                            <motion.div
+                                                className="absolute top-0 left-0 h-full bg-primary/50"
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${percentage}%` }}
+                                                transition={{ ease: "easeInOut" }}
+                                            />
+                                            <div className="absolute inset-0 flex items-center px-3 justify-between">
+                                                <span className={cn(hasVotedForThis ? "font-bold" : "")}>{hasVotedForThis && <Check className="inline-block w-4 h-4 mr-1"/>} {option.text}</span>
+                                                <span className="font-mono text-xs">{percentage.toFixed(0)}%</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <p className="text-xs text-right mt-2 opacity-70">{totalVotes} total votes</p>
+                    </div>
+                     <p className="text-xs text-muted-foreground mt-1 px-3">
+                        {msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), {addSuffix: true}) : 'sending...'}
+                    </p>
+                 </div>
+             </div>
+        );
+    };
+    
     const MessageBubble = ({ msg, isSelf }: { msg: ChamberMessage, isSelf: boolean }) => {
         const { toast } = useToast();
         const [isExpanded, setIsExpanded] = useState(false);
+        
+        if (msg.messageType === 'poll') {
+            return <PollMessage msg={msg} isSelf={isSelf} />
+        }
 
-        const lines = msg.text.split('\n');
-        const isLongMessage = lines.length > 5 || msg.text.length > 350;
+        const lines = msg.text?.split('\n') || [];
+        const isLongMessage = lines.length > 5 || (msg.text?.length || 0) > 350;
         const canExpand = isLongMessage && !isExpanded;
         const canCollapse = isLongMessage && isExpanded;
 
@@ -1012,6 +1202,45 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
     
     const pinnedMessages = messages.filter(m => m.isPinned).sort((a, b) => (b.pinnedAt?.toMillis() || 0) - (a.pinnedAt?.toMillis() || 0));
 
+    const AttachmentMenu = () => {
+        const actionItems = [
+            { icon: BarChart3, label: 'Poll', onClick: () => setIsCreatePollOpen(true) },
+            { icon: FolderKanban, label: 'Drive', onClick: () => {} },
+            { icon: Target, label: 'Focus Zone', onClick: () => {} },
+            { icon: Swords, label: 'Warzone', onClick: () => {} },
+        ];
+
+        return (
+            <Popover>
+                <PopoverTrigger asChild>
+                     <Button type="button" size="icon" variant="ghost" className="text-muted-foreground absolute left-2 top-1/2 -translate-y-1/2"><Paperclip /></Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" side="top" align="start">
+                    <div className="grid grid-cols-4 gap-2">
+                        {actionItems.map(item => (
+                            <Tooltip key={item.label}>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className="flex flex-col h-20 w-20 items-center justify-center gap-1"
+                                        onClick={item.onClick}
+                                        disabled={item.label !== 'Poll'} // Disable non-functional buttons
+                                    >
+                                        <div className={cn("p-3 rounded-full", item.label === 'Poll' ? "bg-blue-500/20 text-blue-500" : "bg-muted text-muted-foreground")}>
+                                            <item.icon className="w-6 h-6" />
+                                        </div>
+                                        <span className="text-xs">{item.label}</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{item.label}</p></TooltipContent>
+                            </Tooltip>
+                        ))}
+                    </div>
+                </PopoverContent>
+            </Popover>
+        )
+    }
+
     return (
          <div className="flex-1 flex flex-col relative">
             <header className="p-4 border-b shadow-sm h-14 flex items-center justify-between z-20 bg-background">
@@ -1059,7 +1288,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                      {replyToMessage && (
                         <div className="bg-muted px-3 py-2 rounded-t-lg text-sm text-muted-foreground flex justify-between items-center">
                              <button onClick={() => scrollToMessage(replyToMessage.id)} className="line-clamp-1 text-left flex-grow hover:text-foreground">
-                                Replying to <span className="font-semibold text-foreground">{replyToMessage.senderName}</span>: <span className="italic">"{replyToMessage.text}"</span>
+                                Replying to <span className="font-semibold text-foreground">{replyToMessage.senderName}</span>: <span className="italic">"{replyToMessage.text || replyToMessage.poll?.question}"</span>
                              </button>
                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyToMessage(null)}>
                                 <XCircle className="w-4 h-4"/>
@@ -1067,9 +1296,10 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                         </div>
                      )}
                      <div className="relative">
+                        <AttachmentMenu />
                         <Input
                             placeholder={`Message in π ${channel?.name || '...'}`}
-                            className={cn("h-12 pr-24 bg-card/50", replyToMessage && "rounded-t-none")}
+                            className={cn("h-12 pl-12 pr-24 bg-card/50", replyToMessage && "rounded-t-none")}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             disabled={!channel || isSending}
@@ -1090,6 +1320,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                     </div>
                 </form>
             </div>
+            <CreatePollDialog isOpen={isCreatePollOpen} onOpenChange={setIsCreatePollOpen} onSubmit={handleSendPoll} />
         </div>
     )
 }

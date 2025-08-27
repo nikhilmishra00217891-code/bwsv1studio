@@ -172,9 +172,21 @@ export interface ReplyInfo {
     text: string;
 }
 
+export interface PollOption {
+    text: string;
+    voterIds: string[];
+}
+
+export interface Poll {
+    question: string;
+    options: PollOption[];
+}
+
 export interface ChamberMessage {
     id: string;
-    text: string;
+    messageType: 'text' | 'poll';
+    text?: string;
+    poll?: Poll;
     senderId: string;
     senderName: string;
     senderAvatar: string;
