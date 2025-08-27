@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogOverlay } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogOverlay } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -1203,8 +1203,10 @@ const ParivartanChamberPage = () => {
                 
                 {/* Mobile Chamber List Drawer */}
                 <Dialog open={isChamberListOpen} onOpenChange={setIsChamberListOpen}>
-                    <DialogContent className="p-0 w-full max-w-xs h-full max-h-screen left-0 top-0 translate-x-0 translate-y-0 rounded-none border-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left">
-                         <DialogOverlay />
+                    <DialogContent className="p-0 w-full max-w-xs h-full left-0 top-0 translate-x-0 translate-y-0 rounded-none border-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left">
+                        <DialogHeader>
+                            <DialogTitle className="sr-only">Chamber Selection</DialogTitle>
+                        </DialogHeader>
                         <ChamberList 
                             userChambers={userChambers} 
                             activeChamberId={activeChamberId} 
