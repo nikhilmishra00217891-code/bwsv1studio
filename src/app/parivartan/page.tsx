@@ -219,7 +219,7 @@ const ChannelDialog = ({
             <div>
                 <Label htmlFor="channelName">Channel Name</Label>
                 <div className="flex items-center gap-2">
-                     <Hash className="w-5 h-5 text-muted-foreground" />
+                     <span className="text-muted-foreground">π</span>
                     <Input id="channelName" value={name} onChange={(e) => setName(e.target.value)} required autoFocus/>
                 </div>
             </div>
@@ -539,7 +539,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                                         activeChannelId === channel.id && "bg-primary/10 text-primary"
                                     )}
                                 >
-                                    <Hash className="w-5 h-5" /> {channel.name}
+                                    <span className="text-muted-foreground">π</span> {channel.name}
                                 </button>
                                 {hasPermission('manageChannels') && (
                                     <DropdownMenu>
@@ -1022,7 +1022,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                      <Button variant="ghost" size="icon" className="md:hidden" onClick={() => document.dispatchEvent(new CustomEvent('toggle-channel-panel'))}>
                         <Menu/>
                     </Button>
-                    <Hash className="w-5 h-5 text-muted-foreground" />
+                    <span className="w-5 h-5 text-muted-foreground flex items-center justify-center font-bold">π</span>
                     <h2 className="font-bold text-lg">{channel?.name || 'Select a channel'}</h2>
                 </div>
                 <p className="text-sm text-muted-foreground hidden lg:block truncate">{chamber?.description || 'The general chat channel for our Parivaar.'}</p>
@@ -1041,7 +1041,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                         ))}
                         {!messages.length && channel && (
                             <div className="text-center text-muted-foreground py-16">
-                                <p>This is the beginning of the #{channel?.name} channel.</p>
+                                <p>This is the beginning of the π {channel?.name} channel.</p>
                                 <p className="text-sm">Be the first to say something!</p>
                             </div>
                         )}
@@ -1068,7 +1068,7 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                      )}
                      <div className="relative">
                         <Input
-                            placeholder={`Message #${channel?.name || '...'}`}
+                            placeholder={`Message in π ${channel?.name || '...'}`}
                             className={cn("h-12 pr-24 bg-card/50", replyToMessage && "rounded-t-none")}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}

@@ -35,6 +35,11 @@ const generateChamberId = (length: number = 8): string => {
     return result;
 }
 
+const generateChannelId = (name: string): string => {
+    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+
 /**
  * Creates a new Parivartan Chamber (study group).
  */
@@ -48,12 +53,11 @@ export const createChamber = async (
   const chamberId = generateChamberId();
   const chamberRef = doc(db, "chambers", chamberId);
 
-  const defaultChannel: Channel = {
-    id: "kuch-bhi-pucho",
-    name: "kuch-bhi-pucho",
-    type: "text",
-    pinnedMessageIds: [],
-  };
+  const defaultChannels: Channel[] = [
+    { id: generateChannelId("Parivartan Talks"), name: "Parivartan Talks", type: 'text', pinnedMessageIds: [] },
+    { id: generateChannelId("Notes"), name: "Notes", type: 'text', pinnedMessageIds: [] },
+    { id: generateChannelId("Doubt Solving Hub"), name: "Doubt Solving Hub", type: 'text', pinnedMessageIds: [] },
+  ];
   
   const adminRole: Role = {
       id: 'admin',
@@ -81,7 +85,7 @@ export const createChamber = async (
     creatorId,
     members: [creatorMember],
     memberIds: [creatorId],
-    channels: [defaultChannel],
+    channels: defaultChannels,
     roles: [adminRole, memberRole],
     createdAt: serverTimestamp() as any,
   };
@@ -264,15 +268,11 @@ export const deleteChamber = async (chamberId: string) => {
 
 // --- Channel & Message Functions ---
 
-const generateChannelId = (name: string): string => {
-    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-}
-
 export const createChannel = async (chamberId: string, channelName: string) => {
     const chamberRef = doc(db, 'chambers', chamberId);
     const newChannel: Channel = {
         id: generateChannelId(channelName),
-        name: channelName.toLowerCase(),
+        name: channelName,
         type: 'text',
         pinnedMessageIds: [],
     };
@@ -309,7 +309,7 @@ export const updateChannel = async (chamberId: string, channelId: string, newNam
         const channelIndex = channels.findIndex(c => c.id === channelId);
         if (channelIndex === -1) throw new Error("Channel not found.");
         
-        channels[channelIndex].name = newName.toLowerCase();
+        channels[channelIndex].name = newName;
         // It's often better not to change the ID, as it can break references.
         // If IDs must change, it requires migrating message subcollections, which is complex for the client.
         // channels[channelIndex].id = newChannelId;
