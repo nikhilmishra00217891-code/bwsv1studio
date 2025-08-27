@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight, PinOff, ChevronsDown, ChevronsUp, XCircle } from 'lucide-react';
+import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight, PinOff, ChevronsDown, ChevronsUp, XCircle, Library } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -111,8 +111,8 @@ const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) =
     )
 }
 
-const ChamberList = ({ userChambers, activeChamberId, onChamberSelect }: { userChambers: Chamber[], activeChamberId: string | null, onChamberSelect: (id: string) => void }) => (
-    <div className="w-20 bg-card/50 p-3 flex-col items-center gap-4 border-r hidden md:flex">
+const ChamberList = ({ userChambers, activeChamberId, onChamberSelect, onNewClick }: { userChambers: Chamber[], activeChamberId: string | null, onChamberSelect: (id: string) => void, onNewClick: () => void }) => (
+    <div className="w-20 bg-card/50 p-3 flex flex-col items-center gap-4 border-r">
         <Tooltip>
             <TooltipTrigger asChild>
                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center font-bold text-lg text-primary">
@@ -122,38 +122,39 @@ const ChamberList = ({ userChambers, activeChamberId, onChamberSelect }: { userC
              <TooltipContent side="right"><p>Home</p></TooltipContent>
         </Tooltip>
         <div className="w-full h-[2px] bg-border my-2"/>
-        {userChambers.map(chamber => (
-             <Tooltip key={chamber.id}>
+        <ScrollArea className="flex-grow w-full">
+            <div className="flex flex-col items-center gap-4">
+                {userChambers.map(chamber => (
+                    <Tooltip key={chamber.id}>
+                        <TooltipTrigger asChild>
+                            <button 
+                                onClick={() => onChamberSelect(chamber.id)}
+                                className={cn("w-14 h-14 rounded-full bg-muted flex items-center justify-center font-bold text-lg transition-all hover:rounded-2xl shrink-0",
+                                    activeChamberId === chamber.id && "rounded-2xl bg-primary text-primary-foreground"
+                                )}
+                            >
+                                {chamber.name.charAt(0)}
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <p>{chamber.name}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                ))}
+            </div>
+        </ScrollArea>
+        <div className="mt-auto">
+             <Tooltip>
                 <TooltipTrigger asChild>
-                    <button 
-                        onClick={() => onChamberSelect(chamber.id)}
-                        className={cn("w-14 h-14 rounded-full bg-muted flex items-center justify-center font-bold text-lg transition-all hover:rounded-2xl",
-                            activeChamberId === chamber.id && "rounded-2xl bg-primary text-primary-foreground"
-                        )}
-                    >
-                        {chamber.name.charAt(0)}
+                    <button onClick={onNewClick} className="w-14 h-14 rounded-full bg-muted flex items-center justify-center transition-all hover:bg-primary hover:rounded-2xl">
+                        <Plus />
                     </button>
                 </TooltipTrigger>
-                <TooltipContent side="right">
-                    <p>{chamber.name}</p>
-                </TooltipContent>
-            </Tooltip>
-        ))}
-        <Dialog>
-            <Tooltip>
-                <DialogTrigger asChild>
-                    <TooltipTrigger asChild>
-                        <button className="w-14 h-14 rounded-full bg-muted flex items-center justify-center transition-all hover:bg-primary hover:rounded-2xl">
-                            <Plus />
-                        </button>
-                    </TooltipTrigger>
-                </DialogTrigger>
                 <TooltipContent side="right">
                     <p>Create or Join a Chamber</p>
                 </TooltipContent>
             </Tooltip>
-            <CreateJoinDialog onChamberSelect={onChamberSelect} />
-        </Dialog>
+        </div>
     </div>
 );
 
@@ -331,58 +332,59 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                 <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
+                <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
                     <DialogHeader className="p-6 pb-4 border-b shrink-0">
                         <DialogTitle>Chamber Settings: {chamber.name}</DialogTitle>
                         <DialogDescription>Manage roles and members for your chamber.</DialogDescription>
                     </DialogHeader>
-
                     <div className="flex-grow p-6 overflow-y-auto min-h-0">
-                        <div className="grid md:grid-cols-2 gap-6 h-full">
-                            {/* Roles Section */}
-                            <Card className="flex flex-col">
-                                <CardHeader><CardTitle className="text-lg">Roles</CardTitle></CardHeader>
-                                <CardContent className="flex-grow flex flex-col gap-2">
-                                    <div className="space-y-2 flex-grow overflow-y-auto">
-                                        {(chamber.roles || []).map(role => (
-                                            <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted group">
-                                                <span className="font-semibold">{role.name}</span>
-                                                <div className="flex items-center">
-                                                    {(role.name !== 'Admin' && role.name !== 'Member') && (
-                                                        <>
-                                                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => setEditingRole(role)}>
-                                                                <PencilRuler className="w-4 h-4"/>
-                                                            </Button>
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
-                                                                        <Trash2 className="w-4 h-4 text-destructive"/>
-                                                                    </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader><AlertDialogTitle>Delete "{role.name}"?</AlertDialogTitle></AlertDialogHeader>
-                                                                    <AlertDialogDescription>This will remove the role from all members who have it. This cannot be undone.</AlertDialogDescription>
-                                                                    <AlertDialogFooter>
-                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={() => handleDeleteRole(role.id)} className={buttonVariants({variant: "destructive"})}>Delete Role</AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </>
-                                                    )}
+                        <div className="grid md:grid-cols-2 gap-8 h-full">
+                             <div className="flex flex-col gap-8">
+                                {/* Roles Section */}
+                                <Card className="flex flex-col">
+                                    <CardHeader><CardTitle className="text-lg">Roles</CardTitle></CardHeader>
+                                    <CardContent className="flex-grow flex flex-col gap-2">
+                                        <div className="space-y-2 flex-grow overflow-y-auto">
+                                            {(chamber.roles || []).map(role => (
+                                                <div key={role.id} className="flex items-center justify-between p-2 rounded-md bg-muted group">
+                                                    <span className="font-semibold">{role.name}</span>
+                                                    <div className="flex items-center">
+                                                        {(role.name !== 'Admin' && role.name !== 'Member') && (
+                                                            <>
+                                                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => setEditingRole(role)}>
+                                                                    <PencilRuler className="w-4 h-4"/>
+                                                                </Button>
+                                                                <AlertDialog>
+                                                                    <AlertDialogTrigger asChild>
+                                                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
+                                                                            <Trash2 className="w-4 h-4 text-destructive"/>
+                                                                        </Button>
+                                                                    </AlertDialogTrigger>
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader><AlertDialogTitle>Delete "{role.name}"?</AlertDialogTitle></AlertDialogHeader>
+                                                                        <AlertDialogDescription>This will remove the role from all members who have it. This cannot be undone.</AlertDialogDescription>
+                                                                        <AlertDialogFooter>
+                                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                            <AlertDialogAction onClick={() => handleDeleteRole(role.id)} className={buttonVariants({variant: "destructive"})}>Delete Role</AlertDialogAction>
+                                                                        </AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-2 pt-4 border-t mt-auto shrink-0">
-                                        <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
-                                        <Button onClick={handleCreateRole} disabled={isCreatingRole}>
-                                            {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                             {/* Members Section */}
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2 pt-4 border-t mt-auto shrink-0">
+                                            <Input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name..."/>
+                                            <Button onClick={handleCreateRole} disabled={isCreatingRole}>
+                                                {isCreatingRole ? <LoaderCircle className="animate-spin"/> : <Plus />}
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                            {/* Members Section */}
                             <Card className="flex flex-col">
                                 <CardHeader><CardTitle className="text-lg">Members ({chamber.members.length})</CardTitle></CardHeader>
                                 <CardContent className="flex-grow overflow-y-auto">
@@ -420,7 +422,6 @@ const ChamberSettingsDialog = ({ chamber, isOpen, onOpenChange }: { chamber: Cha
                             </Card>
                         </div>
                     </div>
-                    
                     <DialogFooter className="p-6 pt-4 border-t shrink-0">
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
                     </DialogFooter>
@@ -493,7 +494,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
 
      return (
         <>
-            <div className={cn("bg-card flex-col border-r w-full max-w-xs md:w-64 md:flex", className)}>
+            <div className={cn("bg-card flex flex-col border-r w-full max-w-xs md:w-64", className)}>
                 <header className="p-4 font-bold text-lg border-b shadow-sm h-16 flex items-center justify-between">
                     <span className="truncate">{chamber?.name || 'Parivartan'}</span>
                     <div className="flex items-center">
@@ -664,6 +665,23 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
             {chamber && isAbsoluteAdmin && (
                 <ChamberSettingsDialog chamber={chamber} isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
             )}
+            {chamber && (
+                 <ChannelDialog
+                    mode="create"
+                    chamberId={chamber.id}
+                    isOpen={isCreateChannelOpen}
+                    onOpenChange={setIsCreateChannelOpen}
+                />
+            )}
+             {chamber && channelToEdit && (
+                <ChannelDialog
+                    mode="rename"
+                    chamberId={chamber.id}
+                    channel={channelToEdit}
+                    isOpen={isRenameChannelOpen}
+                    onOpenChange={setIsRenameChannelOpen}
+                />
+            )}
         </>
     )
 };
@@ -705,7 +723,7 @@ const MemberList = ({ chamber, className, onClose }: { chamber: Chamber | null, 
     if (!chamber || !user) return null;
 
     return (
-        <div className={cn("bg-card flex-col p-4 border-l w-full max-w-xs md:w-64 md:flex", className)}>
+        <div className={cn("bg-card flex flex-col p-4 border-l w-full max-w-xs md:w-64", className)}>
              <header className="font-bold text-muted-foreground uppercase text-sm mb-4 flex items-center justify-between">
                 <h3>Online — {chamber.members.length}</h3>
                  {onClose && (
@@ -996,10 +1014,10 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
     return (
          <div className="flex-1 flex flex-col relative">
             <header className="p-4 border-b shadow-sm h-14 flex items-center justify-between z-20 bg-background">
-                 <Button variant="ghost" size="icon" className="md:hidden" onClick={() => document.dispatchEvent(new CustomEvent('toggle-channel-panel'))}>
-                    <Menu/>
-                </Button>
                 <div className="flex items-center gap-2">
+                     <Button variant="ghost" size="icon" className="md:hidden" onClick={() => document.dispatchEvent(new CustomEvent('toggle-channel-panel'))}>
+                        <Menu/>
+                    </Button>
                     <Hash className="w-5 h-5 text-muted-foreground" />
                     <h2 className="font-bold text-lg">{channel?.name || 'Select a channel'}</h2>
                 </div>
@@ -1088,6 +1106,7 @@ const ParivartanChamberPage = () => {
     const [activeChamberId, setActiveChamberId] = useState<string | null>(null);
     const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
 
+    const [isChamberListOpen, setIsChamberListOpen] = useState(false);
     const [isChannelPanelOpen, setIsChannelPanelOpen] = useState(false);
     const [isMemberListOpen, setIsMemberListOpen] = useState(false);
     const [isCreateJoinDialogOpen, setIsCreateJoinDialogOpen] = useState(false);
@@ -1137,7 +1156,7 @@ const ParivartanChamberPage = () => {
                 setActiveChannelId(selectedChamber.channels[0]?.id || null);
             }
         }
-        setIsChannelPanelOpen(false);
+        setIsChamberListOpen(false);
         setIsCreateJoinDialogOpen(false);
     };
     
@@ -1179,83 +1198,100 @@ const ParivartanChamberPage = () => {
     return (
         <TooltipProvider>
             <div className="flex h-screen bg-background text-foreground">
-                <div className="flex w-20 flex-col items-center gap-4 border-r bg-card/50 p-3 md:hidden">
-                    {userChambers.map(chamber => (
-                         <Tooltip key={chamber.id}>
-                            <TooltipTrigger asChild>
-                                <button 
-                                    onClick={() => handleChamberSelect(chamber.id)}
-                                    className={cn("w-14 h-14 rounded-full bg-muted flex items-center justify-center font-bold text-lg transition-all hover:rounded-2xl",
-                                        activeChamberId === chamber.id && "rounded-2xl bg-primary text-primary-foreground"
-                                    )}
-                                >
-                                    {chamber.name.charAt(0)}
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">
-                                <p>{chamber.name}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    ))}
-                     <Dialog>
-                        <Tooltip>
-                            <DialogTrigger asChild>
-                                <TooltipTrigger asChild>
-                                    <button className="w-14 h-14 rounded-full bg-muted flex items-center justify-center transition-all hover:bg-primary hover:rounded-2xl">
-                                        <Plus />
-                                    </button>
-                                </TooltipTrigger>
-                            </DialogTrigger>
-                            <TooltipContent side="right">
-                                <p>Create or Join a Chamber</p>
-                            </TooltipContent>
-                        </Tooltip>
-                        <CreateJoinDialog onChamberSelect={handleChamberSelect} />
-                     </Dialog>
-                </div>
-                <ChamberList userChambers={userChambers} activeChamberId={activeChamberId} onChamberSelect={handleChamberSelect} />
+                
+                {/* Mobile Chamber List Drawer */}
+                <Dialog open={isChamberListOpen} onOpenChange={setIsChamberListOpen}>
+                    <DialogContent className="p-0 w-80 h-full max-h-screen left-0 top-0 translate-x-0 translate-y-0 rounded-none data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left">
+                        <ChamberList 
+                            userChambers={userChambers} 
+                            activeChamberId={activeChamberId} 
+                            onChamberSelect={handleChamberSelect}
+                            onNewClick={() => { setIsChamberListOpen(false); setIsCreateJoinDialogOpen(true); }}
+                         />
+                    </DialogContent>
+                </Dialog>
 
+                {/* Mobile Channel Panel Drawer */}
+                <AnimatePresence>
+                    {isChannelPanelOpen && (
+                        <motion.div 
+                            initial={{ x: "-100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "-100%" }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            className="absolute inset-0 z-40 md:hidden"
+                        >
+                            <ChannelPanel 
+                                chamber={activeChamber || null}
+                                activeChannelId={activeChannelId}
+                                onChannelSelect={handleChannelSelect}
+                                hasPermission={hasPermission}
+                                className="h-full" 
+                                onClose={() => setIsChannelPanelOpen(false)}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                
+                {/* Mobile Member List Drawer */}
+                <AnimatePresence>
+                     {isMemberListOpen && (
+                        <motion.div 
+                            initial={{ x: "100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "100%" }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            className="absolute inset-0 z-40 md:hidden"
+                        >
+                            <MemberList 
+                                chamber={activeChamber || null}
+                                className="h-full ml-auto"
+                                onClose={() => setIsMemberListOpen(false)}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                
+                {/* Main Content */}
+                <div className="flex flex-1 overflow-hidden">
+                    <div className="flex flex-col items-center border-r bg-card/50 p-3 md:hidden">
+                        <Button variant="ghost" size="icon" onClick={() => setIsChamberListOpen(true)}>
+                            <Library />
+                        </Button>
+                    </div>
 
-                {isChannelPanelOpen && (
-                    <div className="absolute inset-0 z-40 md:hidden">
-                        <ChannelPanel 
-                            chamber={activeChamber || null}
-                            activeChannelId={activeChannelId}
-                            onChannelSelect={handleChannelSelect}
-                            hasPermission={hasPermission}
-                            className="h-full animate-in slide-in-from-left duration-300" 
-                            onClose={() => setIsChannelPanelOpen(false)}
+                    <div className="hidden md:flex">
+                        <ChamberList 
+                            userChambers={userChambers} 
+                            activeChamberId={activeChamberId} 
+                            onChamberSelect={handleChamberSelect}
+                            onNewClick={() => setIsCreateJoinDialogOpen(true)}
                         />
                     </div>
-                )}
-                {isMemberListOpen && (
-                    <div className="absolute inset-0 z-40 md:hidden">
-                         <MemberList 
-                            chamber={activeChamber || null}
-                            className="h-full animate-in slide-in-from-right duration-300 ml-auto"
-                            onClose={() => setIsMemberListOpen(false)}
-                         />
-                    </div>
-                )}
 
-                {activeChamber ? (
-                  <>
-                    <ChannelPanel 
-                        chamber={activeChamber}
-                        activeChannelId={activeChannelId}
-                        onChannelSelect={handleChannelSelect}
-                        hasPermission={hasPermission}
-                        className="hidden md:flex" 
-                    />
-                    <ChatArea chamber={activeChamber} channel={activeChannel || null} hasPermission={hasPermission} />
-                    <MemberList chamber={activeChamber} className="hidden md:flex" />
-                  </>
-                ) : (
-                     <Dialog open={isCreateJoinDialogOpen} onOpenChange={setIsCreateJoinDialogOpen}>
-                        <WelcomePlaceholder onActionClick={() => setIsCreateJoinDialogOpen(true)} />
-                        <CreateJoinDialog onChamberSelect={handleChamberSelect} />
-                     </Dialog>
-                )}
+                    {activeChamber ? (
+                      <div className="flex flex-1 min-w-0">
+                        <div className="hidden md:flex">
+                           <ChannelPanel 
+                                chamber={activeChamber}
+                                activeChannelId={activeChannelId}
+                                onChannelSelect={handleChannelSelect}
+                                hasPermission={hasPermission}
+                            />
+                        </div>
+                        <ChatArea chamber={activeChamber} channel={activeChannel || null} hasPermission={hasPermission} />
+                        <div className="hidden md:flex">
+                           <MemberList chamber={activeChamber} />
+                        </div>
+                      </div>
+                    ) : (
+                         <WelcomePlaceholder onActionClick={() => setIsCreateJoinDialogOpen(true)} />
+                    )}
+                </div>
+
+                <Dialog open={isCreateJoinDialogOpen} onOpenChange={setIsCreateJoinDialogOpen}>
+                    <CreateJoinDialog onChamberSelect={handleChamberSelect} />
+                </Dialog>
             </div>
         </TooltipProvider>
     );
