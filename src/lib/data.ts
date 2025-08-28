@@ -67,16 +67,26 @@ export const getCourseById = async (id: string): Promise<Course | null> => {
 
 export const createCourse = async (): Promise<string> => {
   const coursesCol = collection(db, "courses");
-  const newCourseData = {
+  const newCourseData: Partial<Course> = {
     title: "New Course Title",
     category: "New Category",
     description: "A brief description of your new course. You can edit this later.",
     mentorName: "Faculty Name",
     thumbnail: "https://placehold.co/600x400.png",
     isFree: false,
-    isActive: false, // Default to inactive
+    isActive: false,
     lessons: [],
+    subjects: [
+        {
+            id: 'sub1', title: 'New Subject', chapters: [
+                {id: 'chap1', title: 'New Chapter', lessons: [
+                    {id: 'less1', title: 'New Lesson', type: 'video', duration: '10:00', content: ''}
+                ]}
+            ]
+        }
+    ],
     youtubeLink: "",
+    courseCompletionPercent: 0,
   };
   const docRef = await addDoc(coursesCol, newCourseData);
   return docRef.id;
@@ -146,7 +156,8 @@ export const getEnrolledCoursesForUser = async (userId: string): Promise<Enrolle
 
       const enrolledCoursesPromises = enrolledCourseIds.map(async (courseId) => {
         const courseData = await getCourseById(courseId);
-        const progress = userData.progress?.[courseId] || 0;
+        const progressData = userData.progress?.[courseId];
+        const progress = progressData?.progress || 0;
         if(courseData) {
           return {
             courseId: courseData.id,
@@ -236,19 +247,6 @@ export const incrementFocusStats = async (userId: string, minutes: number) => {
     });
 };
 
-
-export const isFaculty = async (userId: string): Promise<boolean> => {
-  if (!userId) return false;
-  try {
-    const userDocRef = doc(db, 'users', userId);
-    const userDocSnap = await getDoc(userDocRef);
-    return userDocSnap.exists() && userDocSnap.data().role === 'faculty';
-  } catch (error) {
-    console.error("Error checking faculty status:", error);
-    return false;
-  }
-}
-
 export const getAllUsers = async (): Promise<UserProfile[]> => {
     const usersCol = collection(db, "users");
     const q = query(usersCol, orderBy("displayName"));
@@ -273,3 +271,20 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
         return serializedData as UserProfile;
     });
 };
+
+export async function isUserEnrolled(userId: string, courseId: string): Promise<boolean> {
+  const userDoc = await getDoc(doc(db, 'users', userId));
+  if (!userDoc.exists()) {
+    return false;
+  }
+  const enrolledCourses = userDoc.data()?.enrolledCourses || [];
+  return enrolledCourses.includes(courseId);
+}
+
+export async function getEnrolledCourseData(userId: string, courseId: string): Promise<{progress: number, completedLessons: string[]} | null> {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (!userDoc.exists()) {
+        return null;
+    }
+    return userDoc.data()?.progress?.[courseId] || { progress: 0, completedLessons: [] };
+}

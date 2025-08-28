@@ -13,7 +13,6 @@ import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { ThemeToggle } from "./ThemeToggle";
 import { useEffect, useState } from "react";
-import { isFaculty as checkIsFaculty } from "@/lib/data";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useEditMode } from "./EditModeProvider";
@@ -115,19 +114,18 @@ export default function Header() {
 
   useEffect(() => {
     setIsClient(true);
-    const checkFacultyStatus = async () => {
-      if (user) {
-        const facultyStatus = await checkIsFaculty(user.uid);
-        setIsFaculty(facultyStatus);
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      if (userProfile) {
+        setIsFaculty(userProfile.role === 'faculty');
       } else {
         setIsFaculty(false);
         setIsEditMode(false); // Ensure edit mode is off if user logs out
       }
-    };
-    if(isClient){
-      checkFacultyStatus();
     }
-  }, [user, isClient, setIsEditMode]);
+  }, [user, userProfile, loading, setIsEditMode]);
 
 
   const handleLogout = async () => {
@@ -273,5 +271,3 @@ export default function Header() {
     </header>
   );
 }
-
-    

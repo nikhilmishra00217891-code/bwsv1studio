@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getEnrolledCoursesForUser, isFaculty } from "@/lib/data";
+import { getEnrolledCoursesForUser } from "@/lib/data";
 import type { EnrolledCourse } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,14 +60,13 @@ export default function DashboardPage() {
       const fetchCourses = async () => {
         setDataLoading(true);
         const courses = await getEnrolledCoursesForUser(user.uid);
-        const facultyStatus = await isFaculty(user.uid);
+        setUserIsFaculty(userProfile?.role === 'faculty');
         setEnrolledCourses(courses);
-        setUserIsFaculty(facultyStatus);
         setDataLoading(false);
       };
       fetchCourses();
     }
-  }, [user]);
+  }, [user, userProfile]);
   
   const handleLogout = async () => {
     await signOut(auth);
@@ -122,7 +121,7 @@ export default function DashboardPage() {
                           <span className="text-sm font-semibold text-muted-foreground">{course.progress}%</span>
                         </div>
                         <Button asChild className="w-full sm:w-auto self-start">
-                          <Link href={`/courses/${course.courseId}`}>
+                          <Link href={`/courses/${course.courseId}/learnzone`}>
                               <Play className="mr-2 h-4 w-4" /> Continue Learning
                           </Link>
                         </Button>

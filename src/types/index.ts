@@ -1,13 +1,25 @@
 
-
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
 export interface Lesson {
   id: string;
   title: string;
-  type: 'video' | 'pdf';
+  type: 'video' | 'pdf' | 'quiz' | 'dpp' | 'pyq';
   duration: string; 
+  content: string; // URL for video/pdf, or JSON for quiz
+}
+
+export interface Chapter {
+    id: string;
+    title: string;
+    lessons: Lesson[];
+}
+
+export interface Subject {
+    id: string;
+    title: string;
+    chapters: Chapter[];
 }
 
 export interface Course {
@@ -18,9 +30,11 @@ export interface Course {
   thumbnail: string;
   mentorName: string;
   description: string;
-  lessons: Lesson[];
+  lessons: Lesson[]; // Kept for backward compatibility if needed, but new structure is subjects
+  subjects: Subject[];
   isActive: boolean;
   youtubeLink?: string;
+  courseCompletionPercent?: number; // Faculty-driven progress
 }
 
 export interface Testimonial {
@@ -97,7 +111,10 @@ export interface UserProfile {
     };
     enrolledCourses?: string[];
     chambers?: string[]; // IDs of chambers the user is in
-    progress?: { [courseId: string]: number };
+    progress?: { [courseId: string]: {
+        progress: number;
+        completedLessons: string[];
+    } };
     focusStats?: FocusStats;
 }
 

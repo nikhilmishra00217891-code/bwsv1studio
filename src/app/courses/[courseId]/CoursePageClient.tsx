@@ -3,9 +3,10 @@
 
 import type { Course } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, updateCourse, isFaculty as checkIsFaculty } from "@/lib/data";
+import { deleteCourse, updateCourse } from "@/lib/data";
+import { isFaculty as checkIsFaculty } from "@/lib/firebase/server";
 import { saveTextContent, getTextContent } from "@/lib/data/content";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -48,6 +49,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EditableText } from "@/components/common/EditableText";
 import { useEditMode } from "@/components/common/EditModeProvider";
+import Link from "next/link";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
@@ -157,7 +159,7 @@ const CourseEditDialog = ({
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
   const [course, setCourse] = useState(initialCourse);
   const [textContent, setTextContent] = useState<Record<string, string>>({});
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
   const { isEditMode, setIsEditMode } = useEditMode();
   const { toast } = useToast();
@@ -173,18 +175,8 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   }, [initialCourse]);
 
   useEffect(() => {
-    const checkFaculty = async () => {
-      if (user) {
-        const facultyStatus = await checkIsFaculty(user.uid);
-        setIsCurrentUserFaculty(facultyStatus);
-      } else {
-        setIsCurrentUserFaculty(false);
-      }
-    };
-    if (!authLoading) {
-      checkFaculty();
-    }
-  }, [user, authLoading]);
+    setIsCurrentUserFaculty(userProfile?.role === 'faculty');
+  }, [userProfile]);
   
   const handleSaveText = async (field: keyof Course | string, value: any) => {
     const contentId = `course_${field}_${course.id}`;
@@ -284,6 +276,12 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     </Card>
   );
 
+  const totalLessons = useMemo(() => {
+    return course.subjects?.reduce((acc, subject) => 
+        acc + subject.chapters.reduce((chAcc, chapter) => chAcc + chapter.lessons.length, 0), 
+    0) || 0;
+  }, [course.subjects]);
+
   const CourseHero = ({ course }: { course: Course }) => (
     <div className="relative bg-card/50 rounded-xl overflow-hidden p-6 md:p-8 border border-primary/20 shadow-lg shadow-primary/10">
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10"></div>
@@ -302,7 +300,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total</span></div>
-                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{course.lessons.length} lessons</span></div>
+                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{totalLessons} lessons</span></div>
                 <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <span>25% complete</span></div>
             </div>
         </div>
@@ -403,8 +401,10 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           </div>
           <div className="space-y-4">
               <CourseVideo course={course} />
-               <Button size="lg" className="w-full !h-14 text-lg">
-                  <PlayCircle className="mr-2 h-6 w-6" /> Enroll Now
+               <Button size="lg" className="w-full !h-14 text-lg" asChild>
+                  <Link href={`/courses/${course.id}/learnzone`}>
+                    <PlayCircle className="mr-2 h-6 w-6" /> Go to Course
+                  </Link>
               </Button>
           </div>
       </div>
@@ -414,19 +414,18 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       <div>
           <h3 className="text-2xl font-bold font-headline mb-4">Course Curriculum</h3>
           <Accordion type="multiple" className="w-full space-y-3">
-               {course.lessons && course.lessons.length > 0 ? (
-                course.lessons.map((lesson, index) => (
-                  <AccordionItem value={`item-${index}`} key={lesson.id} className="bg-card rounded-lg border-b-0">
+               {course.subjects && course.subjects.length > 0 ? (
+                course.subjects.map((subject, index) => (
+                  <AccordionItem value={`item-${index}`} key={subject.id} className="bg-card rounded-lg border-b-0">
                       <AccordionTrigger className="p-4 hover:no-underline font-semibold">
-                           <div className="flex items-center gap-4">
-                              {lesson.type === 'video' ? <Video className="w-5 h-5 text-primary" /> : <BookText className="w-5 h-5 text-primary" />}
-                              <span>{lesson.title}</span>
-                           </div>
+                          {subject.title}
                       </AccordionTrigger>
                       <AccordionContent className="p-4 pt-0">
                           <p className="text-muted-foreground mb-4">Lesson content details would go here. A short description of what this lesson covers.</p>
-                          <Button variant="secondary">
-                              <PlayCircle className="mr-2 h-4 w-4" /> Go to Lesson
+                          <Button variant="secondary" asChild>
+                              <Link href={`/courses/${course.id}/learnzone`}>
+                                <PlayCircle className="mr-2 h-4 w-4" /> Go to Subject
+                              </Link>
                           </Button>
                       </AccordionContent>
                   </AccordionItem>
