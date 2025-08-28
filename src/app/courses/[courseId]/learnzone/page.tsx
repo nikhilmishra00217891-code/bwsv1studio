@@ -7,8 +7,22 @@ import CourseLearnClient from "./CourseLearnClient";
 export default async function CourseLearnPage({ params }: { params: { courseId: string } }) {
     const { user } = await getSession();
     
+    // If the user session isn't immediately available on the server,
+    // we'll let the client-side AuthProvider handle loading and redirects.
+    // This prevents the redirect loop.
     if (!user) {
-        redirect(`/login?redirect=/courses/${params.courseId}/learnzone`);
+        const course = await getCourseById(params.courseId);
+        if (!course) {
+            notFound();
+        }
+        // Render the client component in a loading state. 
+        // It will handle the redirect to login if the user is truly not authenticated.
+        return (
+             <CourseLearnClient 
+                course={course}
+                userProgress={0}
+            />
+        )
     }
 
     const course = await getCourseById(params.courseId);
@@ -20,8 +34,7 @@ export default async function CourseLearnPage({ params }: { params: { courseId: 
     const userIsFaculty = await isFaculty(user.uid);
 
     if (!isEnrolled && !userIsFaculty) {
-        // You could redirect to the main course page with a message
-        // For now, we'll just show not found to prevent access.
+        // This is a true authorization failure, so we can deny access.
         notFound();
     }
 
