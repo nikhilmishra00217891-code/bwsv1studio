@@ -270,6 +270,31 @@ export const startQuiz = async (roomId: string): Promise<void> => {
     });
 }
 
+export const resetRoomForNewQuiz = async (roomId: string): Promise<void> => {
+    const roomRef = doc(db, "rooms", roomId);
+    const roomSnap = await getDoc(roomRef);
+
+    if (!roomSnap.exists()) {
+        throw new Error("Room not found.");
+    }
+    const roomData = roomSnap.data() as Room;
+
+    const resetMembers = roomData.members.map(member => ({
+        ...member,
+        status: 'playing',
+        answers: {},
+        score: 0,
+        accuracy: 0,
+        timeTaken: 0,
+    }));
+    
+    await updateDoc(roomRef, {
+        status: 'waiting',
+        quizData: null,
+        members: resetMembers,
+    });
+};
+
 
 export const listenForRoomUpdates = (
   roomId: string,

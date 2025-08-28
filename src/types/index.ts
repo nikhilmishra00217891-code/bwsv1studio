@@ -107,7 +107,7 @@ export interface RoomMember {
     photoURL: string;
     avatar: string;
     roleIds?: string[];
-    status?: 'playing' | 'finished';
+    status?: 'waiting' | 'playing' | 'finished';
     // Inspectable properties
     focusStats?: FocusStats;
     currentCycle?: 'work' | 'break' | 'transition';
@@ -133,7 +133,7 @@ export interface Room {
     members: RoomMember[];
     createdAt: Timestamp;
     quizSettings?: GenerateQuizInput;
-    quizData?: GenerateQuizOutput;
+    quizData?: GenerateQuizOutput | null;
 }
 
 export interface Question {

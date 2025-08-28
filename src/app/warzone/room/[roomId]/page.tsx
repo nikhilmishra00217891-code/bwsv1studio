@@ -46,7 +46,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useParams, useRouter } from 'next/navigation';
 import type { Room, RoomMember, ChatMessage, Question } from '@/types';
-import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateQuizSettings, startQuiz, submitAnswer, finishQuizForMember } from '@/lib/data/rooms';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateQuizSettings, startQuiz, submitAnswer, finishQuizForMember, resetRoomForNewQuiz } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -448,9 +448,29 @@ const AnswerReviewDialog = ({ member, quizData }: { member: RoomMember, quizData
 
 const QuizResults = ({ room }: { room: Room }) => {
     const router = useRouter();
+    const { toast } = useToast();
+    const { user } = useAuth();
+    const [isResetting, setIsResetting] = useState(false);
+
     const sortedMembers = useMemo(() => {
         return [...room.members].sort((a,b) => (b.score ?? 0) - (a.score ?? 0) || (a.timeTaken ?? Infinity) - (b.timeTaken ?? Infinity));
     }, [room.members]);
+
+    const handlePlayAgain = async () => {
+        if (room.hostId !== user?.uid) {
+            toast({ variant: 'destructive', title: "Only the host can start a new war." });
+            return;
+        }
+        setIsResetting(true);
+        try {
+            await resetRoomForNewQuiz(room.id);
+            router.refresh();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Failed to reset room", description: error.message });
+        } finally {
+            setIsResetting(false);
+        }
+    }
 
     return (
         <div className="bg-card/50 min-h-screen flex items-center justify-center p-4">
@@ -511,8 +531,8 @@ const QuizResults = ({ room }: { room: Room }) => {
                             </TableBody>
                         </Table>
                          <div className="text-center mt-6">
-                            <Button size="lg" onClick={() => router.refresh()}>
-                                Another War ? <ChevronsRight className="ml-2 h-5 w-5" />
+                            <Button size="lg" onClick={handlePlayAgain} disabled={isResetting || user?.uid !== room.hostId}>
+                                {isResetting ? <LoaderCircle className="animate-spin" /> : <>Another War ? <ChevronsRight className="ml-2 h-5 w-5" /></>}
                             </Button>
                         </div>
                     </CardContent>
@@ -580,7 +600,7 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
 
     const handlePrevious = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev + 1);
+            setCurrentQuestionIndex(prev => prev - 1);
         }
     };
     
