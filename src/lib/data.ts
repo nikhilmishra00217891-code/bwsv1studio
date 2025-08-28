@@ -68,24 +68,38 @@ export const getCourseById = async (id: string): Promise<Course | null> => {
 export const createCourse = async (): Promise<string> => {
   const coursesCol = collection(db, "courses");
   const newCourseData: Partial<Course> = {
-    title: "New Course Title",
-    category: "New Category",
-    description: "A brief description of your new course. You can edit this later.",
-    mentorName: "Faculty Name",
-    thumbnail: "https://placehold.co/600x400.png",
-    isFree: false,
-    isActive: false,
-    lessons: [],
+    title: "Introduction to Physics",
+    category: "Science",
+    description: "A comprehensive introduction to the fundamental principles of physics, from classical mechanics to modern physics. This course is designed to build a strong foundation for competitive exams like JEE and NEET.",
+    mentorName: "Prof. S. Verma",
+    thumbnail: "https://placehold.co/600x400.png?text=Physics",
+    isFree: true,
+    isActive: true,
+    lessons: [], // Legacy, can be removed later
     subjects: [
         {
-            id: 'sub1', title: 'New Subject', chapters: [
-                {id: 'chap1', title: 'New Chapter', lessons: [
-                    {id: 'less1', title: 'New Lesson', type: 'video', duration: '10:00', content: ''}
+            id: 'classical_mechanics', title: 'Classical Mechanics', chapters: [
+                {id: 'kinematics', title: 'Kinematics', lessons: [
+                    {id: 'km1', title: 'Introduction to Motion', type: 'video', duration: '12:35', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "## Key Concepts\n\n*   **Displacement:** Change in position. It's a vector quantity.\n*   **Velocity:** Rate of change of displacement. `v = Δx / Δt`\n*   **Acceleration:** Rate of change of velocity. `a = Δv / Δt`"},
+                    {id: 'km2', title: 'Equations of Motion', type: 'video', duration: '15:50', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "## The Three Equations\n\n1.  `v = u + at`\n2.  `s = ut + (1/2)at^2`\n3.  `v^2 = u^2 + 2as`\n\nThese are applicable only for constant acceleration."}
+                ]},
+                {id: 'newtons_laws', title: 'Newton\'s Laws of Motion', lessons: [
+                    {id: 'nlm1', title: 'First Law (Inertia)', type: 'video', duration: '10:02', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "An object remains at rest or in uniform motion unless acted upon by a net external force."},
+                    {id: 'nlm2', title: 'Second Law (F=ma)', type: 'video', duration: '18:11', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "The acceleration of an object is directly proportional to the net force acting on it and inversely proportional to its mass."},
+                    {id: 'nlm3', title: 'Third Law (Action-Reaction)', type: 'video', duration: '09:45', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "For every action, there is an equal and opposite reaction."}
+                ]}
+            ]
+        },
+        {
+            id: 'electromagnetism', title: 'Electromagnetism', chapters: [
+                {id: 'electric_charges', title: 'Electric Charges and Fields', lessons: [
+                    {id: 'ecf1', title: 'Coulomb\'s Law', type: 'video', duration: '22:00', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "Describes the electrostatic force between two charged particles."},
+                    {id: 'ecf2', title: 'Electric Field', type: 'video', duration: '19:30', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "The region around a charged particle where a force would be exerted on other charged particles."}
                 ]}
             ]
         }
     ],
-    youtubeLink: "",
+    youtubeLink: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     courseCompletionPercent: 0,
   };
   const docRef = await addDoc(coursesCol, newCourseData);
