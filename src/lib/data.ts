@@ -75,7 +75,6 @@ export const createCourse = async (): Promise<string> => {
     thumbnail: "https://placehold.co/600x400.png?text=Physics",
     isFree: true,
     isActive: true,
-    lessons: [], // Legacy, can be removed later
     subjects: [
         {
             id: 'classical_mechanics', title: 'Classical Mechanics', chapters: [
