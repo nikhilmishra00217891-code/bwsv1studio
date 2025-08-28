@@ -8,6 +8,7 @@ export interface Lesson {
   type: 'video' | 'pdf' | 'quiz' | 'dpp' | 'pyq';
   duration: string; 
   content: string; // URL for video/pdf, or JSON for quiz
+  notes?: string;
 }
 
 export interface Chapter {

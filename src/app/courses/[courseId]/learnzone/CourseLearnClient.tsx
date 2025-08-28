@@ -21,6 +21,13 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
     // Fallback if no subjects or lessons exist yet.
     const firstLesson = course.subjects?.[0]?.chapters?.[0]?.lessons?.[0];
 
+    const handleStartFirstLesson = () => {
+        if (firstLesson) {
+            setSelectedLesson(firstLesson);
+        }
+    };
+
+
     return (
         <div className="flex h-screen bg-card/50">
             <CourseSidebar 
@@ -69,8 +76,8 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 <div className="flex-grow overflow-y-auto">
                    <CourseContent
                         lesson={selectedLesson}
-                        welcomeMessage={!firstLesson}
-                        onStartFirstLesson={() => firstLesson && setSelectedLesson(firstLesson)}
+                        welcomeMessage={!selectedLesson}
+                        onStartFirstLesson={handleStartFirstLesson}
                         courseTitle={course.title}
                     />
                 </div>
