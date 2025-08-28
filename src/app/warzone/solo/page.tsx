@@ -16,7 +16,6 @@ interface Answer {
   questionIndex: number;
   answer: string;
   isCorrect: boolean;
-  timeTaken: number;
 }
 
 const QuizUI = () => {
@@ -26,11 +25,12 @@ const QuizUI = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
-  const [userAnswers, setUserAnswers] = useState<Answer[]>([]);
-  const [totalTime, setTotalTime] = useState(0);
+  const [userAnswers, setUserAnswers] = useState<{[key: number]: string}>({});
   const [isReviewMode, setIsReviewMode] = useState(false);
+  
+  const [timer, setTimer] = useState(0);
+  const [isQuizFinished, setIsQuizFinished] = useState(false);
+
 
   const quizParams: GenerateQuizInput = useMemo(() => ({
     topic: searchParams.get('topic') || '',
@@ -60,16 +60,13 @@ const QuizUI = () => {
   }, [quizParams]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTotalTime(prevTime => prevTime + 1);
+    if (isQuizFinished) return;
+    const interval = setInterval(() => {
+      setTimer(prevTime => prevTime + 1);
     }, 1000);
 
-    if (currentQuestionIndex >= (quizData?.questions.length || 0)) {
-        clearInterval(timer);
-    }
-
-    return () => clearInterval(timer);
-  }, [currentQuestionIndex, quizData]);
+    return () => clearInterval(interval);
+  }, [isQuizFinished]);
 
   if (loading) {
     return (
@@ -100,31 +97,28 @@ const QuizUI = () => {
   if (!quizData || quizData.questions.length === 0) {
     return <p>No quiz data available.</p>;
   }
-  
-  const isQuizFinished = currentQuestionIndex >= quizData.questions.length;
-  
+
   const handleAnswer = (answer: string) => {
-    if (isAnswered) return;
-
-    setSelectedAnswer(answer);
-    setIsAnswered(true);
-
-    const isCorrect = answer === quizData.questions[currentQuestionIndex].correctAnswer;
-    setUserAnswers(prev => [...prev, {
-      questionIndex: currentQuestionIndex,
-      answer,
-      isCorrect,
-      timeTaken: 0, // Placeholder
-    }]);
-
-    setTimeout(() => {
-        setIsAnswered(false);
-        setSelectedAnswer(null);
-        setCurrentQuestionIndex(prev => prev + 1);
-    }, 1500); // Wait 1.5 seconds before moving to the next question
+    setUserAnswers(prev => ({...prev, [currentQuestionIndex]: answer}));
   };
 
-  const AnswerReview = ({ question, userAnswer }: { question: Question, userAnswer: Answer }) => {
+  const handleNext = () => {
+    if (currentQuestionIndex < quizData.questions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+    }
+  }
+
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+        setCurrentQuestionIndex(prev => prev - 1);
+    }
+  }
+
+  const handleFinish = () => {
+    setIsQuizFinished(true);
+  }
+  
+  const AnswerReview = ({ question, userAnswerText }: { question: Question, userAnswerText: string }) => {
     return (
         <Card className="mb-4">
             <CardHeader>
@@ -134,7 +128,7 @@ const QuizUI = () => {
                 <div className="space-y-2">
                     {question.options.map((option, i) => {
                         const isCorrect = option === question.correctAnswer;
-                        const isUserChoice = option === userAnswer.answer;
+                        const isUserChoice = option === userAnswerText;
                         return (
                             <div key={i} className={cn(
                                 "flex items-center gap-3 p-3 rounded-md border",
@@ -160,7 +154,12 @@ const QuizUI = () => {
 };
 
   if (isQuizFinished) {
-    const score = userAnswers.filter(a => a.isCorrect).length;
+    let score = 0;
+    quizData.questions.forEach((q, index) => {
+        if(userAnswers[index] === q.correctAnswer) {
+            score++;
+        }
+    });
     const accuracy = (score / quizData.questions.length) * 100;
     
      return (
@@ -184,7 +183,7 @@ const QuizUI = () => {
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Time</p>
-                                <p className="text-3xl font-bold">{totalTime}s</p>
+                                <p className="text-3xl font-bold">{timer}s</p>
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -206,7 +205,7 @@ const QuizUI = () => {
                         <p className="text-muted-foreground">Learn from your battle to win the war.</p>
                     </div>
                     {quizData.questions.map((q, index) => (
-                        <AnswerReview key={index} question={q} userAnswer={userAnswers[index]} />
+                        <AnswerReview key={index} question={q} userAnswerText={userAnswers[index]} />
                     ))}
                     <Button size="lg" className="mt-8" onClick={() => setIsReviewMode(false)}>
                         Back to Summary
@@ -219,6 +218,7 @@ const QuizUI = () => {
 
   const currentQuestion = quizData.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / quizData.questions.length) * 100;
+  const selectedAnswer = userAnswers[currentQuestionIndex];
 
 
   return (
@@ -235,33 +235,41 @@ const QuizUI = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {currentQuestion.options.map((option, index) => {
-                const isCorrect = option === currentQuestion.correctAnswer;
                 const isSelected = selectedAnswer === option;
                 
                 return (
                     <Button
                         key={index}
                         onClick={() => handleAnswer(option)}
-                        disabled={isAnswered}
+                        variant="outline"
                         className={cn(
-                            "h-auto py-4 text-base justify-start transition-all duration-300 transform-gpu",
-                            isAnswered && isCorrect && "bg-green-600 hover:bg-green-600 text-white animate-pop-in",
-                            isAnswered && isSelected && !isCorrect && "bg-destructive hover:bg-destructive text-white animate-[shake_0.82s_cubic-bezier(.36,.07,.19,.97)_both]",
-                            isAnswered && !isSelected && !isCorrect && "opacity-50"
+                            "h-auto py-4 text-base justify-start transition-all duration-200",
+                             isSelected && "ring-2 ring-primary bg-primary/10"
                         )}
                     >
-                         <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 shrink-0",
-                             isAnswered && isCorrect && "bg-white border-green-600",
-                             isAnswered && isSelected && !isCorrect && "bg-white border-destructive",
-                             !isAnswered && "border-primary/50"
+                         <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 shrink-0 border-primary/50",
+                             isSelected && "bg-primary border-primary"
                          )}>
-                             {isAnswered && isCorrect && <ShieldCheck className="w-4 h-4 text-green-600"/>}
-                             {isAnswered && isSelected && !isCorrect && <ShieldX className="w-4 h-4 text-destructive"/>}
+                             {isSelected && <Check className="w-4 h-4 text-primary-foreground"/>}
                          </div>
                         <span className="text-left">{option}</span>
                     </Button>
                 )
             })}
+        </div>
+        <div className="flex justify-between items-center mt-6">
+            <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
+                Previous
+            </Button>
+            {currentQuestionIndex === quizData.questions.length - 1 ? (
+                <Button onClick={handleFinish} className="bg-green-600 hover:bg-green-700">
+                    Finish Battle <ChevronsRight className="ml-2 h-4 w-4"/>
+                </Button>
+            ) : (
+                <Button onClick={handleNext}>
+                    Next <ArrowRight className="ml-2 h-4 w-4"/>
+                </Button>
+            )}
         </div>
     </div>
   );

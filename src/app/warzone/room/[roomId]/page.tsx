@@ -526,31 +526,26 @@ const QuizResults = ({ room }: { room: Room }) => {
 const MultiplayerQuizUI = ({ room }: { room: Room }) => {
     const { user } = useAuth();
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-    const [isAnswered, setIsAnswered] = useState(false);
+    const [userAnswers, setUserAnswers] = useState<{[key: number]: string}>({});
     const startTimeRef = useRef<number>(Date.now());
     const { toast } = useToast();
     
     const quizData = room.quizData!;
     const quizParams = room.quizSettings!;
-    const currentUser = room.members.find(m => m.uid === user?.uid);
     
     useEffect(() => {
-        const userAnswer = currentUser?.answers?.[currentQuestionIndex];
-        if (userAnswer) {
-            setSelectedAnswer(userAnswer);
-            setIsAnswered(true);
-        } else {
-            setSelectedAnswer(null);
-            setIsAnswered(false);
+        if (user) {
+            const currentUser = room.members.find(m => m.uid === user.uid);
+            setUserAnswers(currentUser?.answers || {});
         }
-    }, [currentQuestionIndex, currentUser?.answers]);
+    }, [room.members, user]);
 
     const handleAnswer = (answer: string) => {
-        if (isAnswered || !user) return;
+        if (!user) return;
+        
+        const newAnswers = {...userAnswers, [currentQuestionIndex]: answer};
+        setUserAnswers(newAnswers);
 
-        setSelectedAnswer(answer);
-        setIsAnswered(true);
         submitAnswer(room.id, user.uid, currentQuestionIndex, answer);
     };
 
@@ -561,13 +556,13 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
     };
 
     const handleFinish = async () => {
-        if (!user || !currentUser?.answers) return;
+        if (!user || !userAnswers) return;
 
         const timeTaken = Math.round((Date.now() - startTimeRef.current) / 1000);
         
         let score = 0;
         quizData.questions.forEach((q, index) => {
-            if (currentUser.answers?.[index] === q.correctAnswer) {
+            if (userAnswers[index] === q.correctAnswer) {
                 score++;
             }
         });
@@ -594,6 +589,7 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
     
     const currentQuestion = quizData.questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / quizData.questions.length) * 100;
+    const selectedAnswer = userAnswers[currentQuestionIndex];
 
     return (
         <div className="bg-card/50 min-h-screen flex items-center justify-center">
@@ -611,27 +607,21 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
                  <Card>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
                         {currentQuestion.options.map((option, index) => {
-                             const isCorrect = option === currentQuestion.correctAnswer;
                              const isSelected = selectedAnswer === option;
                             return (
                                 <Button
                                     key={index}
                                     onClick={() => handleAnswer(option)}
-                                    disabled={isAnswered}
                                     className={cn(
                                         "h-auto py-4 text-base justify-start transition-all duration-300 transform-gpu",
-                                        isAnswered && isCorrect && "bg-green-600 hover:bg-green-600 text-white animate-pop-in",
-                                        isAnswered && isSelected && !isCorrect && "bg-destructive hover:bg-destructive text-white animate-[shake_0.82s_cubic-bezier(.36,.07,.19,.97)_both]",
-                                        isAnswered && !isSelected && !isCorrect && "opacity-50"
+                                        isSelected && "ring-2 ring-primary bg-primary/10"
                                     )}
+                                    variant="outline"
                                 >
-                                    <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 shrink-0",
-                                        isAnswered && isCorrect && "bg-white border-green-600",
-                                        isAnswered && isSelected && !isCorrect && "bg-white border-destructive",
-                                        !isAnswered && "border-primary/50"
+                                    <div className={cn("w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 shrink-0 border-primary/50",
+                                        isSelected && "bg-primary border-primary"
                                     )}>
-                                        {isAnswered && isCorrect && <ShieldCheck className="w-4 h-4 text-green-600"/>}
-                                        {isAnswered && isSelected && !isCorrect && <ShieldX className="w-4 h-4 text-destructive"/>}
+                                        {isSelected && <Check className="w-4 h-4 text-primary-foreground"/>}
                                     </div>
                                     <span className="text-left">{option}</span>
                                 </Button>
@@ -644,11 +634,11 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
                         <ArrowLeft className="mr-2 h-4 w-4"/> Previous
                      </Button>
                       {currentQuestionIndex === quizData.questions.length - 1 ? (
-                         <Button onClick={handleFinish} disabled={!isAnswered} className="bg-green-600 hover:bg-green-700">
+                         <Button onClick={handleFinish} className="bg-green-600 hover:bg-green-700">
                            Finish Battle <ChevronsRight className="ml-2 h-4 w-4"/>
                          </Button>
                       ) : (
-                         <Button onClick={handleNext} disabled={!isAnswered}>
+                         <Button onClick={handleNext}>
                             Next <ArrowRight className="ml-2 h-4 w-4"/>
                          </Button>
                       )}
