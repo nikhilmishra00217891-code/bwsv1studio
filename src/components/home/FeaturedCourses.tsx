@@ -1,4 +1,6 @@
 
+"use client";
+
 import { getFeaturedCourses } from "@/lib/data";
 import { getTextContent } from "@/lib/data/content";
 import type { Course } from "@/types";
@@ -7,9 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LoaderCircle } from "lucide-react";
 import { EditableText } from "../common/EditableText";
 import { EditableImage } from "../common/EditableImage";
+import { useEffect, useState } from "react";
 
 const CourseCard = ({ course }: { course: Course }) => {
   return (
@@ -46,9 +49,33 @@ const CourseCard = ({ course }: { course: Course }) => {
   );
 };
 
-export default async function FeaturedCourses() {
-  const courses = await getFeaturedCourses();
-  const textContent = await getTextContent();
+export default function FeaturedCourses() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [textContent, setTextContent] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+        const [courseData, contentData] = await Promise.all([
+            getFeaturedCourses(),
+            getTextContent()
+        ]);
+        setCourses(courseData);
+        setTextContent(contentData);
+        setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+      return (
+        <section className="py-20 md:py-28 bg-background">
+            <div className="container mx-auto px-6 text-center">
+                <LoaderCircle className="w-12 h-12 animate-spin text-primary mx-auto" />
+            </div>
+        </section>
+      )
+  }
 
   return (
     <section className="py-20 md:py-28 bg-background">

@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { listenForCourses, createCourse, isFaculty } from "@/lib/data";
+import { listenForCourses, createCourse } from "@/lib/data";
 import { CourseList } from "@/components/courses/CourseList";
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ export default function CoursesPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [userIsFaculty, setUserIsFaculty] = useState(false);
 
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -26,32 +26,21 @@ export default function CoursesPage() {
     // This effect handles data fetching and real-time updates.
     if (authLoading) return;
 
-    let unsubscribe: () => void;
+    const facultyStatus = !!user && userProfile?.role === 'faculty';
+    setUserIsFaculty(facultyStatus);
 
-    const checkFacultyAndSubscribe = async () => {
-      let facultyStatus = false;
-      if (user) {
-        facultyStatus = await isFaculty(user.uid);
-      }
-      setUserIsFaculty(facultyStatus);
-
-      // Now that faculty status is known, subscribe to the appropriate course list.
-      // This listener will handle the initial fetch and subsequent real-time updates.
-      unsubscribe = listenForCourses(facultyStatus, (fetchedCourses) => {
-        setCourses(fetchedCourses);
-        setLoading(false);
-      });
-    };
-
-    checkFacultyAndSubscribe();
+    // Now that faculty status is known, subscribe to the appropriate course list.
+    // This listener will handle the initial fetch and subsequent real-time updates.
+    const unsubscribe = listenForCourses(facultyStatus, (fetchedCourses) => {
+      setCourses(fetchedCourses);
+      setLoading(false);
+    });
 
     // Cleanup subscription on component unmount
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      unsubscribe();
     };
-  }, [user, authLoading]);
+  }, [user, userProfile, authLoading]);
 
   const handleCreateCourse = async () => {
     setIsCreating(true);
