@@ -2,7 +2,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { generateQuiz, type GenerateQuizInput, type GenerateQuizOutput, type Question } from '@/ai/flows/generate-quiz-flow';
 import { useEffect, useState, useMemo } from 'react';
 import { LoaderCircle, ShieldCheck, ShieldX, Clock, Trophy, ArrowRight, BookOpen, Check, X, ChevronsRight } from 'lucide-react';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
 
 interface Answer {
   questionIndex: number;
@@ -60,13 +61,13 @@ const QuizUI = () => {
   }, [quizParams]);
 
   useEffect(() => {
-    if (isQuizFinished) return;
+    if (isQuizFinished || !quizData) return;
     const interval = setInterval(() => {
       setTimer(prevTime => prevTime + 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isQuizFinished]);
+  }, [isQuizFinished, quizData]);
 
   if (loading) {
     return (
@@ -86,7 +87,7 @@ const QuizUI = () => {
             <CardContent>
                 <p>{error}</p>
                 <Button asChild className="mt-4">
-                    <a href="/warzone">Try Again</a>
+                    <a href="/warzone/setup">Try Again</a>
                 </Button>
             </CardContent>
         </Card>
@@ -188,9 +189,9 @@ const QuizUI = () => {
                         </div>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                              <Button size="lg" asChild>
-                                <a href="/warzone">
-                                    New Warzone <ChevronsRight className="ml-2 h-5 w-5" />
-                                </a>
+                                <Link href={`/warzone/setup?topic=${encodeURIComponent(quizParams.topic)}&grade=${encodeURIComponent(quizParams.grade)}&difficulty=${quizParams.difficulty}&numQuestions=${quizParams.numberOfQuestions}`}>
+                                    Another War ? <ChevronsRight className="ml-2 h-5 w-5" />
+                                </Link>
                             </Button>
                              <Button size="lg" variant="outline" onClick={() => setIsReviewMode(true)}>
                                 <BookOpen className="mr-2 h-5 w-5" /> Review Answers

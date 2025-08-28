@@ -447,6 +447,7 @@ const AnswerReviewDialog = ({ member, quizData }: { member: RoomMember, quizData
 
 
 const QuizResults = ({ room }: { room: Room }) => {
+    const router = useRouter();
     const sortedMembers = useMemo(() => {
         return [...room.members].sort((a,b) => (b.score ?? 0) - (a.score ?? 0) || (a.timeTaken ?? Infinity) - (b.timeTaken ?? Infinity));
     }, [room.members]);
@@ -510,10 +511,8 @@ const QuizResults = ({ room }: { room: Room }) => {
                             </TableBody>
                         </Table>
                          <div className="text-center mt-6">
-                            <Button size="lg" asChild>
-                                <Link href="/warzone/lobby">
-                                    New Warzone <ChevronsRight className="ml-2 h-5 w-5" />
-                                </Link>
+                            <Button size="lg" onClick={() => router.refresh()}>
+                                Another War ? <ChevronsRight className="ml-2 h-5 w-5" />
                             </Button>
                         </div>
                     </CardContent>
@@ -556,8 +555,7 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
     };
 
     const handleFinish = async () => {
-        if (!user || !userAnswers) return;
-
+        if (!user) return;
         const timeTaken = Math.round((Date.now() - startTimeRef.current) / 1000);
         
         let score = 0;
@@ -566,7 +564,6 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
                 score++;
             }
         });
-        
         const accuracy = (score / quizData.questions.length) * 100;
         
         try {
@@ -583,7 +580,7 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
 
     const handlePrevious = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            setCurrentQuestionIndex(prev => prev + 1);
         }
     };
     
