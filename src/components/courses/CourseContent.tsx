@@ -1,18 +1,19 @@
 
 "use client";
 
-import type { Lesson } from "@/types";
+import type { Course, Lesson, Subject } from "@/types";
 import { Button } from "../ui/button";
-import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp } from 'lucide-react';
+import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight } from 'lucide-react';
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
-import { Card } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
+import { Progress } from "../ui/progress";
+import { cn } from "@/lib/utils";
 
 interface CourseContentProps {
-    lesson: Lesson | null;
-    welcomeMessage?: boolean;
-    onStartFirstLesson?: () => void;
-    courseTitle?: string;
+    course: Course;
+    selectedLesson: Lesson | null;
+    onSubjectSelect: (subject: Subject) => void;
 }
 
 const extractYouTubeVideoId = (url: string): string | null => {
@@ -29,7 +30,6 @@ const extractYouTubeVideoId = (url: string): string | null => {
             }
         }
     } catch (e) {
-        // Fallback for invalid URLs, just in case
         const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
         const match = url.match(regex);
         return match ? match[1] : null;
@@ -37,23 +37,49 @@ const extractYouTubeVideoId = (url: string): string | null => {
     return null;
 }
 
-
-const WelcomeScreen = ({ onStartFirstLesson, courseTitle }: { onStartFirstLesson?: () => void, courseTitle?: string }) => (
-    <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <div className="bg-primary/10 p-5 rounded-full mb-6">
-            <BookOpen className="w-16 h-16 text-primary" />
+const SubjectGrid = ({ course, onSubjectSelect }: { course: Course, onSubjectSelect: (subject: Subject) => void }) => {
+    return (
+        <div className="p-4 md:p-8">
+            <div className="mb-8">
+                <h1 className="text-4xl font-bold font-headline">{course.title}</h1>
+                <p className="text-muted-foreground mt-1">Select a subject to begin your learning journey.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {(course.subjects || []).map(subject => (
+                    <button 
+                        key={subject.id}
+                        onClick={() => onSubjectSelect(subject)}
+                        className="text-left w-full"
+                    >
+                        <Card className="hover:border-primary/50 hover:shadow-lg transition-all duration-200 h-full">
+                             <CardContent className="p-4 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                     <div className={cn(
+                                        "w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg text-primary bg-primary/10 shrink-0",
+                                    )}>
+                                        {subject.title.substring(0, 2)}
+                                    </div>
+                                    <div className="flex-grow">
+                                        <h3 className="font-bold text-lg">{subject.title}</h3>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <Progress value={subject.progress || 0} className="w-24 h-1.5" />
+                                            <span className="text-xs text-muted-foreground">{subject.progress || 0}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-6 h-6 text-muted-foreground" />
+                            </CardContent>
+                        </Card>
+                    </button>
+                ))}
+            </div>
+             <div className="mt-8 text-sm text-muted-foreground flex items-center gap-2">
+                <Info className="w-4 h-4" />
+                <p>Completion % depends on lecture and DPP progress!</p>
+            </div>
         </div>
-        <h1 className="text-3xl font-bold font-headline">Welcome to {courseTitle}!</h1>
-        <p className="text-muted-foreground mt-2 max-w-md">
-            Select a lesson from the sidebar to begin your learning journey. You've got this!
-        </p>
-        {onStartFirstLesson && (
-            <Button size="lg" className="mt-8" onClick={onStartFirstLesson}>
-                <PlayCircle className="mr-2" /> Start First Lesson
-            </Button>
-        )}
-    </div>
-);
+    )
+}
 
 const LectureView = ({ lesson }: { lesson: Lesson }) => {
     const videoId = extractYouTubeVideoId(lesson.content || "");
@@ -108,14 +134,10 @@ const LectureView = ({ lesson }: { lesson: Lesson }) => {
     )
 }
 
-export function CourseContent({ lesson, welcomeMessage, onStartFirstLesson, courseTitle }: CourseContentProps) {
-    if (welcomeMessage) {
-        return <WelcomeScreen onStartFirstLesson={onStartFirstLesson} courseTitle={courseTitle} />;
+export function CourseContent({ course, selectedLesson, onSubjectSelect }: CourseContentProps) {
+    if (selectedLesson) {
+        return <LectureView lesson={selectedLesson} />;
     }
 
-    if (!lesson) {
-        return <WelcomeScreen courseTitle={courseTitle} />;
-    }
-
-    return <LectureView lesson={lesson} />;
+    return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;
 }

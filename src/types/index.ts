@@ -21,6 +21,7 @@ export interface Subject {
     id: string;
     title: string;
     chapters: Chapter[];
+    progress?: number;
 }
 
 export interface Course {

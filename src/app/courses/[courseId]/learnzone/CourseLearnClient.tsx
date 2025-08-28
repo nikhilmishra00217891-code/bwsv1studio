@@ -6,32 +6,32 @@ import type { Course, Subject, Chapter, Lesson } from "@/types";
 import { CourseSidebar } from '@/components/courses/CourseSidebar';
 import { CourseContent } from '@/components/courses/CourseContent';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BookOpen, ChevronsRightLeft } from 'lucide-react';
+import { ArrowLeft, ChevronsRightLeft } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 
 export default function CourseLearnClient({ course, userProgress }: { course: Course; userProgress: number; }) {
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+    const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const handleLessonClick = (lesson: Lesson) => {
         setSelectedLesson(lesson);
     }
-    
-    // Fallback if no subjects or lessons exist yet.
-    const firstLesson = course.subjects?.[0]?.chapters?.[0]?.lessons?.[0];
 
-    const handleStartFirstLesson = () => {
-        if (firstLesson) {
-            setSelectedLesson(firstLesson);
+    const handleSubjectSelect = (subject: Subject) => {
+        setSelectedSubject(subject);
+        setSelectedLesson(null); // Reset lesson when a new subject is chosen
+        if (!isSidebarOpen) {
+            setIsSidebarOpen(true);
         }
-    };
-
+    }
 
     return (
         <div className="flex h-screen bg-card/50">
             <CourseSidebar 
                 course={course}
+                selectedSubject={selectedSubject}
                 onLessonClick={handleLessonClick}
                 selectedLessonId={selectedLesson?.id}
                 isOpen={isSidebarOpen}
@@ -75,10 +75,9 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
 
                 <div className="flex-grow overflow-y-auto">
                    <CourseContent
-                        lesson={selectedLesson}
-                        welcomeMessage={!selectedLesson}
-                        onStartFirstLesson={handleStartFirstLesson}
-                        courseTitle={course.title}
+                        course={course}
+                        selectedLesson={selectedLesson}
+                        onSubjectSelect={handleSubjectSelect}
                     />
                 </div>
             </main>

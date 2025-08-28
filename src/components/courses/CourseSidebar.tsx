@@ -50,30 +50,7 @@ const ChapterItem = ({ chapter, onLessonClick, selectedLessonId }: { chapter: Ch
     )
 }
 
-const SubjectItem = ({ subject, onLessonClick, selectedLessonId }: { subject: Subject, onLessonClick: (lesson: Lesson) => void, selectedLessonId?: string | null }) => {
-    return (
-         <Collapsible defaultOpen>
-            <CollapsibleTrigger className="w-full text-left flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 group">
-                <h3 className="font-bold text-base font-headline">{subject.title}</h3>
-                <ChevronRight className="w-5 h-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pl-4 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                <div className="py-1 space-y-1">
-                    {subject.chapters.map(chapter => (
-                        <ChapterItem 
-                            key={chapter.id} 
-                            chapter={chapter} 
-                            onLessonClick={onLessonClick}
-                            selectedLessonId={selectedLessonId}
-                        />
-                    ))}
-                </div>
-            </CollapsibleContent>
-        </Collapsible>
-    )
-}
-
-export const CourseSidebar = ({ course, onLessonClick, selectedLessonId, isOpen, onClose }: { course: Course, onLessonClick: (lesson: Lesson) => void, selectedLessonId?: string | null, isOpen: boolean, onClose: () => void }) => {
+export const CourseSidebar = ({ course, selectedSubject, onLessonClick, selectedLessonId, isOpen, onClose }: { course: Course, selectedSubject: Subject | null, onLessonClick: (lesson: Lesson) => void, selectedLessonId?: string | null, isOpen: boolean, onClose: () => void }) => {
     return (
         <AnimatePresence>
         {isOpen && (
@@ -87,7 +64,7 @@ export const CourseSidebar = ({ course, onLessonClick, selectedLessonId, isOpen,
                 <header className="p-4 border-b flex items-center justify-between gap-3 h-16 shrink-0">
                     <div className="flex items-center gap-3 overflow-hidden">
                         <BookOpen className="w-6 h-6 text-primary shrink-0"/>
-                        <h2 className="text-lg font-bold font-headline truncate">{course.title}</h2>
+                        <h2 className="text-lg font-bold font-headline truncate">{selectedSubject ? selectedSubject.title : course.title}</h2>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden shrink-0">
                         <X className="w-5 h-5"/>
@@ -95,18 +72,18 @@ export const CourseSidebar = ({ course, onLessonClick, selectedLessonId, isOpen,
                 </header>
                 <ScrollArea className="flex-grow p-2">
                     <div className="space-y-2">
-                        {course.subjects && course.subjects.length > 0 ? (
-                             course.subjects.map(subject => (
-                                <SubjectItem 
-                                    key={subject.id} 
-                                    subject={subject} 
+                        {selectedSubject ? (
+                             selectedSubject.chapters.map(chapter => (
+                                <ChapterItem 
+                                    key={chapter.id} 
+                                    chapter={chapter} 
                                     onLessonClick={onLessonClick}
                                     selectedLessonId={selectedLessonId}
                                 />
                             ))
                         ) : (
                             <div className="p-8 text-center text-muted-foreground">
-                                <p>No subjects or lessons have been added to this course yet.</p>
+                                <p>Select a subject from the main content area to see its chapters and lessons.</p>
                             </div>
                         )}
                     </div>
