@@ -2,7 +2,7 @@
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, BookText, ChevronRight, Video, CheckCircle2 } from 'lucide-react';
+import { BookOpen, BookText, ChevronRight, Video, CheckCircle2, X } from 'lucide-react';
 import type { Course, Subject, Chapter, Lesson } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -73,7 +73,7 @@ const SubjectItem = ({ subject, onLessonClick, selectedLessonId }: { subject: Su
     )
 }
 
-export const CourseSidebar = ({ course, onLessonClick, selectedLessonId, isOpen }: { course: Course, onLessonClick: (lesson: Lesson) => void, selectedLessonId?: string | null, isOpen: boolean }) => {
+export const CourseSidebar = ({ course, onLessonClick, selectedLessonId, isOpen, onClose }: { course: Course, onLessonClick: (lesson: Lesson) => void, selectedLessonId?: string | null, isOpen: boolean, onClose: () => void }) => {
     return (
         <AnimatePresence>
         {isOpen && (
@@ -84,9 +84,14 @@ export const CourseSidebar = ({ course, onLessonClick, selectedLessonId, isOpen 
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 className="fixed top-0 left-0 h-full w-80 bg-background border-r flex flex-col z-40"
             >
-                <header className="p-4 border-b flex items-center gap-3 h-16 shrink-0">
-                    <BookOpen className="w-6 h-6 text-primary"/>
-                    <h2 className="text-lg font-bold font-headline truncate">{course.title}</h2>
+                <header className="p-4 border-b flex items-center justify-between gap-3 h-16 shrink-0">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <BookOpen className="w-6 h-6 text-primary shrink-0"/>
+                        <h2 className="text-lg font-bold font-headline truncate">{course.title}</h2>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden shrink-0">
+                        <X className="w-5 h-5"/>
+                    </Button>
                 </header>
                 <ScrollArea className="flex-grow p-2">
                     <div className="space-y-2">

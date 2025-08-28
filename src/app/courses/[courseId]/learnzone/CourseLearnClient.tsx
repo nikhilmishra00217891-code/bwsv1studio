@@ -28,6 +28,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 onLessonClick={handleLessonClick}
                 selectedLessonId={selectedLesson?.id}
                 isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
             />
 
             <main className="flex-1 flex flex-col transition-all duration-300" style={{ marginLeft: isSidebarOpen ? '320px' : '0' }}>
