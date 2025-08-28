@@ -3,7 +3,7 @@
 
 import type { Lesson } from "@/types";
 import { Button } from "../ui/button";
-import { PlayCircle, FileText, CheckCircle, Video } from 'lucide-react';
+import { PlayCircle, FileText, CheckCircle, Video, BookOpen } from 'lucide-react';
 import Image from "next/image";
 
 interface CourseContentProps {
@@ -64,8 +64,12 @@ const LessonPreview = ({ lesson }: { lesson: Lesson }) => {
 }
 
 export function CourseContent({ lesson, welcomeMessage, onStartFirstLesson, courseTitle }: CourseContentProps) {
+    if (!lesson && welcomeMessage) {
+        return <WelcomeScreen onStartFirstLesson={onStartFirstLesson} courseTitle={courseTitle} />;
+    }
+
     if (!lesson) {
-        return <WelcomeScreen onStartFirstLesson={welcomeMessage ? undefined : onStartFirstLesson} courseTitle={courseTitle} />;
+        return <WelcomeScreen courseTitle={courseTitle} />;
     }
 
     return <LessonPreview lesson={lesson} />;
