@@ -1,19 +1,24 @@
 
 "use client";
 
-import type { Course, Lesson, Subject } from "@/types";
+import type { Course, Lesson, Subject, Chapter } from "@/types";
 import { Button } from "../ui/button";
-import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight } from 'lucide-react';
+import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText } from 'lucide-react';
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
+
 
 interface CourseContentProps {
     course: Course;
+    selectedSubject: Subject | null;
     selectedLesson: Lesson | null;
     onSubjectSelect: (subject: Subject) => void;
+    onChapterSelect: (chapter: Chapter) => void;
+    onLessonClick: (lesson: Lesson) => void;
 }
 
 const extractYouTubeVideoId = (url: string): string | null => {
@@ -81,6 +86,45 @@ const SubjectGrid = ({ course, onSubjectSelect }: { course: Course, onSubjectSel
     )
 }
 
+const ChapterGrid = ({ subject, onChapterSelect }: { subject: Subject, onChapterSelect: (chapter: Chapter) => void; }) => {
+    return (
+        <div className="p-4 md:p-8">
+             <div className="mb-8">
+                <h1 className="text-4xl font-bold font-headline">{subject.title}</h1>
+            </div>
+            <Tabs defaultValue="chapters">
+                <TabsList>
+                    <TabsTrigger value="chapters">Chapters</TabsTrigger>
+                    <TabsTrigger value="material">Study Material</TabsTrigger>
+                </TabsList>
+                 <TabsContent value="chapters" className="mt-6">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {(subject.chapters || []).map((chapter, index) => (
+                            <button key={chapter.id} onClick={() => onChapterSelect(chapter)} className="text-left">
+                                <Card className="hover:border-primary/50 hover:shadow-lg transition-all duration-200 h-full p-4">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-sm font-semibold text-blue-500 mb-1">CH - {String(index + 1).padStart(2, '0')}</p>
+                                            <h3 className="font-bold text-lg">{chapter.title}</h3>
+                                        </div>
+                                        <ChevronRight className="w-6 h-6 text-muted-foreground shrink-0"/>
+                                    </div>
+                                     <p className="text-xs text-muted-foreground mt-2">Lecture: {chapter.lessons.length}</p>
+                                </Card>
+                            </button>
+                        ))}
+                    </div>
+                </TabsContent>
+                 <TabsContent value="material" className="mt-6">
+                     <Card className="p-8 text-center">
+                        <p className="text-muted-foreground">Study material for {subject.title} will be available here.</p>
+                     </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+    )
+}
+
 const LectureView = ({ lesson }: { lesson: Lesson }) => {
     const videoId = extractYouTubeVideoId(lesson.content || "");
     return (
@@ -134,9 +178,13 @@ const LectureView = ({ lesson }: { lesson: Lesson }) => {
     )
 }
 
-export function CourseContent({ course, selectedLesson, onSubjectSelect }: CourseContentProps) {
+export function CourseContent({ course, selectedSubject, selectedLesson, onSubjectSelect, onChapterSelect }: CourseContentProps) {
     if (selectedLesson) {
         return <LectureView lesson={selectedLesson} />;
+    }
+
+    if (selectedSubject) {
+        return <ChapterGrid subject={selectedSubject} onChapterSelect={onChapterSelect} />;
     }
 
     return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;

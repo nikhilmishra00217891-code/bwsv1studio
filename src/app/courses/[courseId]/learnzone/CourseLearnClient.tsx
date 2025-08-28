@@ -6,7 +6,7 @@ import type { Course, Subject, Chapter, Lesson } from "@/types";
 import { CourseSidebar } from '@/components/courses/CourseSidebar';
 import { CourseContent } from '@/components/courses/CourseContent';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ChevronsRightLeft } from 'lucide-react';
+import { ArrowLeft, ChevronsRightLeft, Library } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 
@@ -19,10 +19,18 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         setSelectedLesson(lesson);
     }
 
-    const handleSubjectSelect = (subject: Subject) => {
+    const handleChapterSelect = (chapter: Chapter) => {
+        if (chapter.lessons.length > 0) {
+            setSelectedLesson(chapter.lessons[0]);
+        } else {
+            setSelectedLesson(null); // Or handle empty chapters differently
+        }
+    }
+
+    const handleSubjectSelect = (subject: Subject | null) => {
         setSelectedSubject(subject);
-        setSelectedLesson(null); // Reset lesson when a new subject is chosen
-        if (!isSidebarOpen) {
+        setSelectedLesson(null); // Reset lesson when navigating subjects
+        if (subject && !isSidebarOpen) {
             setIsSidebarOpen(true);
         }
     }
@@ -54,6 +62,11 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                                 <ArrowLeft className="w-4 h-4 mr-2"/> Back to Course Details
                             </Link>
                         </Button>
+                         {selectedSubject && (
+                            <Button variant="outline" size="sm" onClick={() => handleSubjectSelect(null)}>
+                                <Library className="w-4 h-4 mr-2"/> All Subjects
+                            </Button>
+                        )}
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-right">
@@ -76,8 +89,11 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 <div className="flex-grow overflow-y-auto">
                    <CourseContent
                         course={course}
+                        selectedSubject={selectedSubject}
                         selectedLesson={selectedLesson}
                         onSubjectSelect={handleSubjectSelect}
+                        onChapterSelect={handleChapterSelect}
+                        onLessonClick={handleLessonClick}
                     />
                 </div>
             </main>

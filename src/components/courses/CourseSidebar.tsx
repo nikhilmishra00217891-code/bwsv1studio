@@ -27,8 +27,11 @@ const LessonItem = ({ lesson, isSelected, onClick, isCompleted }: { lesson: Less
 }
 
 const ChapterItem = ({ chapter, onLessonClick, selectedLessonId }: { chapter: Chapter, onLessonClick: (lesson: Lesson) => void, selectedLessonId?: string | null }) => {
+    // A chapter is "active" if one of its lessons is the currently selected lesson.
+    const isActive = chapter.lessons.some(lesson => lesson.id === selectedLessonId);
+
     return (
-        <Collapsible defaultOpen>
+        <Collapsible defaultOpen={isActive}>
             <CollapsibleTrigger className="w-full text-left flex items-center justify-between p-2 rounded-md hover:bg-muted text-foreground/90 group">
                 <span className="font-semibold text-sm">{chapter.title}</span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
