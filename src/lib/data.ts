@@ -1,7 +1,7 @@
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 
@@ -294,6 +294,30 @@ export async function isUserEnrolled(userId: string, courseId: string): Promise<
   const enrolledCourses = userDoc.data()?.enrolledCourses || [];
   return enrolledCourses.includes(courseId);
 }
+
+export const enrollInCourse = async (userId: string, courseId: string): Promise<void> => {
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+        throw new Error("User profile not found.");
+    }
+    
+    // Atomically add the course ID to the user's enrolledCourses array
+    await updateDoc(userRef, {
+        enrolledCourses: arrayUnion(courseId)
+    });
+
+    // Initialize progress for the new course
+    const progressField = `progress.${courseId}`;
+    await updateDoc(userRef, {
+        [progressField]: {
+            progress: 0,
+            completedLessons: []
+        }
+    });
+}
+
 
 export async function getEnrolledCourseData(userId: string, courseId: string): Promise<{progress: number, completedLessons: string[]} | null> {
     const userDoc = await getDoc(doc(db, 'users', userId));
