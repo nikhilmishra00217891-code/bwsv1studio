@@ -44,6 +44,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     const isOnboarding = pathname === '/onboarding';
     const isHomepage = pathname === '/';
+    const isAboutPage = pathname === '/about';
     const isGamePage = pathname.startsWith('/games/');
     const isAdminPage = pathname.startsWith('/admin/');
     const isCoursePage = pathname.startsWith('/courses/') && pathname.length > '/courses/'.length;
@@ -61,6 +62,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </Button>
       </div>
     );
+    
+    const showFloatingButtons = isHomepage || isAboutPage;
 
     return (
         <>
@@ -70,7 +73,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 {!isGamePage && !isAdminPage && !isCoursePage && <Footer />}
             </div>
              {isHomepage && user && <FloatingCTA />}
-            {!isOnboarding && !isGamePage && (
+            {showFloatingButtons && (
                  <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
                     <FeedbackWidget />
                     <Button
