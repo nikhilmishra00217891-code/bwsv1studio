@@ -28,7 +28,6 @@ import {
   Clock,
   Heart,
   PlayCircle,
-  Video,
   Eye,
   EyeOff,
   Trash2,
@@ -41,7 +40,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { EditableText } from "@/components/common/EditableText";
 import { useEditMode } from "@/components/common/EditModeProvider";
 import Link from "next/link";
@@ -314,7 +312,6 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       {isCurrentUserFaculty && <CourseFacultyControls />}
       <CourseHero course={course} />
       <CourseMentor course={course} />
-
       <div className="mt-8">
         <CourseOverview course={course} />
       </div>
