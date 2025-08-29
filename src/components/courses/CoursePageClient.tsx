@@ -1,16 +1,16 @@
 
 'use client';
 
-import type { Course, Subject } from "@/types";
+import type { Course } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, enrollInCourse, isUserEnrolled, updateCourse, addSubject, deleteSubject, addChapter, deleteChapter } from "@/lib/data";
+import { deleteCourse, updateCourse } from "@/lib/data";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -24,68 +24,87 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   BookText,
-  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Heart,
+  PlayCircle,
+  Video,
   Eye,
   EyeOff,
   Trash2,
   LoaderCircle,
+  Youtube,
   Pencil,
-  Star,
-  ShieldCheck,
-  Video,
-  Newspaper,
-  BookCopy,
-  MessageSquare,
-  PlayCircle,
-  Plus
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { EditableText } from "@/components/common/EditableText";
 import { useEditMode } from "@/components/common/EditModeProvider";
 import Link from "next/link";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 import { EditableImage } from "../common/EditableImage";
-import { Input } from "../ui/input";
 
+const extractYouTubeVideoId = (url: string): string | null => {
+    if (!url) return null;
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname === 'youtu.be') {
+            return urlObj.pathname.slice(1);
+        }
+        if (urlObj.hostname.includes('youtube.com')) {
+            const videoId = urlObj.searchParams.get('v');
+            if (videoId) {
+                return videoId;
+            }
+        }
+    } catch (e) {
+        // Fallback for invalid URLs, just in case
+        const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+    }
+    return null;
+}
 
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
   const [course, setCourse] = useState(initialCourse);
   const { user, userProfile, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
-  const [userIsEnrolled, setUserIsEnrolled] = useState(false);
-  const [isEnrolling, setIsEnrolling] = useState(false);
   const { isEditMode, setIsEditMode } = useEditMode();
   const { toast } = useToast();
   const router = useRouter();
-
-  const [newSubject, setNewSubject] = useState('');
-  const [newChapters, setNewChapters] = useState<Record<string, string>>({});
-  const [loadingState, setLoadingState] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setCourse(initialCourse);
   }, [initialCourse]);
 
   useEffect(() => {
-    if (!user) {
-        setUserIsEnrolled(false);
-        return;
-    }
-    const checkEnrollment = async () => {
-        const enrolled = await isUserEnrolled(user.uid, course.id);
-        setUserIsEnrolled(enrolled);
-    }
-    checkEnrollment();
     setIsCurrentUserFaculty(userProfile?.role === 'faculty');
-  }, [user, userProfile, course.id]);
+  }, [userProfile]);
+
+  const handleSaveCourse = async (data: Partial<Course>) => {
+    try {
+        await updateCourse(course.id, data);
+        setCourse(prev => ({...prev, ...data}));
+        toast({
+            title: "Course Updated",
+            description: `Your changes have been saved.`
+        });
+    } catch(error) {
+        console.error("Update error:", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not save your changes.",
+        })
+    }
+  }
 
   const handleActiveToggle = async (isActive: boolean) => {
-    await updateCourse(course.id, { isActive });
-    setCourse(prev => ({...prev, isActive}));
-    toast({ title: `Course is now ${isActive ? 'active' : 'inactive'}` });
+    handleSaveCourse({isActive});
   };
 
   const handleDelete = async () => {
@@ -104,89 +123,6 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         });
     }
   }
-  
-  const handleEnroll = async () => {
-      if (!user) {
-          router.push('/login');
-          return;
-      }
-      setIsEnrolling(true);
-      try {
-          await enrollInCourse(user.uid, course.id);
-          setUserIsEnrolled(true);
-          toast({
-              title: "Enrollment Successful!",
-              description: `Welcome to ${course.title}.`
-          });
-      } catch (error: any) {
-          toast({
-              variant: "destructive",
-              title: "Enrollment Failed",
-              description: error.message || "An unexpected error occurred."
-          });
-      } finally {
-          setIsEnrolling(false);
-      }
-  }
-
-  // --- Course Structure Editing Functions ---
-  const handleAddSubject = async () => {
-    if (!newSubject.trim()) return;
-    setLoadingState({ ...loadingState, addSubject: true });
-    try {
-      const updatedCourse = await addSubject(course.id, newSubject.trim());
-      setCourse(updatedCourse);
-      toast({ title: "Subject Added!", description: `"${newSubject.trim()}" has been added to the course.` });
-      setNewSubject('');
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Failed to add subject', description: error.message });
-    } finally {
-      setLoadingState({ ...loadingState, addSubject: false });
-    }
-  };
-
-  const handleDeleteSubject = async (subjectId: string) => {
-    setLoadingState({ ...loadingState, [`delete_subject_${subjectId}`]: true });
-    try {
-        const updatedCourse = await deleteSubject(course.id, subjectId);
-        setCourse(updatedCourse);
-        toast({ title: 'Subject Deleted' });
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Failed to delete subject', description: error.message });
-    } finally {
-         setLoadingState({ ...loadingState, [`delete_subject_${subjectId}`]: false });
-    }
-  }
-
-  const handleAddChapter = async (subjectId: string) => {
-    const chapterTitle = newChapters[subjectId]?.trim();
-    if (!chapterTitle) return;
-     setLoadingState({ ...loadingState, [`add_chapter_${subjectId}`]: true });
-     try {
-        const updatedCourse = await addChapter(course.id, subjectId, chapterTitle);
-        setCourse(updatedCourse);
-        toast({ title: 'Chapter Added!', description: `"${chapterTitle}" has been added.` });
-        setNewChapters({ ...newChapters, [subjectId]: '' });
-     } catch(error: any) {
-        toast({ variant: 'destructive', title: 'Failed to add chapter', description: error.message });
-     } finally {
-        setLoadingState({ ...loadingState, [`add_chapter_${subjectId}`]: false });
-     }
-  }
-
-  const handleDeleteChapter = async (subjectId: string, chapterId: string) => {
-    setLoadingState({ ...loadingState, [`delete_chapter_${chapterId}`]: true });
-     try {
-        const updatedCourse = await deleteChapter(course.id, subjectId, chapterId);
-        setCourse(updatedCourse);
-        toast({ title: 'Chapter Deleted' });
-     } catch(error: any) {
-        toast({ variant: 'destructive', title: 'Failed to delete chapter', description: error.message });
-     } finally {
-        setLoadingState({ ...loadingState, [`delete_chapter_${chapterId}`]: false });
-     }
-  }
-  // --- End Editing Functions ---
 
   const CourseFacultyControls = () => (
     <Card className="mb-8 border-primary/30">
@@ -236,120 +172,152 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       </CardContent>
     </Card>
   );
-  
-  const descriptionItems = [
-    { icon: CalendarDays, text: 'Starts 1 Dec 2024 - Ends 09 Apr 2025' },
-    { icon: ShieldCheck, text: 'Validity until 31st March 2026' },
-    { icon: Video, text: 'Online lectures' },
-    { icon: BookText, text: 'DPPs and Test With Solutions' },
-    { icon: Star, text: 'Exam guidance at our offline centers' },
-  ];
 
-  const totalSubjects = course.subjects?.map(s => s.title).join(', ') || 'N/A';
+  const totalLessons = useMemo(() => {
+    return course.subjects?.reduce((acc, subject) => 
+        acc + subject.chapters.reduce((chAcc, chapter) => chAcc + chapter.lessons.length, 0), 
+    0) || 0;
+  }, [course.subjects]);
+
+  const CourseHero = ({ course }: { course: Course }) => (
+    <div className="relative bg-card/50 rounded-xl overflow-hidden p-6 md:p-8 border border-primary/20 shadow-lg shadow-primary/10">
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10"></div>
+        <EditableImage
+            contentId={`course_thumb_${course.id}`}
+            src={course.thumbnail}
+            alt={course.title}
+            fill
+            className="object-cover opacity-20"
+            data-ai-hint="learning online course"
+        />
+        <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
+            <div className="md:col-span-2">
+                 <EditableText as="badge" contentId={`course_category_${course.id}`} defaultValue={course.category} />
+                <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">
+                   <EditableText contentId={`course_title_${course.id}`} defaultValue={course.title} />
+                </h1>
+            </div>
+            <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total</span></div>
+                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{totalLessons} lessons</span></div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <span>25% complete</span></div>
+            </div>
+        </div>
+    </div>
+  )
+
+  const CourseMentor = ({ course }: { course: Course }) => (
+      <Dialog>
+          <div className="bg-card p-6 rounded-lg flex flex-col sm:flex-row items-center gap-6">
+               <div className="relative">
+                    <EditableImage contentId={`course_mentor_avatar_${course.id}`} src="https://i.postimg.cc/d1W1VcYF/aman-kumar.png" alt="Mentor Avatar" width={80} height={80} className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
+                </div>
+              <div className="flex-grow text-center sm:text-left">
+                  <h3 className="text-xl font-bold font-headline">
+                    <EditableText contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} /> & Team
+                  </h3>
+                  <p className="text-muted-foreground">Your Mentors</p>
+              </div>
+              <div className="flex gap-2">
+                  <DialogTrigger asChild>
+                      <Button variant="outline">Know Your Mentors</Button>
+                  </DialogTrigger>
+                  <Button variant="outline" size="icon"><Heart /></Button>
+              </div>
+          </div>
+          <DialogContent>
+              <DialogHeader className="items-center text-center">
+                   <div className="relative w-24 h-24">
+                       <EditableImage contentId={`course_mentor_avatar_${course.id}`} src="https://i.postimg.cc/d1W1VcYF/aman-kumar.png" alt="Mentor Avatar" fill className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
+                   </div>
+                  <DialogTitle className="text-2xl font-headline"><EditableText contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} /> & Team</DialogTitle>
+                  <DialogDescription>Your guides, friends, and mentors on this journey.</DialogDescription>
+              </DialogHeader>
+              <div className="py-4 text-center text-muted-foreground">
+                   <EditableText multiline contentId={`course_mentor_bio_${course.id}`} defaultValue="With over a decade of experience in making complex topics feel like a story, our mentors are here to ensure you not only crack your exams but also fall in love with the subject. We believe in the 'Parivaar' philosophy - teaching with the care of an elder brother." />
+              </div>
+          </DialogContent>
+      </Dialog>
+  )
+  
+  const CourseVideo = ({ course }: { course: Course }) => {
+    const videoId = extractYouTubeVideoId(course.youtubeLink || "");
+    
+    if(isEditMode) {
+      return (
+        <div className="space-y-2">
+          <Label htmlFor="youtubeLink">YouTube Video Link</Label>
+          <Input 
+            id="youtubeLink"
+            defaultValue={course.youtubeLink} 
+            onBlur={(e) => handleSaveCourse({youtubeLink: e.target.value})}
+            placeholder="https://www.youtube.com/watch?v=..."
+          />
+        </div>
+      )
+    }
+    
+    if (!videoId) {
+        return (
+            <div className="bg-card rounded-lg border aspect-video flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                    <Youtube className="w-12 h-12 mx-auto mb-2"/>
+                    <p>No video has been linked for this course yet.</p>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="bg-card rounded-lg overflow-hidden border aspect-video">
+            <iframe
+                className="w-full h-full"
+                src={`https://www.youtube.com/embed/${videoId}?rel=0`}
+                title="YouTube video player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen>
+            </iframe>
+        </div>
+    )
+  }
+
+  const CourseOverview = ({ course }: { course: Course }) => (
+      <div className="grid md:grid-cols-3 gap-8">
+          <div className="md:col-span-2 space-y-6">
+               <h3 className="text-2xl font-bold font-headline">About This Course</h3>
+                <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    <EditableText multiline contentId={`course_description_${course.id}`} defaultValue={course.description} />
+                </div>
+               <div className="flex flex-wrap gap-2">
+                  <Badge>Exam Prep 🔥</Badge>
+                  <Badge>Conceptual 🧠</Badge>
+                  <Badge>Quick Revision ⚡</Badge>
+               </div>
+          </div>
+          <div className="space-y-4">
+              <CourseVideo course={course} />
+               <Button size="lg" className="w-full !h-14 text-lg" asChild>
+                  <Link href={`/courses/${course.id}/learnzone`}>
+                    <PlayCircle className="mr-2 h-6 w-6" /> Go to Course
+                  </Link>
+              </Button>
+          </div>
+      </div>
+  )
 
   if (authLoading) {
     return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
   }
 
   return (
-    <div className="bg-muted/30">
-        <div className="container mx-auto px-6 py-12 md:py-20">
-            {isCurrentUserFaculty && <CourseFacultyControls />}
+    <div className="container mx-auto px-6 py-12 md:py-20 space-y-12">
+      {isCurrentUserFaculty && <CourseFacultyControls />}
+      <CourseHero course={course} />
+      <CourseMentor course={course} />
 
-            <div className="grid lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    <Tabs defaultValue="description" className="w-full">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-                            <TabsList>
-                                <TabsTrigger value="description">Description</TabsTrigger>
-                                <TabsTrigger value="resources">Resources</TabsTrigger>
-                                <TabsTrigger value="announcements">Announcements</TabsTrigger>
-                            </TabsList>
-                            <Button variant="outline" className="mt-4 sm:mt-0"><MessageSquare className="w-4 h-4 mr-2"/> Share Batch</Button>
-                        </div>
-                        <Card>
-                            <CardContent className="p-6">
-                                <TabsContent value="description">
-                                     <h3 className="text-2xl font-bold font-headline mb-6">This Course Includes</h3>
-                                     <div className="space-y-4">
-                                        {descriptionItems.map((item, index) => (
-                                            <div key={index} className="flex items-center gap-4">
-                                                <div className="bg-primary/10 p-2 rounded-full">
-                                                    <item.icon className="w-6 h-6 text-primary"/>
-                                                </div>
-                                                <span className="font-medium text-foreground/80">{item.text}</span>
-                                            </div>
-                                        ))}
-                                         <div className="flex items-center gap-4">
-                                            <div className="bg-primary/10 p-2 rounded-full">
-                                                <BookCopy className="w-6 h-6 text-primary"/>
-                                            </div>
-                                            <span className="font-medium text-foreground/80">
-                                                <strong className="text-foreground">Subjects:</strong> {totalSubjects}
-                                            </span>
-                                        </div>
-                                     </div>
-                                </TabsContent>
-                                 <TabsContent value="resources">
-                                     <h3 className="text-2xl font-bold font-headline mb-6">Resources</h3>
-                                     <p className="text-muted-foreground">Resources for this course will be available here.</p>
-                                 </TabsContent>
-                                 <TabsContent value="announcements">
-                                     <h3 className="text-2xl font-bold font-headline mb-6">Announcements</h3>
-                                     <p className="text-muted-foreground">Important announcements for this course will be posted here.</p>
-                                 </TabsContent>
-                            </CardContent>
-                        </Card>
-                    </Tabs>
-                    <div className="h-64"></div>
-                    <div className="h-64"></div>
-                    <div className="h-64"></div>
-                </div>
-                <div className="lg:col-span-1">
-                    <div className="sticky top-24">
-                        <Card className="overflow-hidden">
-                            <CardContent className="p-0">
-                                <div className="relative">
-                                    <EditableImage
-                                        contentId={`course_thumb_${course.id}`}
-                                        src={course.thumbnail}
-                                        alt={course.title}
-                                        width={600}
-                                        height={400}
-                                        className="w-full aspect-video object-cover"
-                                        data-ai-hint={`${course.category} learning`}
-                                    />
-                                    {course.isFree && <Badge className="absolute top-3 right-3 text-sm">NEW</Badge>}
-                                </div>
-                                <div className="p-6">
-                                     <h2 className="text-2xl font-bold font-headline">
-                                        <EditableText contentId={`course_title_${course.id}`} defaultValue={course.title} />
-                                     </h2>
-                                     <p className="text-muted-foreground mt-1">
-                                        <EditableText as="input" contentId={`course_category_${course.id}`} defaultValue={course.category} />
-                                     </p>
-                                     <div className="flex justify-between items-center mt-4 text-sm">
-                                         <span>Taught by <strong className="text-primary">
-                                            <EditableText as="input" contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} />
-                                         </strong></span>
-                                         <Badge variant="outline">Hinglish</Badge>
-                                     </div>
-                                     {userIsEnrolled ? (
-                                        <Button asChild size="lg" className="w-full mt-6 text-lg">
-                                            <Link href={`/courses/${course.id}/learnzone`}>Go to Course</Link>
-                                        </Button>
-                                     ) : (
-                                         <Button onClick={handleEnroll} size="lg" className="w-full mt-6 text-lg" disabled={isEnrolling}>
-                                            {isEnrolling ? <LoaderCircle className="animate-spin" /> : "Enroll Now"}
-                                        </Button>
-                                     )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className="mt-8">
+        <CourseOverview course={course} />
+      </div>
     </div>
   );
 }
