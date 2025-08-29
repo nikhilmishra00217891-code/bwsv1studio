@@ -311,9 +311,11 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       {isCurrentUserFaculty && <CourseFacultyControls />}
       <CourseHero course={course} />
       <CourseMentor course={course} />
+      
       <div className="mt-8">
         <CourseOverview course={course} />
       </div>
+
     </div>
   );
 }
