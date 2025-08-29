@@ -252,7 +252,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     { icon: Star, text: 'Exam guidance at our offline centers' },
   ];
 
-  const CourseCurriculum = ({ course }: { course: Course }) => (
+  const CourseCurriculumEditor = () => (
       <div className="space-y-4">
           <Accordion type="multiple" className="w-full space-y-3">
                {course.subjects && course.subjects.length > 0 ? (
@@ -312,6 +312,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                   </AccordionItem>
               ))
               ) : (
+                isEditMode ? null :
                 <Card>
                     <CardContent className="p-6 text-center text-muted-foreground">
                         No subjects have been added to this course yet.
@@ -321,7 +322,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           </Accordion>
 
           {isEditMode && (
-            <Card className="mt-6">
+            <Card className="mt-6 bg-card/50">
                 <CardHeader>
                     <CardTitle className="text-lg">Add New Subject</CardTitle>
                 </CardHeader>
@@ -396,7 +397,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                                 </TabsContent>
                                 <TabsContent value="subjects">
                                      <h3 className="text-2xl font-bold font-headline mb-6">Course Curriculum</h3>
-                                    <CourseCurriculum course={course} />
+                                    <CourseCurriculumEditor />
                                 </TabsContent>
                                  <TabsContent value="resources">
                                      <h3 className="text-2xl font-bold font-headline mb-6">Resources</h3>
@@ -409,7 +410,9 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                             </CardContent>
                         </Card>
                     </Tabs>
-
+                    <div className="h-64"></div>
+                    <div className="h-64"></div>
+                    <div className="h-64"></div>
                 </div>
                 <div className="lg:col-span-1">
                     <div className="sticky top-24">
