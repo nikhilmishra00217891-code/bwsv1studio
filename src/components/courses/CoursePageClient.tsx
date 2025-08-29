@@ -252,10 +252,10 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     { icon: Star, text: 'Exam guidance at our offline centers' },
   ];
 
-  const CourseCurriculumEditor = () => (
+  const CourseCurriculum = () => (
       <div className="space-y-4">
           <Accordion type="multiple" className="w-full space-y-3">
-               {course.subjects && course.subjects.length > 0 ? (
+               {(course.subjects || []).length > 0 ? (
                 course.subjects.map((subject) => (
                   <AccordionItem value={subject.id} key={subject.id} className="bg-card rounded-lg border-b-0">
                       <AccordionTrigger className="p-4 hover:no-underline font-semibold">
@@ -312,12 +312,13 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                   </AccordionItem>
               ))
               ) : (
-                isEditMode ? null :
-                <Card>
-                    <CardContent className="p-6 text-center text-muted-foreground">
-                        No subjects have been added to this course yet.
-                    </CardContent>
-                </Card>
+                !isEditMode && (
+                  <Card>
+                      <CardContent className="p-6 text-center text-muted-foreground">
+                          No subjects have been added to this course yet.
+                      </CardContent>
+                  </Card>
+                )
               )}
           </Accordion>
 
@@ -397,7 +398,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                                 </TabsContent>
                                 <TabsContent value="subjects">
                                      <h3 className="text-2xl font-bold font-headline mb-6">Course Curriculum</h3>
-                                    <CourseCurriculumEditor />
+                                    <CourseCurriculum />
                                 </TabsContent>
                                  <TabsContent value="resources">
                                      <h3 className="text-2xl font-bold font-headline mb-6">Resources</h3>
