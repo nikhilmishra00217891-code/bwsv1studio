@@ -82,8 +82,8 @@ export default function CourseStructureEditor({ course, onCourseUpdate }: Course
   return (
     <Card className="shadow-lg mt-8 border-primary/20">
       <CardHeader>
-        <CardTitle>Course Structure Editor</CardTitle>
-        <CardDescription>Add, remove, and organize subjects and chapters for this course.</CardDescription>
+        <CardTitle>Course Flow Editor</CardTitle>
+        <CardDescription>Add, remove, and organize subjects and chapters for this course. This will be reflected in the learnzone.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">

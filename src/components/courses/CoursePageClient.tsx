@@ -296,7 +296,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                             </CardContent>
                         </Card>
                     </Tabs>
-                    {isEditMode && <CourseStructureEditor course={course} onCourseUpdate={setCourse} />}
+                    {isEditMode && isCurrentUserFaculty && <CourseStructureEditor course={course} onCourseUpdate={setCourse} />}
                 </div>
                 <div className="lg:col-span-1">
                     <div className="sticky top-24">
