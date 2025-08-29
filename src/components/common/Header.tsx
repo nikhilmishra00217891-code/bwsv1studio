@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2 } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, FileFlowChart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -235,6 +235,7 @@ export default function Header() {
                           <p className="px-2 text-sm font-semibold text-muted-foreground">Faculty Tools</p>
                           <NavLink href="/admin/users" label="User Management" icon={Users} onSelect={handleLinkClick} />
                           <NavLink href="/admin/ai-controls" label="AI Controls" icon={BrainCircuit} onSelect={handleLinkClick} />
+                          <NavLink href="/admin/course-flow" label="Course Flow" icon={FileFlowChart} onSelect={handleLinkClick} />
                         </>
                       )}
                       <div className="my-2 border-t border-border/50"></div>

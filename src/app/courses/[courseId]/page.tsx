@@ -1,7 +1,7 @@
 
 import { getCourseById } from "@/lib/data";
 import { notFound } from "next/navigation";
-import CoursePageClient from "./CoursePageClient";
+import CoursePageClient from "@/components/courses/CoursePageClient";
 
 // This is the server component that fetches the data.
 export default async function SingleCoursePage({ params }: { params: { courseId: string } }) {
