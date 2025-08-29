@@ -1,17 +1,17 @@
 
 'use client';
 
-import type { Course } from "@/types";
+import type { Course, Subject } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, updateCourse } from "@/lib/data";
+import { deleteCourse, updateCourse, addSubject, deleteSubject, addChapter, deleteChapter } from "@/lib/data/courses";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -35,6 +35,7 @@ import {
   LoaderCircle,
   Youtube,
   Pencil,
+  PlusCircle,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -74,6 +75,10 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   const { isEditMode, setIsEditMode } = useEditMode();
   const { toast } = useToast();
   const router = useRouter();
+
+  const [newSubjectTitle, setNewSubjectTitle] = useState("");
+  const [newChapterTitles, setNewChapterTitles] = useState<Record<string, string>>({});
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setCourse(initialCourse);
@@ -121,6 +126,44 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         });
     }
   }
+  
+  const handleAddSubject = () => {
+    if (!newSubjectTitle.trim()) return;
+    startTransition(async () => {
+        const updatedCourse = await addSubject(course.id, newSubjectTitle);
+        setCourse(updatedCourse);
+        setNewSubjectTitle("");
+        toast({ title: "Subject Added!" });
+    });
+  }
+
+  const handleDeleteSubject = (subjectId: string) => {
+      startTransition(async () => {
+          const updatedCourse = await deleteSubject(course.id, subjectId);
+          setCourse(updatedCourse);
+          toast({ title: "Subject Removed" });
+      });
+  }
+  
+  const handleAddChapter = (subjectId: string) => {
+    const chapterTitle = newChapterTitles[subjectId]?.trim();
+    if (!chapterTitle) return;
+
+    startTransition(async () => {
+        const updatedCourse = await addChapter(course.id, subjectId, chapterTitle);
+        setCourse(updatedCourse);
+        setNewChapterTitles(prev => ({ ...prev, [subjectId]: "" }));
+        toast({ title: "Chapter Added!" });
+    });
+  }
+
+  const handleDeleteChapter = (subjectId: string, chapterId: string) => {
+      startTransition(async () => {
+          const updatedCourse = await deleteChapter(course.id, subjectId, chapterId);
+          setCourse(updatedCourse);
+          toast({ title: "Chapter Removed" });
+      });
+  }
 
   const CourseFacultyControls = () => (
     <Card className="mb-8 border-primary/30">
@@ -133,6 +176,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             id="active-mode"
             checked={course.isActive}
             onCheckedChange={handleActiveToggle}
+            disabled={isPending}
           />
           <Label htmlFor="active-mode" className="flex items-center gap-2">
             {course.isActive ? (
@@ -147,6 +191,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             id="edit-mode"
             checked={isEditMode}
             onCheckedChange={setIsEditMode}
+            disabled={isPending}
           />
           <Label htmlFor="edit-mode" className="flex items-center gap-2">
             <Pencil className="w-4 h-4" /> Edit Page
@@ -155,7 +200,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         <div className="flex items-center gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-                <Button variant="destructive"><Trash2 className="mr-2 w-4 h-4" /> Delete Course</Button>
+                <Button variant="destructive" disabled={isPending}><Trash2 className="mr-2 w-4 h-4" /> Delete Course</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
@@ -303,16 +348,71 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       </div>
   )
 
-  const CourseCurriculum = ({ course }: { course: Course }) => (
-      <div>
+  const CourseFlow = ({ course }: { course: Course }) => {
+
+    return (
+        <div>
           <h3 className="text-2xl font-bold font-headline mb-4">Course Flow</h3>
-          <Card>
-              <CardContent className="p-6 text-center text-muted-foreground">
-                  No lessons have been added to this course yet.
-              </CardContent>
-          </Card>
-      </div>
-  )
+          
+          {isCurrentUserFaculty && isEditMode ? (
+              <div className="space-y-6">
+                {(course.subjects || []).map((subject) => (
+                    <Card key={subject.id} className="p-4 bg-muted/50">
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="font-bold text-lg">{subject.title}</h4>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteSubject(subject.id)} disabled={isPending}>
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                        </div>
+                        <div className="space-y-2 ml-4">
+                            {subject.chapters.map(chapter => (
+                                <div key={chapter.id} className="flex justify-between items-center p-2 rounded-md bg-background">
+                                    <p>{chapter.title}</p>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteChapter(subject.id, chapter.id)} disabled={isPending}>
+                                        <Trash2 className="w-4 h-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <div className="flex items-center gap-2 pt-2">
+                                <Input
+                                    placeholder="New chapter title..."
+                                    value={newChapterTitles[subject.id] || ""}
+                                    onChange={(e) => setNewChapterTitles(prev => ({ ...prev, [subject.id]: e.target.value }))}
+                                    disabled={isPending}
+                                />
+                                <Button onClick={() => handleAddChapter(subject.id)} disabled={isPending}>
+                                    <PlusCircle className="w-4 h-4 mr-2" /> Add Chapter
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+                 <Card className="p-4 border-dashed">
+                     <CardTitle className="text-lg mb-2">Add a New Subject</CardTitle>
+                     <div className="flex items-center gap-2">
+                        <Input 
+                            placeholder="New subject title..."
+                            value={newSubjectTitle}
+                            onChange={(e) => setNewSubjectTitle(e.target.value)}
+                            disabled={isPending}
+                        />
+                        <Button onClick={handleAddSubject} disabled={isPending}>
+                             {isPending && <LoaderCircle className="w-4 h-4 mr-2 animate-spin" />}
+                             Add Subject
+                        </Button>
+                    </div>
+                 </Card>
+              </div>
+          ) : (
+             <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                    No subjects or chapters have been added to this course yet.
+                </CardContent>
+            </Card>
+          )}
+        </div>
+    )
+  }
 
   if (authLoading) {
     return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
@@ -327,15 +427,17 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:w-1/2 mx-auto h-auto">
           <TabsTrigger value="overview" className="py-2.5">Overview</TabsTrigger>
-          <TabsTrigger value="curriculum" className="py-2.5">Course Flow</TabsTrigger>
+          <TabsTrigger value="flow" className="py-2.5">Course Flow</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="mt-8">
           <CourseOverview course={course} />
         </TabsContent>
-        <TabsContent value="curriculum" className="mt-8">
-          <CourseCurriculum course={course} />
+        <TabsContent value="flow" className="mt-8">
+          <CourseFlow course={course} />
         </TabsContent>
       </Tabs>
+      <div className="h-96"></div>
+      <div className="h-96"></div>
     </div>
   );
 }

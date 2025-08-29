@@ -1,4 +1,5 @@
 
+
 import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter } from "@/types";
 import { db } from "./firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion } from "firebase/firestore";
@@ -305,68 +306,3 @@ export async function getEnrolledCourseData(userId: string, courseId: string): P
     }
     return userDoc.data()?.progress?.[courseId] || { progress: 0, completedLessons: [] };
 }
-
-// --- Course Structure Editing Functions ---
-
-export const addSubject = async (courseId: string, subjectTitle: string): Promise<Course> => {
-    const courseRef = doc(db, 'courses', courseId);
-    const newSubject: Subject = {
-        id: subjectTitle.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now(),
-        title: subjectTitle,
-        chapters: [],
-        progress: 0,
-    };
-    await updateDoc(courseRef, {
-        subjects: arrayUnion(newSubject)
-    });
-    return (await getDoc(courseRef)).data() as Course;
-};
-
-export const deleteSubject = async (courseId: string, subjectId: string): Promise<Course> => {
-    const courseRef = doc(db, 'courses', courseId);
-    const courseSnap = await getDoc(courseRef);
-    if (!courseSnap.exists()) throw new Error("Course not found");
-
-    const courseData = courseSnap.data() as Course;
-    const updatedSubjects = courseData.subjects.filter(s => s.id !== subjectId);
-
-    await updateDoc(courseRef, { subjects: updatedSubjects });
-    return { ...courseData, subjects: updatedSubjects };
-};
-
-export const addChapter = async (courseId: string, subjectId: string, chapterTitle: string): Promise<Course> => {
-    const courseRef = doc(db, 'courses', courseId);
-    const courseSnap = await getDoc(courseRef);
-    if (!courseSnap.exists()) throw new Error("Course not found");
-    
-    const courseData = courseSnap.data() as Course;
-    const subjectIndex = courseData.subjects.findIndex(s => s.id === subjectId);
-    if (subjectIndex === -1) throw new Error("Subject not found");
-
-    const newChapter: Chapter = {
-        id: chapterTitle.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now(),
-        title: chapterTitle,
-        lessons: [],
-    };
-
-    courseData.subjects[subjectIndex].chapters.push(newChapter);
-
-    await updateDoc(courseRef, { subjects: courseData.subjects });
-    return courseData;
-};
-
-export const deleteChapter = async (courseId: string, subjectId: string, chapterId: string): Promise<Course> => {
-    const courseRef = doc(db, 'courses', courseId);
-    const courseSnap = await getDoc(courseRef);
-    if (!courseSnap.exists()) throw new Error("Course not found");
-    
-    const courseData = courseSnap.data() as Course;
-    const subjectIndex = courseData.subjects.findIndex(s => s.id === subjectId);
-    if (subjectIndex === -1) throw new Error("Subject not found");
-    
-    const updatedChapters = courseData.subjects[subjectIndex].chapters.filter(c => c.id !== chapterId);
-    courseData.subjects[subjectIndex].chapters = updatedChapters;
-
-    await updateDoc(courseRef, { subjects: courseData.subjects });
-    return courseData;
-};
