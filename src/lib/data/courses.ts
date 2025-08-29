@@ -9,7 +9,7 @@ import {
   arrayUnion,
   arrayRemove,
 } from "firebase/firestore";
-import type { Course, Subject, Chapter } from "@/types";
+import type { Course, Subject, Chapter, Lesson } from "@/types";
 
 export const addSubject = async (courseId: string, subjectTitle: string): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
@@ -72,6 +72,51 @@ export const deleteChapter = async (courseId: string, subjectId: string, chapter
     
     const updatedChapters = courseData.subjects[subjectIndex].chapters.filter(c => c.id !== chapterId);
     courseData.subjects[subjectIndex].chapters = updatedChapters;
+
+    await updateDoc(courseRef, { subjects: courseData.subjects });
+    return courseData;
+};
+
+export const addLesson = async (courseId: string, subjectId: string, chapterId: string, lessonTitle: string): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) throw new Error("Course not found");
+    
+    const courseData = courseSnap.data() as Course;
+    const subjectIndex = courseData.subjects.findIndex(s => s.id === subjectId);
+    if (subjectIndex === -1) throw new Error("Subject not found");
+
+    const chapterIndex = courseData.subjects[subjectIndex].chapters.findIndex(c => c.id === chapterId);
+    if (chapterIndex === -1) throw new Error("Chapter not found");
+
+    const newLesson: Lesson = {
+        id: lessonTitle.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now(),
+        title: lessonTitle,
+        type: 'video', // default type
+        content: '',
+        duration: '10 min', // default duration
+    };
+
+    courseData.subjects[subjectIndex].chapters[chapterIndex].lessons.push(newLesson);
+    
+    await updateDoc(courseRef, { subjects: courseData.subjects });
+    return courseData;
+};
+
+export const deleteLesson = async (courseId: string, subjectId: string, chapterId: string, lessonId: string): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) throw new Error("Course not found");
+    
+    const courseData = courseSnap.data() as Course;
+    const subjectIndex = courseData.subjects.findIndex(s => s.id === subjectId);
+    if (subjectIndex === -1) throw new Error("Subject not found");
+
+    const chapterIndex = courseData.subjects[subjectIndex].chapters.findIndex(c => c.id === chapterId);
+    if (chapterIndex === -1) throw new Error("Chapter not found");
+    
+    const updatedLessons = courseData.subjects[subjectIndex].chapters[chapterIndex].lessons.filter(l => l.id !== lessonId);
+    courseData.subjects[subjectIndex].chapters[chapterIndex].lessons = updatedLessons;
 
     await updateDoc(courseRef, { subjects: courseData.subjects });
     return courseData;

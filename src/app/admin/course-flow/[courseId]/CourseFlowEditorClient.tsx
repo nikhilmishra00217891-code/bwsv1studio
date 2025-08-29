@@ -2,13 +2,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { Course } from "@/types";
+import type { Course, Lesson } from "@/types";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { addSubject, deleteSubject, addChapter, deleteChapter } from "@/lib/data/courses";
-import { LoaderCircle, PlusCircle, Trash2, ArrowLeft } from "lucide-react";
+import { addSubject, deleteSubject, addChapter, deleteChapter, addLesson, deleteLesson } from "@/lib/data/courses";
+import { LoaderCircle, PlusCircle, Trash2, ArrowLeft, Video, BookText } from "lucide-react";
 import Link from "next/link";
 import {
     Accordion,
@@ -33,6 +33,7 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
     const [course, setCourse] = useState(initialCourse);
     const [newSubjectTitle, setNewSubjectTitle] = useState("");
     const [newChapterTitles, setNewChapterTitles] = useState<Record<string, string>>({});
+    const [newLessonTitles, setNewLessonTitles] = useState<Record<string, string>>({});
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
 
@@ -90,6 +91,34 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
         });
     }
 
+     const handleAddLesson = (subjectId: string, chapterId: string) => {
+        const lessonTitle = newLessonTitles[chapterId]?.trim();
+        if (!lessonTitle) return;
+
+        startTransition(async () => {
+            try {
+                const updatedCourse = await addLesson(course.id, subjectId, chapterId, lessonTitle);
+                setCourse(updatedCourse);
+                setNewLessonTitles(prev => ({ ...prev, [chapterId]: "" }));
+                toast({ title: "Lesson Added!" });
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Error', description: error.message });
+            }
+        });
+    }
+    
+    const handleDeleteLesson = (subjectId: string, chapterId: string, lessonId: string) => {
+        startTransition(async () => {
+            try {
+                const updatedCourse = await deleteLesson(course.id, subjectId, chapterId, lessonId);
+                setCourse(updatedCourse);
+                toast({ title: "Lesson Removed" });
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Error', description: error.message });
+            }
+        });
+    }
+
     return (
         <div className="animate-fade-in p-4 md:p-8 space-y-6">
             <div className="flex items-center gap-4">
@@ -104,7 +133,7 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                 </div>
             </div>
 
-            <div className="max-w-3xl mx-auto space-y-6">
+            <div className="max-w-4xl mx-auto space-y-6">
                 <Accordion type="multiple" className="w-full space-y-4">
                     {(course.subjects || []).map((subject, index) => (
                         <AccordionItem value={`item-${index}`} key={subject.id} className="bg-card rounded-lg border">
@@ -118,7 +147,7 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader><AlertDialogTitle>Delete "{subject.title}"?</AlertDialogTitle></AlertDialogHeader>
-                                        <AlertDialogDescription>This will delete the subject and all its chapters. This action cannot be undone.</AlertDialogDescription>
+                                        <AlertDialogDescription>This will delete the subject and all its chapters and lessons. This action cannot be undone.</AlertDialogDescription>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                             <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)} className={cn(buttonVariants({variant: "destructive"}))}>Delete Subject</AlertDialogAction>
@@ -126,33 +155,62 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                     </AlertDialogContent>
                                 </AlertDialog>
                             </AccordionTrigger>
-                            <AccordionContent className="p-4 pt-0">
-                                <div className="space-y-2 ml-4">
-                                    {subject.chapters.length > 0 ? (
-                                        subject.chapters.map(chapter => (
-                                            <div key={chapter.id} className="flex justify-between items-center p-2 rounded-md bg-background">
-                                                <p>{chapter.title}</p>
-                                                <AlertDialog>
+                            <AccordionContent className="p-4 pt-0 space-y-4">
+                               <Accordion type="multiple" className="w-full space-y-3">
+                                    {subject.chapters.map(chapter => (
+                                        <AccordionItem value={`chapter-${chapter.id}`} key={chapter.id} className="bg-background rounded-md border">
+                                             <AccordionTrigger className="p-3 hover:no-underline font-medium text-base flex justify-between w-full">
+                                                <span>{chapter.title}</span>
+                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                                                             <Trash2 className="w-4 h-4 text-destructive" />
                                                         </Button>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader><AlertDialogTitle>Delete "{chapter.title}"?</AlertDialogTitle></AlertDialogHeader>
-                                                        <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+                                                        <AlertDialogDescription>This will delete the chapter and all its lessons. This cannot be undone.</AlertDialogDescription>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                             <AlertDialogAction onClick={() => handleDeleteChapter(subject.id, chapter.id)} className={cn(buttonVariants({variant: "destructive"}))}>Delete Chapter</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground p-2">No chapters yet.</p>
-                                    )}
-                                    <div className="flex items-center gap-2 pt-2">
+                                            </AccordionTrigger>
+                                            <AccordionContent className="p-3 pt-0">
+                                                 <div className="space-y-2 ml-4">
+                                                    {chapter.lessons.map(lesson => (
+                                                        <div key={lesson.id} className="flex justify-between items-center p-2 rounded-md bg-muted/50">
+                                                            <div className="flex items-center gap-2">
+                                                                <Video className="w-4 h-4 text-muted-foreground"/>
+                                                                <p>{lesson.title}</p>
+                                                            </div>
+                                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteLesson(subject.id, chapter.id, lesson.id)}>
+                                                                <Trash2 className="w-4 h-4 text-destructive" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                     <div className="flex items-center gap-2 pt-2">
+                                                        <Input
+                                                            placeholder="New lesson title..."
+                                                            value={newLessonTitles[chapter.id] || ""}
+                                                            onChange={(e) => setNewLessonTitles(prev => ({ ...prev, [chapter.id]: e.target.value }))}
+                                                            disabled={isPending}
+                                                            className="h-8 text-sm"
+                                                        />
+                                                        <Button size="icon" className="h-8 w-8" onClick={() => handleAddLesson(subject.id, chapter.id)} disabled={isPending || !(newLessonTitles[chapter.id] || "").trim()}>
+                                                            <PlusCircle className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                 </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
+                                </Accordion>
+
+                                <div className="p-4 border rounded-md bg-background">
+                                     <h4 className="font-semibold text-sm mb-2">Add New Chapter</h4>
+                                     <div className="flex items-center gap-2">
                                         <Input
                                             placeholder="New chapter title..."
                                             value={newChapterTitles[subject.id] || ""}
@@ -160,7 +218,7 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                             disabled={isPending}
                                         />
                                         <Button onClick={() => handleAddChapter(subject.id)} disabled={isPending || !(newChapterTitles[subject.id] || "").trim()}>
-                                            <PlusCircle className="w-4 h-4" />
+                                            <PlusCircle className="w-4 h-4 mr-2" /> Add
                                         </Button>
                                     </div>
                                 </div>

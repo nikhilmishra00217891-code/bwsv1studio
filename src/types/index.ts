@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -32,7 +33,8 @@ export interface Course {
   thumbnail: string;
   mentorName: string;
   description: string;
-  lessons: Lesson[]; // Kept for backward compatibility if needed, but new structure is subjects
+  // lessons is deprecated but kept for safety, use subjects instead
+  lessons: Lesson[]; 
   subjects: Subject[];
   isActive: boolean;
   youtubeLink?: string;
