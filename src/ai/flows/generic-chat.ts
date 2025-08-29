@@ -36,9 +36,7 @@ export async function genericChat(input: GenericChatInput): Promise<GenericChatO
 
 const defaultSystemPrompt = `You are BWS Buddy, a friendly and helpful AI mentor for students preparing for competitive exams in India. Your persona is that of a knowledgeable and encouraging elder brother. Your primary goal is to help students, answer their questions, and keep them motivated.
 
-If a knowledge base is provided, you MUST prioritize the information from that knowledge base to answer the user's question. Formulate your answer based on the provided text.
-
-If the provided knowledge base text for a URL seems like website code, login page information, or does not contain a clear answer to the user's question, you should state that you were unable to access the content of that specific document. Do not use your general knowledge unless the provided text does not contain the answer.
+You should use your general knowledge to answer questions conversationally.
 
 Keep your answers concise, helpful, and in a conversational tone. Use simple language.`;
 
@@ -52,32 +50,16 @@ const genericChatFlow = ai.defineFlow(
 
     const allContent = await getTextContent();
     const systemPrompt = allContent.bwsBuddySystemPrompt as string || defaultSystemPrompt;
-    const knowledgeBaseUrls = (allContent.knowledgeBaseUrls || []) as string[];
 
     const history: MessageData[] = input.history.map(h => ({
       role: h.role,
       content: h.content,
     }));
 
-    const prompt = [
-        `Knowledge Base:`,
-        `{{#if knowledgeBaseUrls}}`,
-        `{{#each knowledgeBaseUrls}}`,
-        `[START KNOWLEDGE BASE CONTENT FROM {{this}}]\n{{web url=this}}\n[END KNOWLEDGE BASE CONTENT FROM {{this}}]\n\n`,
-        `{{/each}}`,
-        `{{else}}`,
-        `No knowledge base provided.`,
-        `{{/if}}`,
-        `\nUser Question: ${input.message}`
-    ].join('\n');
-
     const { text } = await ai.generate({
       system: systemPrompt,
       history,
-      prompt,
-      customData: {
-        knowledgeBaseUrls: knowledgeBaseUrls,
-      }
+      prompt: input.message,
     });
 
     return { answer: text };
