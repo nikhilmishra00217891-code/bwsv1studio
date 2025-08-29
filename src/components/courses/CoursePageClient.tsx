@@ -227,7 +227,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                 <Card>
                     <CardContent className="p-6 text-center text-muted-foreground">
                         No subjects have been added to this course yet.
-                        {isEditMode && " Use the Course Structure Editor below to add subjects."}
+                        {isEditMode && " Use the Course Flow Editor below to add subjects."}
                     </CardContent>
                 </Card>
               )}
@@ -247,7 +247,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             {isCurrentUserFaculty && <CourseFacultyControls />}
 
             <div className="grid lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 space-y-8">
                     <Tabs defaultValue="description" className="w-full">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                             <TabsList>
@@ -296,7 +296,11 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                             </CardContent>
                         </Card>
                     </Tabs>
-                    {isEditMode && isCurrentUserFaculty && <CourseStructureEditor course={course} onCourseUpdate={setCourse} />}
+                    
+                    {isEditMode && isCurrentUserFaculty && (
+                        <CourseStructureEditor course={course} onCourseUpdate={setCourse} />
+                    )}
+
                 </div>
                 <div className="lg:col-span-1">
                     <div className="sticky top-24">
