@@ -57,41 +57,35 @@ export const CourseSidebar = ({ course, selectedSubject, onLessonClick, selected
     return (
         <AnimatePresence>
         {isOpen && (
-            <motion.aside 
-                initial={{ x: '-100%', opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: '-100%', opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="fixed top-0 left-0 h-full w-80 bg-background border-r flex flex-col z-40"
-            >
-                <header className="p-4 border-b flex items-center justify-between gap-3 h-16 shrink-0">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                        <BookOpen className="w-6 h-6 text-primary shrink-0"/>
-                        <h2 className="text-lg font-bold font-headline truncate">{selectedSubject ? selectedSubject.title : course.title}</h2>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden shrink-0">
-                        <X className="w-5 h-5"/>
-                    </Button>
-                </header>
-                <ScrollArea className="flex-grow p-2">
-                    <div className="space-y-2">
-                        {selectedSubject ? (
-                             selectedSubject.chapters.map(chapter => (
-                                <ChapterItem 
-                                    key={chapter.id} 
-                                    chapter={chapter} 
-                                    onLessonClick={onLessonClick}
-                                    selectedLessonId={selectedLessonId}
-                                />
-                            ))
-                        ) : (
-                            <div className="p-8 text-center text-muted-foreground">
-                                <p>Select a subject from the main content area to see its chapters and lessons.</p>
-                            </div>
-                        )}
-                    </div>
-                </ScrollArea>
-            </motion.aside>
+            <>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/60 z-30 md:hidden"
+                    onClick={onClose}
+                 />
+                <motion.div 
+                    initial={{ x: '-100%'}}
+                    animate={{ x: 0 }}
+                    exit={{ x: '-100%'}}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="fixed top-0 left-0 h-full w-80 bg-background border-r flex flex-col z-40"
+                >
+                    <header className="p-4 border-b flex items-center justify-between gap-3 h-16 shrink-0">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            <BookOpen className="w-6 h-6 text-primary shrink-0"/>
+                            <h2 className="text-lg font-bold font-headline truncate">{course.title}</h2>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden shrink-0">
+                            <X className="w-5 h-5"/>
+                        </Button>
+                    </header>
+                    <ScrollArea className="flex-grow p-2">
+                         {/* The content inside is temporarily removed as requested */}
+                    </ScrollArea>
+                </motion.div>
+            </>
         )}
         </AnimatePresence>
     )

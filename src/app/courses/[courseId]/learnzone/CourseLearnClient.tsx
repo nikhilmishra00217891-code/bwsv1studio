@@ -6,14 +6,14 @@ import type { Course, Subject, Chapter, Lesson } from "@/types";
 import { CourseSidebar } from '@/components/courses/CourseSidebar';
 import { CourseContent } from '@/components/courses/CourseContent';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ChevronsRightLeft, Library } from 'lucide-react';
+import { ArrowLeft, ChevronsRightLeft, Library, Menu } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 
 export default function CourseLearnClient({ course, userProgress }: { course: Course; userProgress: number; }) {
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const handleLessonClick = (lesson: Lesson) => {
         setSelectedLesson(lesson);
@@ -23,13 +23,13 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         if (chapter.lessons.length > 0) {
             setSelectedLesson(chapter.lessons[0]);
         } else {
-            setSelectedLesson(null); // Or handle empty chapters differently
+            setSelectedLesson(null); 
         }
     }
 
     const handleSubjectSelect = (subject: Subject | null) => {
         setSelectedSubject(subject);
-        setSelectedLesson(null); // Reset lesson when navigating subjects
+        setSelectedLesson(null);
         if (subject && !isSidebarOpen) {
             setIsSidebarOpen(true);
         }
@@ -46,7 +46,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 onClose={() => setIsSidebarOpen(false)}
             />
 
-            <main className="flex-1 flex flex-col transition-all duration-300" style={{ marginLeft: isSidebarOpen ? '320px' : '0' }}>
+            <main className="flex-1 flex flex-col transition-all duration-300 md:ml-0" style={{ marginLeft: isSidebarOpen ? '320px' : '0' }}>
                 <header className="flex-shrink-0 bg-background/80 backdrop-blur-sm border-b p-3 flex items-center justify-between h-16">
                     <div className="flex items-center gap-2">
                         <Button 
@@ -55,11 +55,11 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             className="text-muted-foreground"
                         >
-                            <ChevronsRightLeft className="w-5 h-5"/>
+                            <Menu className="w-5 h-5"/>
                         </Button>
                         <Button variant="outline" size="sm" asChild>
                             <Link href={`/courses/${course.id}`}>
-                                <ArrowLeft className="w-4 h-4 mr-2"/> Back to Course Details
+                                <ArrowLeft className="w-4 h-4 mr-2"/> Back to Details
                             </Link>
                         </Button>
                          {selectedSubject && (
@@ -68,7 +68,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                             </Button>
                         )}
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="hidden md:flex items-center gap-4">
                         <div className="text-right">
                             <p className="text-xs text-muted-foreground">Course Progress</p>
                             <div className="flex items-center gap-2">
