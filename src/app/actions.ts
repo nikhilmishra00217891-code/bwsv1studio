@@ -1,7 +1,7 @@
 
 "use server";
 
-import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat } from "@/ai/flows";
+import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat, recommendContent } from "@/ai/flows";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from "firebase/firestore";
 import type { UserProfile } from "@/types";
@@ -35,29 +35,6 @@ export async function askAiMentor(
     } catch (error) {
       console.error(`AI Error for course ${courseContext}:`, error);
       return "I seem to be having trouble recalling details about this specific course right now. Could you ask a general question instead?";
-    }
-  }
-
-  // Heuristics to decide which flow to use for general queries
-  const lowerCaseMessage = lastUserMessage.toLowerCase();
-  
-  const recommendationKeywords = ['recommend', 'suggest', 'find courses', 'which course', 'help me choose'];
-
-  if (recommendationKeywords.some(keyword => lowerCaseMessage.includes(keyword))) {
-    try {
-      const result = await helpStudentsFindRelevantCourses({
-        interests: lastUserMessage,
-        goals: "achieve academic excellence", // Generic goal
-      });
-      
-      if (result.relevantCourses.length > 0) {
-        return `Based on your interests, I'd recommend looking into these courses: ${result.relevantCourses.join(", ")}. You can find them on our Courses page!`;
-      } else {
-        return "I couldn't find specific course recommendations for that. Could you tell me more about what subjects or exams you're interested in?";
-      }
-    } catch (error) {
-        console.error('AI Error for course recommendation:', error);
-        return "I'm having a bit of trouble with recommendations right now. Why not browse our full list on the Courses page?";
     }
   }
 
