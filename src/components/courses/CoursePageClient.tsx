@@ -262,7 +262,6 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                             <TabsList>
                                 <TabsTrigger value="description">Description</TabsTrigger>
-                                <TabsTrigger value="subjects">Curriculum</TabsTrigger>
                                 <TabsTrigger value="resources">Resources</TabsTrigger>
                                 <TabsTrigger value="announcements">Announcements</TabsTrigger>
                             </TabsList>
@@ -290,103 +289,6 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                                             </span>
                                         </div>
                                      </div>
-                                </TabsContent>
-                                <TabsContent value="subjects">
-                                    <h3 className="text-2xl font-bold font-headline mb-6">Course Curriculum</h3>
-                                    <div className="space-y-4">
-                                        <Accordion type="multiple" className="w-full space-y-3">
-                                            {(course.subjects || []).length > 0 ? (
-                                                course.subjects.map((subject) => (
-                                                <AccordionItem value={subject.id} key={subject.id} className="bg-muted/50 rounded-lg border-b-0">
-                                                    <AccordionTrigger className="p-4 hover:no-underline font-semibold">
-                                                        {subject.title}
-                                                        {isEditMode && 
-                                                            <Button 
-                                                                variant="ghost" size="icon" className="h-8 w-8 ml-auto mr-2"
-                                                                onClick={(e) => { e.stopPropagation(); handleDeleteSubject(subject.id); }}
-                                                                disabled={loadingState[`delete_subject_${subject.id}`]}
-                                                            >
-                                                                {loadingState[`delete_subject_${subject.id}`] ? <LoaderCircle className="w-4 h-4 animate-spin"/> : <Trash2 className="w-4 h-4 text-destructive"/>}
-                                                            </Button>
-                                                        }
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="p-4 pt-0">
-                                                        {subject.chapters.length > 0 ? (
-                                                            <div className="space-y-2">
-                                                                {subject.chapters.map(chapter => (
-                                                                    <div key={chapter.id} className="flex items-center justify-between p-2 rounded-md bg-background/50">
-                                                                        <span>{chapter.title}</span>
-                                                                        {isEditMode && 
-                                                                            <Button 
-                                                                                variant="ghost" size="icon" className="h-7 w-7"
-                                                                                onClick={() => handleDeleteChapter(subject.id, chapter.id)}
-                                                                                disabled={loadingState[`delete_chapter_${chapter.id}`]}
-                                                                            >
-                                                                                {loadingState[`delete_chapter_${chapter.id}`] ? <LoaderCircle className="w-4 h-4 animate-spin"/> : <Trash2 className="w-4 h-4 text-destructive"/>}
-                                                                            </Button>
-                                                                        }
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <p className="text-sm text-muted-foreground mb-4">No chapters yet for this subject.</p>
-                                                        )}
-                                                        {isEditMode && (
-                                                            <div className="flex gap-2 pt-4 border-t mt-4">
-                                                                <Input
-                                                                    placeholder="New chapter title..."
-                                                                    value={newChapters[subject.id] || ''}
-                                                                    onChange={(e) => setNewChapters({ ...newChapters, [subject.id]: e.target.value })}
-                                                                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddChapter(subject.id) }}
-                                                                />
-                                                                <Button 
-                                                                    size="icon" 
-                                                                    onClick={() => handleAddChapter(subject.id)}
-                                                                    disabled={loadingState[`add_chapter_${subject.id}`]}
-                                                                >
-                                                                    {loadingState[`add_chapter_${subject.id}`] ? <LoaderCircle className="w-4 h-4 animate-spin"/> : <Plus />}
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            ))
-                                            ) : (
-                                                !isEditMode && (
-                                                <Card>
-                                                    <CardContent className="p-6 text-center text-muted-foreground">
-                                                        No lessons have been added to this course yet.
-                                                    </CardContent>
-                                                </Card>
-                                                )
-                                            )}
-                                        </Accordion>
-
-                                        {isEditMode && isCurrentUserFaculty && (
-                                            <Card className="mt-6 bg-card/50">
-                                                <CardHeader>
-                                                    <CardTitle className="text-lg">Add New Subject</CardTitle>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <div className="flex gap-2">
-                                                        <Input
-                                                            id="new-subject"
-                                                            placeholder="e.g., Classical Mechanics"
-                                                            value={newSubject}
-                                                            onChange={(e) => setNewSubject(e.target.value)}
-                                                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubject() }}
-                                                        />
-                                                        <Button 
-                                                            onClick={handleAddSubject}
-                                                            disabled={loadingState.addSubject}
-                                                        >
-                                                            {loadingState.addSubject ? <LoaderCircle className="animate-spin" /> : 'Add Subject'}
-                                                        </Button>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        )}
-                                    </div>
                                 </TabsContent>
                                  <TabsContent value="resources">
                                      <h3 className="text-2xl font-bold font-headline mb-6">Resources</h3>
