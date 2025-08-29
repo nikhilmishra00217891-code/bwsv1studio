@@ -178,7 +178,7 @@ const LectureView = ({ lesson }: { lesson: Lesson }) => {
     )
 }
 
-export function CourseContent({ course, selectedSubject, selectedLesson, onSubjectSelect, onChapterSelect }: CourseContentProps) {
+export function CourseContent({ course, selectedSubject, selectedLesson, onSubjectSelect, onChapterSelect, onLessonClick }: CourseContentProps) {
     if (selectedLesson) {
         return <LectureView lesson={selectedLesson} />;
     }
