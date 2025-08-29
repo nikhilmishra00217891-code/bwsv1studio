@@ -36,7 +36,7 @@ import {
   Youtube,
   Pencil,
   PlusCircle,
-  FileFlowChart,
+  Workflow,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -159,7 +159,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         </div>
          <Button asChild variant="outline">
             <Link href={`/admin/course-flow/${course.id}`}>
-              <FileFlowChart className="w-4 h-4 mr-2" />
+              <Workflow className="w-4 h-4 mr-2" />
               Edit Course Flow
             </Link>
           </Button>
