@@ -214,7 +214,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                           {subject.title}
                       </AccordionTrigger>
                       <AccordionContent className="p-4 pt-0">
-                          <p className="text-muted-foreground mb-4">Lesson content details would go here. A short description of what this lesson covers.</p>
+                          <p className="text-muted-foreground mb-4">This subject contains {subject.chapters.length} chapter(s). Go to the learnzone to view lessons.</p>
                           <Button variant="secondary" asChild>
                               <Link href={`/courses/${course.id}/learnzone`}>
                                 <PlayCircle className="mr-2 h-4 w-4" /> Go to Subject
@@ -318,9 +318,13 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                                      <h2 className="text-2xl font-bold font-headline">
                                         <EditableText contentId={`course_title_${course.id}`} defaultValue={course.title} />
                                      </h2>
-                                     <p className="text-muted-foreground mt-1">For {course.category} Students</p>
+                                     <p className="text-muted-foreground mt-1">
+                                        <EditableText as="input" contentId={`course_category_${course.id}`} defaultValue={course.category} />
+                                     </p>
                                      <div className="flex justify-between items-center mt-4 text-sm">
-                                         <span>Taught by <strong className="text-primary">{course.mentorName}</strong></span>
+                                         <span>Taught by <strong className="text-primary">
+                                            <EditableText as="input" contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} />
+                                         </strong></span>
                                          <Badge variant="outline">Hinglish</Badge>
                                      </div>
                                      {userIsEnrolled ? (

@@ -24,7 +24,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setIsMounted(true);
     }, []);
 
-    const isFocusOrWarZone = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.includes('/learnzone');
+    const isFocusOrWarZone = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.startsWith('/learnzone');
 
     if (!isMounted) {
         return (
@@ -46,6 +46,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const isHomepage = pathname === '/';
     const isGamePage = pathname.startsWith('/games/');
     const isAdminPage = pathname.startsWith('/admin/');
+    const isCoursePage = pathname.startsWith('/courses/') && pathname.length > '/courses/'.length;
 
     if (userProfile?.suspension?.isSuspended) {
         return <SuspendedAccountFirewall reason={userProfile.suspension.reason} />;
@@ -66,7 +67,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="flex min-h-screen flex-col">
                 {!isOnboarding && <Header />}
                 <main className="flex-1">{children}</main>
-                {!isGamePage && !isAdminPage && <Footer />}
+                {!isGamePage && !isAdminPage && !isCoursePage && <Footer />}
             </div>
              {isHomepage && user && <FloatingCTA />}
             {!isOnboarding && !isGamePage && (
