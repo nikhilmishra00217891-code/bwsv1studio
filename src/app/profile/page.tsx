@@ -4,7 +4,7 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LoaderCircle, Mail, User, Rocket, Brain, Trophy, VenetianMask, StarIcon, Award, Bird, FerrisWheel, Phone, Pencil, Save, Undo, Check, Dices, Palette, BrainCircuit as BrainCircuitIcon } from "lucide-react";
+import { LoaderCircle, Mail, User, Rocket, Brain, Trophy, VenetianMask, StarIcon, Award, Bird, FerrisWheel, Phone, Pencil, Save, Undo, Check, Dices, Palette, BrainCircuit as BrainCircuitIcon, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { UserProfile } from "@/types";
@@ -413,12 +413,13 @@ export default function ProfilePage() {
                               setProfileData(p => ({...p!, theme: value, customTheme: p!.customTheme })); // Keep customTheme data
                           }
                       }}
-                      className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+                      className="grid grid-cols-2 sm:grid-cols-3 gap-4"
                   >
                       <Label htmlFor="theme-light" className="cursor-pointer"><RadioGroupItem value="light" id="theme-light" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'light' && 'border-primary ring-2 ring-primary')}>Light</div></Label>
                       <Label htmlFor="theme-dark" className="cursor-pointer"><RadioGroupItem value="dark" id="theme-dark" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'dark' && 'border-primary ring-2 ring-primary')}>Dark</div></Label>
                       <Label htmlFor="theme-proudshe" className="cursor-pointer"><RadioGroupItem value="proudshe" id="theme-proudshe" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'proudshe' && 'border-primary ring-2 ring-primary')}>Proudshe</div></Label>
                       <Label htmlFor="theme-retrogamer" className="cursor-pointer"><RadioGroupItem value="retrogamer" id="theme-retrogamer" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center", profileData.theme === 'retrogamer' && 'border-primary ring-2 ring-primary')}>Retro Gamer</div></Label>
+                      <Label htmlFor="theme-yinyang" className="cursor-pointer"><RadioGroupItem value="yinyang" id="theme-yinyang" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center flex items-center justify-center gap-2", profileData.theme === 'yinyang' && 'border-primary ring-2 ring-primary')}><Shield className="w-4 h-4"/> Yin Yang</div></Label>
                       <Label htmlFor="theme-custom" className="cursor-pointer"><RadioGroupItem value="custom" id="theme-custom" className="sr-only"/> <div className={cn("p-2 border rounded-md text-center flex items-center justify-center gap-2", profileData.theme === 'custom' && 'border-primary ring-2 ring-primary')}><Palette className="w-4 h-4"/> Custom</div></Label>
                   </RadioGroup>
 
