@@ -2,7 +2,7 @@
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, BookText, ChevronRight, Video, CheckCircle2, X } from 'lucide-react';
+import { BookOpen, BookText, ChevronRight, Video, CheckCircle2, X, Megaphone, Calendar, FolderKanban } from 'lucide-react';
 import type { Course, Subject, Chapter, Lesson } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -53,6 +53,13 @@ const ChapterItem = ({ chapter, onLessonClick, selectedLessonId }: { chapter: Ch
     )
 }
 
+const SidebarMenuItem = ({ icon: Icon, label }: { icon: React.ElementType, label: string }) => (
+    <button className="w-full flex items-center gap-3 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+        <Icon className="w-5 h-5"/>
+        <span className="font-medium">{label}</span>
+    </button>
+)
+
 export const CourseSidebar = ({ course, selectedSubject, onLessonClick, selectedLessonId, isOpen, onClose }: { course: Course, selectedSubject: Subject | null, onLessonClick: (lesson: Lesson) => void, selectedLessonId?: string | null, isOpen: boolean, onClose: () => void }) => {
     return (
         <AnimatePresence>
@@ -82,7 +89,11 @@ export const CourseSidebar = ({ course, selectedSubject, onLessonClick, selected
                         </Button>
                     </header>
                     <ScrollArea className="flex-grow p-2">
-                         {/* The content inside is temporarily removed as requested */}
+                        <div className="p-2 space-y-2">
+                            <SidebarMenuItem icon={Megaphone} label="Announcements"/>
+                            <SidebarMenuItem icon={Calendar} label="Events"/>
+                            <SidebarMenuItem icon={FolderKanban} label="Course Resources"/>
+                        </div>
                     </ScrollArea>
                 </motion.div>
             </>

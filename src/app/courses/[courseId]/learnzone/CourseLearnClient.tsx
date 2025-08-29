@@ -30,9 +30,6 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
     const handleSubjectSelect = (subject: Subject | null) => {
         setSelectedSubject(subject);
         setSelectedLesson(null);
-        if (subject && !isSidebarOpen) {
-            setIsSidebarOpen(true);
-        }
     }
 
     return (
