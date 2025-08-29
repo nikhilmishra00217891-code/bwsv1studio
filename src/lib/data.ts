@@ -1,5 +1,5 @@
 
-import type { Course, Testimonial, EnrolledCourse, UserProfile } from "@/types";
+import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter } from "@/types";
 import { db } from "./firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion } from "firebase/firestore";
 import type { User } from "firebase/auth";
@@ -68,44 +68,14 @@ export const getCourseById = async (id: string): Promise<Course | null> => {
 export const createCourse = async (): Promise<string> => {
   const coursesCol = collection(db, "courses");
   const newCourseData: Partial<Course> = {
-    title: "Introduction to Physics",
-    category: "Science",
-    description: "A comprehensive introduction to the fundamental principles of physics, from classical mechanics to modern physics. This course is designed to build a strong foundation for competitive exams like JEE and NEET.",
+    title: "New Course Title",
+    category: "New Category",
+    description: "A comprehensive introduction to the fundamental principles of this new course.",
     mentorName: "Prof. S. Verma",
-    thumbnail: "https://placehold.co/600x400.png?text=Physics",
+    thumbnail: "https://placehold.co/600x400.png?text=New+Course",
     isFree: true,
-    isActive: true,
-    subjects: [
-        {
-            id: 'classical_mechanics', title: 'Classical Mechanics', progress: 50, chapters: [
-                {id: 'kinematics', title: 'Kinematics', lessons: [
-                    {id: 'km1', title: 'Introduction to Motion', type: 'video', duration: '12:35', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "## Key Concepts\n\n*   **Displacement:** Change in position. It's a vector quantity.\n*   **Velocity:** Rate of change of displacement. `v = Δx / Δt`\n*   **Acceleration:** Rate of change of velocity. `a = Δv / Δt`"},
-                    {id: 'km2', title: 'Equations of Motion', type: 'video', duration: '15:50', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "## The Three Equations\n\n1.  `v = u + at`\n2.  `s = ut + (1/2)at^2`\n3.  `v^2 = u^2 + 2as`\n\nThese are applicable only for constant acceleration."}
-                ]},
-                {id: 'newtons_laws', title: 'Newton\'s Laws of Motion', lessons: [
-                    {id: 'nlm1', title: 'First Law (Inertia)', type: 'video', duration: '10:02', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "An object remains at rest or in uniform motion unless acted upon by a net external force."},
-                    {id: 'nlm2', title: 'Second Law (F=ma)', type: 'video', duration: '18:11', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "The acceleration of an object is directly proportional to the net force acting on it and inversely proportional to its mass."},
-                    {id: 'nlm3', title: 'Third Law (Action-Reaction)', type: 'video', duration: '09:45', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "For every action, there is an equal and opposite reaction."}
-                ]},
-                {id: 'work_energy', title: 'Work, Energy, and Power', lessons: []}
-            ]
-        },
-        {
-            id: 'electromagnetism', title: 'Electromagnetism', progress: 25, chapters: [
-                {id: 'electric_charges', title: 'Electric Charges and Fields', lessons: [
-                    {id: 'ecf1', title: 'Coulomb\'s Law', type: 'video', duration: '22:00', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "Describes the electrostatic force between two charged particles."},
-                    {id: 'ecf2', title: 'Electric Field', type: 'video', duration: '19:30', content: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', notes: "The region around a charged particle where a force would be exerted on other charged particles."}
-                ]},
-                 {id: 'electrostatic_potential', title: 'Electrostatic Potential and Capacitance', lessons: []}
-            ]
-        },
-        {
-            id: 'optics', title: 'Optics', progress: 0, chapters: [
-                 {id: 'ray_optics', title: 'Ray Optics', lessons: []},
-                 {id: 'wave_optics', title: 'Wave Optics', lessons: []}
-            ]
-        }
-    ],
+    isActive: false, // Inactive by default
+    subjects: [],
     youtubeLink: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     courseCompletionPercent: 0,
   };
@@ -113,9 +83,11 @@ export const createCourse = async (): Promise<string> => {
   return docRef.id;
 }
 
-export const updateCourse = async (courseId: string, data: Partial<Course>) => {
+export const updateCourse = async (courseId: string, data: Partial<Course>): Promise<Course> => {
     const courseRef = doc(db, "courses", courseId);
     await updateDoc(courseRef, data);
+    const updatedDoc = await getDoc(courseRef);
+    return { id: updatedDoc.id, ...updatedDoc.data() } as Course;
 }
 
 export const deleteCourse = async (courseId: string) => {
@@ -334,4 +306,67 @@ export async function getEnrolledCourseData(userId: string, courseId: string): P
     return userDoc.data()?.progress?.[courseId] || { progress: 0, completedLessons: [] };
 }
 
+// --- Course Structure Editing Functions ---
+
+export const addSubject = async (courseId: string, subjectTitle: string): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const newSubject: Subject = {
+        id: subjectTitle.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now(),
+        title: subjectTitle,
+        chapters: [],
+        progress: 0,
+    };
+    await updateDoc(courseRef, {
+        subjects: arrayUnion(newSubject)
+    });
+    return (await getDoc(courseRef)).data() as Course;
+};
+
+export const deleteSubject = async (courseId: string, subjectId: string): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) throw new Error("Course not found");
+
+    const courseData = courseSnap.data() as Course;
+    const updatedSubjects = courseData.subjects.filter(s => s.id !== subjectId);
+
+    await updateDoc(courseRef, { subjects: updatedSubjects });
+    return { ...courseData, subjects: updatedSubjects };
+};
+
+export const addChapter = async (courseId: string, subjectId: string, chapterTitle: string): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) throw new Error("Course not found");
     
+    const courseData = courseSnap.data() as Course;
+    const subjectIndex = courseData.subjects.findIndex(s => s.id === subjectId);
+    if (subjectIndex === -1) throw new Error("Subject not found");
+
+    const newChapter: Chapter = {
+        id: chapterTitle.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now(),
+        title: chapterTitle,
+        lessons: [],
+    };
+
+    courseData.subjects[subjectIndex].chapters.push(newChapter);
+
+    await updateDoc(courseRef, { subjects: courseData.subjects });
+    return courseData;
+};
+
+export const deleteChapter = async (courseId: string, subjectId: string, chapterId: string): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) throw new Error("Course not found");
+    
+    const courseData = courseSnap.data() as Course;
+    const subjectIndex = courseData.subjects.findIndex(s => s.id === subjectId);
+    if (subjectIndex === -1) throw new Error("Subject not found");
+    
+    const updatedChapters = courseData.subjects[subjectIndex].chapters.filter(c => c.id !== chapterId);
+    courseData.subjects[subjectIndex].chapters = updatedChapters;
+
+    await updateDoc(courseRef, { subjects: courseData.subjects });
+    return courseData;
+};

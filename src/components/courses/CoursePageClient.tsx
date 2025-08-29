@@ -48,6 +48,7 @@ import { useEditMode } from "@/components/common/EditModeProvider";
 import Link from "next/link";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 import { EditableImage } from "../common/EditableImage";
+import CourseStructureEditor from "./CourseStructureEditor";
 
 
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
@@ -85,8 +86,8 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   
   const handleSaveCourse = async (data: Partial<Course>) => {
     try {
-        await updateCourse(course.id, data);
-        setCourse(prev => ({...prev, ...data}));
+        const updatedCourse = await updateCourse(course.id, data);
+        setCourse(updatedCourse);
         toast({
             title: "Course Updated",
             description: `Your changes have been saved.`
@@ -225,7 +226,8 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
               ) : (
                 <Card>
                     <CardContent className="p-6 text-center text-muted-foreground">
-                        No lessons have been added to this course yet.
+                        No subjects have been added to this course yet.
+                        {isEditMode && " Use the Course Structure Editor below to add subjects."}
                     </CardContent>
                 </Card>
               )}
@@ -294,6 +296,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                             </CardContent>
                         </Card>
                     </Tabs>
+                    {isEditMode && <CourseStructureEditor course={course} onCourseUpdate={setCourse} />}
                 </div>
                 <div className="lg:col-span-1">
                     <div className="sticky top-24">
