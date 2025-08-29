@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -307,31 +306,11 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   const CourseCurriculum = ({ course }: { course: Course }) => (
       <div>
           <h3 className="text-2xl font-bold font-headline mb-4">Course Flow</h3>
-          <Accordion type="multiple" className="w-full space-y-3">
-               {course.subjects && course.subjects.length > 0 ? (
-                course.subjects.map((subject, index) => (
-                  <AccordionItem value={`item-${index}`} key={subject.id} className="bg-card rounded-lg border-b-0">
-                      <AccordionTrigger className="p-4 hover:no-underline font-semibold">
-                          {subject.title}
-                      </AccordionTrigger>
-                      <AccordionContent className="p-4 pt-0">
-                          <p className="text-muted-foreground mb-4">Lesson content details would go here. A short description of what this lesson covers.</p>
-                          <Button variant="secondary" asChild>
-                              <Link href={`/courses/${course.id}/learnzone`}>
-                                <PlayCircle className="mr-2 h-4 w-4" /> Go to Subject
-                              </Link>
-                          </Button>
-                      </AccordionContent>
-                  </AccordionItem>
-              ))
-              ) : (
-                <Card>
-                    <CardContent className="p-6 text-center text-muted-foreground">
-                        No lessons have been added to this course yet.
-                    </CardContent>
-                </Card>
-              )}
-          </Accordion>
+          <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                  No lessons have been added to this course yet.
+              </CardContent>
+          </Card>
       </div>
   )
 
