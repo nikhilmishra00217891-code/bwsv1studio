@@ -3,7 +3,6 @@
 
 import { useState, useEffect, FormEvent, useRef } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { isFaculty } from "@/lib/data";
 import {
   listenForAnnouncements,
   createAnnouncement,
@@ -194,7 +193,7 @@ const AnnouncementBubble = ({
 };
 
 export default function AnnouncementsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const [userIsFaculty, setUserIsFaculty] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -204,15 +203,7 @@ export default function AnnouncementsPage() {
   useEffect(() => {
     if (authLoading) return;
     
-    const checkFaculty = async () => {
-        if (user) {
-            const facultyStatus = await isFaculty(user.uid);
-            setUserIsFaculty(facultyStatus);
-        } else {
-            setUserIsFaculty(false);
-        }
-    };
-    checkFaculty();
+    setUserIsFaculty(userProfile?.role === 'faculty');
 
     setDataLoading(true);
     const unsubscribe = listenForAnnouncements((newAnnouncements) => {
@@ -221,7 +212,7 @@ export default function AnnouncementsPage() {
     });
 
     return () => unsubscribe();
-  }, [user, authLoading]);
+  }, [user, userProfile, authLoading]);
 
   useEffect(() => {
     // Scroll to bottom when announcements change
