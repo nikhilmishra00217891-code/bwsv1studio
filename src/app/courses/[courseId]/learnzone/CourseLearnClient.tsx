@@ -13,6 +13,7 @@ import Link from 'next/link';
 export default function CourseLearnClient({ course, userProgress }: { course: Course; userProgress: number; }) {
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+    const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const handleLessonClick = (lesson: Lesson) => {
@@ -20,15 +21,22 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
     }
 
     const handleChapterSelect = (chapter: Chapter) => {
-        if (chapter.lessons.length > 0) {
-            setSelectedLesson(chapter.lessons[0]);
-        } else {
-            setSelectedLesson(null); 
-        }
+        setSelectedChapter(chapter);
+        setSelectedLesson(null);
     }
 
     const handleSubjectSelect = (subject: Subject | null) => {
         setSelectedSubject(subject);
+        setSelectedChapter(null);
+        setSelectedLesson(null);
+    }
+    
+    const handleBackToChapters = () => {
+        setSelectedLesson(null);
+    }
+
+    const handleBackToSubjects = () => {
+        setSelectedChapter(null);
         setSelectedLesson(null);
     }
 
@@ -59,9 +67,14 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                                 <ArrowLeft className="w-4 h-4 mr-2"/> Back to Details
                             </Link>
                         </Button>
-                         {selectedSubject && (
-                            <Button variant="outline" size="sm" onClick={() => handleSubjectSelect(null)}>
-                                <Library className="w-4 h-4 mr-2"/> All Subjects
+                         {selectedLesson && (
+                            <Button variant="outline" size="sm" onClick={handleBackToChapters}>
+                                <ArrowLeft className="w-4 h-4 mr-2"/> Back to Lessons
+                            </Button>
+                        )}
+                        {selectedChapter && (
+                             <Button variant="outline" size="sm" onClick={handleBackToSubjects}>
+                                <Library className="w-4 h-4 mr-2"/> All Chapters
                             </Button>
                         )}
                     </div>

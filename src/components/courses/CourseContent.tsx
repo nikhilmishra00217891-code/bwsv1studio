@@ -178,6 +178,61 @@ const LectureView = ({ lesson }: { lesson: Lesson }) => {
     )
 }
 
+const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLessonClick: (lesson: Lesson) => void }) => {
+    const liveLessons = chapter.lessons.filter(l => l.status === 'live');
+    const recordedLessons = chapter.lessons.filter(l => l.status === 'recorded');
+
+    return (
+        <div className="p-4 md:p-8">
+             <div className="mb-8">
+                <h1 className="text-4xl font-bold font-headline">{chapter.title}</h1>
+            </div>
+             <Tabs defaultValue="live">
+                <TabsList>
+                    <TabsTrigger value="live">Currently Live ({liveLessons.length})</TabsTrigger>
+                    <TabsTrigger value="recorded">Recorded ({recordedLessons.length})</TabsTrigger>
+                </TabsList>
+                 <TabsContent value="live" className="mt-6">
+                    {liveLessons.length > 0 ? (
+                        <div className="space-y-3">
+                            {liveLessons.map(lesson => (
+                                <button key={lesson.id} onClick={() => onLessonClick(lesson)} className="w-full text-left">
+                                    <Card className="hover:bg-primary/5 hover:border-primary/40 transition-colors">
+                                        <CardContent className="p-4 flex items-center gap-4">
+                                            <Video className="w-6 h-6 text-primary"/>
+                                            <span className="font-semibold">{lesson.title}</span>
+                                        </CardContent>
+                                    </Card>
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <Card className="p-8 text-center text-muted-foreground">No sessions are live right now.</Card>
+                    )}
+                 </TabsContent>
+                 <TabsContent value="recorded" className="mt-6">
+                     {recordedLessons.length > 0 ? (
+                        <div className="space-y-3">
+                            {recordedLessons.map(lesson => (
+                                <button key={lesson.id} onClick={() => onLessonClick(lesson)} className="w-full text-left">
+                                    <Card className="hover:bg-muted/80">
+                                        <CardContent className="p-4 flex items-center gap-4">
+                                            <BookText className="w-6 h-6 text-muted-foreground"/>
+                                            <span className="font-semibold text-muted-foreground">{lesson.title}</span>
+                                        </CardContent>
+                                    </Card>
+                                </button>
+                            ))}
+                        </div>
+                     ) : (
+                         <Card className="p-8 text-center text-muted-foreground">No recorded sessions available for this chapter yet.</Card>
+                     )}
+                 </TabsContent>
+            </Tabs>
+        </div>
+    )
+}
+
 export function CourseContent({ course, selectedSubject, selectedLesson, onSubjectSelect, onChapterSelect, onLessonClick }: CourseContentProps) {
     if (selectedLesson) {
         return <LectureView lesson={selectedLesson} />;
