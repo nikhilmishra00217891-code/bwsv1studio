@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { Course, Lesson, Subject, Chapter } from "@/types";
@@ -132,7 +131,7 @@ const LectureView = ({ lesson }: { lesson: Lesson }) => {
     return (
         <div className="max-w-5xl mx-auto p-4 md:p-8">
             <div className="aspect-video bg-card rounded-lg overflow-hidden border shadow-lg relative">
-                {lesson.type === 'video' && videoId ? (
+                {videoId ? (
                      <iframe
                         className="w-full h-full"
                         src={`https://www.youtube.com/embed/${videoId}?rel=0`}
