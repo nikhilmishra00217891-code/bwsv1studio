@@ -16,6 +16,7 @@ import {
   serverTimestamp,
   orderBy,
   onSnapshot,
+  limit,
 } from "firebase/firestore";
 import type { Course, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
 
@@ -142,24 +143,6 @@ export const sendLiveChatMessage = async (
         ...message,
         timestamp: serverTimestamp()
     });
-};
-
-export const listenForLiveChatMessages = (
-    courseId: string, subjectId: string, chapterId: string, lessonId: string,
-    callback: (messages: LiveChatMessage[]) => void
-): (() => void) => {
-    const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
-    const q = query(chatColRef, orderBy("timestamp", "asc"), limit(100));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        const messages = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        } as LiveChatMessage));
-        callback(messages);
-    });
-
-    return unsubscribe;
 };
 
 export const deleteLiveChatHistory = async (courseId: string, subjectId: string, chapterId: string, lessonId: string) => {
