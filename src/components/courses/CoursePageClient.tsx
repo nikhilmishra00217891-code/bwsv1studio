@@ -303,7 +303,18 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     )
   }
 
-  const CourseOverview = ({ course }: { course: Course }) => (
+  const CourseOverview = ({ course }: { course: Course }) => {
+    const handleBadgeSave = (index: number) => (contentId: string, value: string) => {
+        const newTags = [...(course.tags || [])];
+        newTags[index] = value;
+        handleSaveCourse({ tags: newTags });
+    }
+
+    const defaultTags = ["Exam Prep 🔥", "Conceptual 🧠", "Quick Revision ⚡️", "New Tag ✨"];
+    const tags = course.tags && course.tags.length > 0 ? course.tags : defaultTags;
+
+
+    return (
       <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
                <h3 className="text-2xl font-bold font-headline">About This Course</h3>
@@ -311,9 +322,15 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                     <EditableText onSave={(contentId, value) => handleSaveCourse({ description: value })} multiline contentId={`course_description_${course.id}`} defaultValue={course.description} />
                 </div>
                <div className="flex flex-wrap gap-2">
-                  <Badge>Exam Prep 🔥</Badge>
-                  <Badge>Conceptual 🧠</Badge>
-                  <Badge>Quick Revision ⚡</Badge>
+                    {tags.slice(0, 4).map((tag, index) => (
+                        <EditableText 
+                            key={index}
+                            as="badge"
+                            onSave={handleBadgeSave(index)}
+                            contentId={`course_tag_${course.id}_${index}`}
+                            defaultValue={tag}
+                        />
+                    ))}
                </div>
           </div>
           <div className="space-y-4">
@@ -325,7 +342,8 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
               </Button>
           </div>
       </div>
-  )
+    )
+}
 
   if (authLoading) {
     return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>

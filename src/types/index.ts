@@ -34,6 +34,7 @@ export interface Course {
   thumbnail: string;
   mentorName: string;
   description: string;
+  tags?: string[];
   // lessons is deprecated but kept for safety, use subjects instead
   lessons: Lesson[]; 
   subjects: Subject[];
