@@ -8,8 +8,16 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  collection,
+  query,
+  getDocs,
+  writeBatch,
+  addDoc,
+  serverTimestamp,
+  orderBy,
+  onSnapshot,
 } from "firebase/firestore";
-import type { Course, Subject, Chapter, Lesson } from "@/types";
+import type { Course, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
 
 export const addSubject = async (courseId: string, subjectTitle: string): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
@@ -122,3 +130,50 @@ export const deleteLesson = async (courseId: string, subjectId: string, chapterI
     await updateDoc(courseRef, { subjects: courseData.subjects });
     return courseData;
 };
+
+// --- Live Chat Functions ---
+
+export const sendLiveChatMessage = async (
+    courseId: string, subjectId: string, chapterId: string, lessonId: string,
+    message: Omit<LiveChatMessage, 'id' | 'timestamp'>
+) => {
+    const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
+    await addDoc(chatColRef, {
+        ...message,
+        timestamp: serverTimestamp()
+    });
+};
+
+export const listenForLiveChatMessages = (
+    courseId: string, subjectId: string, chapterId: string, lessonId: string,
+    callback: (messages: LiveChatMessage[]) => void
+): (() => void) => {
+    const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
+    const q = query(chatColRef, orderBy("timestamp", "asc"), limit(100));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const messages = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        } as LiveChatMessage));
+        callback(messages);
+    });
+
+    return unsubscribe;
+};
+
+export const deleteLiveChatHistory = async (courseId: string, subjectId: string, chapterId: string, lessonId: string) => {
+    const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
+    const snapshot = await getDocs(chatColRef);
+    
+    if (snapshot.empty) {
+        return;
+    }
+    
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+}

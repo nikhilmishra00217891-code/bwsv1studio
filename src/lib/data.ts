@@ -2,7 +2,7 @@
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter, Lesson } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion, writeBatch } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 
@@ -307,6 +307,23 @@ export async function getEnrolledCourseData(userId: string, courseId: string): P
     return userDoc.data()?.progress?.[courseId] || { progress: 0, completedLessons: [] };
 }
 
+const deleteLiveChatHistory = async (courseId: string, subjectId: string, chapterId: string, lessonId: string) => {
+    const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
+    const snapshot = await getDocs(chatColRef);
+    
+    if (snapshot.empty) {
+        return;
+    }
+    
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+}
+
+
 export const endLiveSession = async (
   courseId: string,
   subjectId: string,
@@ -351,6 +368,11 @@ export const endLiveSession = async (
     if (!lessonUpdated) {
         throw new Error("Lesson not found within the specified course/subject/chapter.");
     }
+
+    // This is a fire-and-forget operation. We don't wait for it to complete
+    // to avoid slowing down the admin's action. Errors are logged on the server.
+    deleteLiveChatHistory(courseId, subjectId, chapterId, lessonId)
+        .catch(err => console.error(`Failed to delete chat history for lesson ${lessonId}:`, err));
 
     await updateDoc(courseRef, { subjects: updatedSubjects });
     return { success: true, message: "Session ended successfully." };

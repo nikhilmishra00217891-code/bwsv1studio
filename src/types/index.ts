@@ -1,7 +1,14 @@
 
-
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
+
+export interface LiveChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  timestamp: Timestamp;
+}
 
 export interface Lesson {
   id: string;
