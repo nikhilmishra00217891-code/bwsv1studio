@@ -25,7 +25,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         setSelectedLesson(null);
     }
 
-    const handleSubjectSelect = (subject: Subject | null) => {
+    const handleSubjectSelect = (subject: Subject) => {
         setSelectedSubject(subject);
         setSelectedChapter(null);
         setSelectedLesson(null);
@@ -44,9 +44,6 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         <div className="flex h-screen bg-card/50">
             <CourseSidebar 
                 course={course}
-                selectedSubject={selectedSubject}
-                onLessonClick={handleLessonClick}
-                selectedLessonId={selectedLesson?.id}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
             />
@@ -100,6 +97,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                    <CourseContent
                         course={course}
                         selectedSubject={selectedSubject}
+                        selectedChapter={selectedChapter}
                         selectedLesson={selectedLesson}
                         onSubjectSelect={handleSubjectSelect}
                         onChapterSelect={handleChapterSelect}

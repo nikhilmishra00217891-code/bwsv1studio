@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 interface CourseContentProps {
     course: Course;
     selectedSubject: Subject | null;
+    selectedChapter: Chapter | null;
     selectedLesson: Lesson | null;
     onSubjectSelect: (subject: Subject) => void;
     onChapterSelect: (chapter: Chapter) => void;
@@ -233,9 +234,13 @@ const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLesson
     )
 }
 
-export function CourseContent({ course, selectedSubject, selectedLesson, onSubjectSelect, onChapterSelect, onLessonClick }: CourseContentProps) {
+export function CourseContent({ course, selectedSubject, selectedChapter, selectedLesson, onSubjectSelect, onChapterSelect, onLessonClick }: CourseContentProps) {
     if (selectedLesson) {
         return <LectureView lesson={selectedLesson} />;
+    }
+
+    if (selectedChapter) {
+        return <LessonListView chapter={selectedChapter} onLessonClick={onLessonClick} />;
     }
 
     if (selectedSubject) {
