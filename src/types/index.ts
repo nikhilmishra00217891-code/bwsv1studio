@@ -10,6 +10,7 @@ export interface Lesson {
   duration: string; 
   content: string; // URL for video/pdf, or JSON for quiz
   notes?: string;
+  status: 'live' | 'recorded';
 }
 
 export interface Chapter {

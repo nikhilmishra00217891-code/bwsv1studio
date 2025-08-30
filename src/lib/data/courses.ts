@@ -77,7 +77,7 @@ export const deleteChapter = async (courseId: string, subjectId: string, chapter
     return courseData;
 };
 
-export const addLesson = async (courseId: string, subjectId: string, chapterId: string, lessonTitle: string): Promise<Course> => {
+export const addLesson = async (courseId: string, subjectId: string, chapterId: string, lessonTitle: string, lessonUrl: string): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
     const courseSnap = await getDoc(courseRef);
     if (!courseSnap.exists()) throw new Error("Course not found");
@@ -92,9 +92,10 @@ export const addLesson = async (courseId: string, subjectId: string, chapterId: 
     const newLesson: Lesson = {
         id: lessonTitle.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now(),
         title: lessonTitle,
-        type: 'video', // default type
-        content: '',
-        duration: '10 min', // default duration
+        type: 'video', 
+        content: lessonUrl,
+        duration: '0 min',
+        status: 'live',
     };
 
     courseData.subjects[subjectIndex].chapters[chapterIndex].lessons.push(newLesson);

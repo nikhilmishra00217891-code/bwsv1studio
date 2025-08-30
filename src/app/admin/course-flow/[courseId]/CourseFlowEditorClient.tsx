@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { addSubject, deleteSubject, addChapter, deleteChapter, addLesson, deleteLesson } from "@/lib/data/courses";
-import { LoaderCircle, PlusCircle, Trash2, ArrowLeft, Video, BookText } from "lucide-react";
+import { LoaderCircle, PlusCircle, Trash2, ArrowLeft, Video, BookText, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
 import {
     Accordion,
@@ -28,12 +28,14 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 export default function CourseFlowEditorClient({ initialCourse }: { initialCourse: Course }) {
     const [course, setCourse] = useState(initialCourse);
     const [newSubjectTitle, setNewSubjectTitle] = useState("");
     const [newChapterTitles, setNewChapterTitles] = useState<Record<string, string>>({});
     const [newLessonTitles, setNewLessonTitles] = useState<Record<string, string>>({});
+    const [newLessonUrls, setNewLessonUrls] = useState<Record<string, string>>({});
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
 
@@ -92,14 +94,19 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
     }
 
      const handleAddLesson = (subjectId: string, chapterId: string) => {
-        const lessonTitle = newLessonTitles[chapterId]?.trim();
-        if (!lessonTitle) return;
+        const lessonTitle = (newLessonTitles[chapterId] || "").trim();
+        const lessonUrl = (newLessonUrls[chapterId] || "").trim();
+        if (!lessonTitle || !lessonUrl) {
+             toast({ variant: "destructive", title: "Missing Fields", description: "Please provide both a title and a URL for the lesson." });
+            return;
+        };
 
         startTransition(async () => {
             try {
-                const updatedCourse = await addLesson(course.id, subjectId, chapterId, lessonTitle);
+                const updatedCourse = await addLesson(course.id, subjectId, chapterId, lessonTitle, lessonUrl);
                 setCourse(updatedCourse);
                 setNewLessonTitles(prev => ({ ...prev, [chapterId]: "" }));
+                setNewLessonUrls(prev => ({ ...prev, [chapterId]: "" }));
                 toast({ title: "Lesson Added!" });
             } catch (error: any) {
                 toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -194,18 +201,36 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                                             </Button>
                                                         </div>
                                                     ))}
-                                                     <div className="flex items-center gap-2 pt-2">
-                                                        <Input
-                                                            placeholder="New lesson title..."
-                                                            value={newLessonTitles[chapter.id] || ""}
-                                                            onChange={(e) => setNewLessonTitles(prev => ({ ...prev, [chapter.id]: e.target.value }))}
-                                                            disabled={isPending}
-                                                            className="h-8 text-sm"
-                                                        />
-                                                        <Button size="icon" className="h-8 w-8" onClick={() => handleAddLesson(subject.id, chapter.id)} disabled={isPending || !(newLessonTitles[chapter.id] || "").trim()}>
-                                                            <PlusCircle className="w-4 h-4" />
-                                                        </Button>
-                                                    </div>
+                                                     <div className="p-4 border-dashed border rounded-md mt-4">
+                                                        <h5 className="font-semibold text-sm mb-2">Add New Lesson</h5>
+                                                        <div className="space-y-3">
+                                                            <div>
+                                                                <Label htmlFor={`lesson-title-${chapter.id}`} className="text-xs">Title</Label>
+                                                                <Input
+                                                                    id={`lesson-title-${chapter.id}`}
+                                                                    placeholder="Lesson title..."
+                                                                    value={newLessonTitles[chapter.id] || ""}
+                                                                    onChange={(e) => setNewLessonTitles(prev => ({ ...prev, [chapter.id]: e.target.value }))}
+                                                                    disabled={isPending}
+                                                                    className="h-8 text-sm"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <Label htmlFor={`lesson-url-${chapter.id}`} className="text-xs">YouTube URL</Label>
+                                                                <Input
+                                                                    id={`lesson-url-${chapter.id}`}
+                                                                    placeholder="https://youtube.com/watch?v=..."
+                                                                    value={newLessonUrls[chapter.id] || ""}
+                                                                    onChange={(e) => setNewLessonUrls(prev => ({ ...prev, [chapter.id]: e.target.value }))}
+                                                                    disabled={isPending}
+                                                                    className="h-8 text-sm"
+                                                                />
+                                                            </div>
+                                                            <Button size="sm" className="w-full" onClick={() => handleAddLesson(subject.id, chapter.id)} disabled={isPending || !(newLessonTitles[chapter.id] || "").trim() || !(newLessonUrls[chapter.id] || "").trim()}>
+                                                                <PlusCircle className="w-4 h-4 mr-2" /> Add Lesson
+                                                            </Button>
+                                                        </div>
+                                                     </div>
                                                  </div>
                                             </AccordionContent>
                                         </AccordionItem>
