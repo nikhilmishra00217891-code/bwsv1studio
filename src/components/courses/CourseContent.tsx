@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Course, Lesson, Subject, Chapter } from "@/types";
@@ -134,7 +135,7 @@ const LectureView = ({ lesson }: { lesson: Lesson }) => {
                 {lesson.type === 'video' && videoId ? (
                      <iframe
                         className="w-full h-full"
-                        src={`https://www.youtube.com/embed/${videoId}?rel=0&showinfo=0&autoplay=1`}
+                        src={`https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1`}
                         title="YouTube video player"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen>
