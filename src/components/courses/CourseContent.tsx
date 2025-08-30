@@ -131,7 +131,7 @@ const LectureView = ({ lesson }: { lesson: Lesson }) => {
     const videoId = extractYouTubeVideoId(lesson.content || "");
     return (
         <div className="max-w-5xl mx-auto p-4 md:p-8">
-            <div className="aspect-video bg-card rounded-lg overflow-hidden border shadow-lg">
+            <div className="aspect-video bg-card rounded-lg overflow-hidden border shadow-lg relative" onContextMenu={(e) => e.preventDefault()}>
                 {lesson.type === 'video' && videoId ? (
                      <iframe
                         className="w-full h-full"
@@ -182,7 +182,7 @@ const LectureView = ({ lesson }: { lesson: Lesson }) => {
 
 const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLessonClick: (lesson: Lesson) => void }) => {
     const liveLessons = chapter.lessons.filter(l => l.status === 'live');
-    const recordedLessons = chapter.lessons.filter(l => l.status === 'recorded');
+    const recordedLessons = chapter.lessons.filter(l => l.status !== 'live');
 
     return (
         <div className="p-4 md:p-8">
