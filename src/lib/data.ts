@@ -1,6 +1,6 @@
 
 
-import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter } from "@/types";
+import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter, Lesson } from "@/types";
 import { db } from "./firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion } from "firebase/firestore";
 import type { User } from "firebase/auth";
@@ -306,3 +306,56 @@ export async function getEnrolledCourseData(userId: string, courseId: string): P
     }
     return userDoc.data()?.progress?.[courseId] || { progress: 0, completedLessons: [] };
 }
+
+export const endLiveSession = async (
+  courseId: string,
+  subjectId: string,
+  chapterId: string,
+  lessonId: string
+): Promise<{success: boolean, message: string}> => {
+  const courseRef = doc(db, "courses", courseId);
+  try {
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) {
+      throw new Error("Course not found");
+    }
+
+    const courseData = courseSnap.data() as Course;
+    
+    let lessonUpdated = false;
+
+    const updatedSubjects = courseData.subjects.map(subject => {
+        if (subject.id === subjectId) {
+            return {
+                ...subject,
+                chapters: subject.chapters.map(chapter => {
+                    if (chapter.id === chapterId) {
+                        return {
+                            ...chapter,
+                            lessons: chapter.lessons.map(lesson => {
+                                if (lesson.id === lessonId) {
+                                    lessonUpdated = true;
+                                    return { ...lesson, status: 'recorded' };
+                                }
+                                return lesson;
+                            })
+                        }
+                    }
+                    return chapter;
+                })
+            };
+        }
+        return subject;
+    });
+
+    if (!lessonUpdated) {
+        throw new Error("Lesson not found within the specified course/subject/chapter.");
+    }
+
+    await updateDoc(courseRef, { subjects: updatedSubjects });
+    return { success: true, message: "Session ended successfully." };
+  } catch (error: any) {
+    console.error("Error ending session:", error);
+    return { success: false, message: error.message || "An unknown error occurred." };
+  }
+};
