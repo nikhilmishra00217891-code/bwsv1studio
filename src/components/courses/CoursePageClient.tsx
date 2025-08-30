@@ -50,23 +50,24 @@ import { EditableImage } from "../common/EditableImage";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
-    try {
-        const urlObj = new URL(url);
-        if (urlObj.hostname === 'youtu.be') {
-            return urlObj.pathname.slice(1);
-        }
-        if (urlObj.hostname.includes('youtube.com')) {
-            const videoId = urlObj.searchParams.get('v');
-            if (videoId) {
-                return videoId;
-            }
-        }
-    } catch (e) {
-        const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-        const match = url.match(regex);
-        return match ? match[1] : null;
+    let videoId: string | null = null;
+    
+    // Standard and short URLs
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regex);
+    if (match) {
+        videoId = match[1];
     }
-    return null;
+
+    // Handle /live/ URLs
+    if (!videoId) {
+        const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
+        if (liveMatch) {
+            videoId = liveMatch[1];
+        }
+    }
+    
+    return videoId;
 }
 
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
@@ -207,9 +208,9 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                 </h1>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total</span></div>
+                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <EditableText contentId={`course_duration_${course.id}`} defaultValue="8 hours total" /></div>
                 <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{totalLessons} lessons</span></div>
-                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <span>25% complete</span></div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <EditableText contentId={`course_completion_${course.id}`} defaultValue="25% complete" /></div>
             </div>
         </div>
     </div>
