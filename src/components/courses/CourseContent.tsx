@@ -24,23 +24,24 @@ interface CourseContentProps {
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
-    try {
-        const urlObj = new URL(url);
-        if (urlObj.hostname === 'youtu.be') {
-            return urlObj.pathname.slice(1);
-        }
-        if (urlObj.hostname.includes('youtube.com')) {
-            const videoId = urlObj.searchParams.get('v');
-            if (videoId) {
-                return videoId;
-            }
-        }
-    } catch (e) {
-        const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-        const match = url.match(regex);
-        return match ? match[1] : null;
+    let videoId: string | null = null;
+    
+    // Standard and short URLs
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regex);
+    if (match) {
+        videoId = match[1];
     }
-    return null;
+
+    // Handle /live/ URLs
+    if (!videoId) {
+        const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
+        if (liveMatch) {
+            videoId = liveMatch[1];
+        }
+    }
+    
+    return videoId;
 }
 
 const SubjectGrid = ({ course, onSubjectSelect }: { course: Course, onSubjectSelect: (subject: Subject) => void }) => {
