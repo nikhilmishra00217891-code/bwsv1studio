@@ -37,6 +37,7 @@ import {
   Pencil,
   PlusCircle,
   Workflow,
+  X,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -309,9 +310,19 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         newTags[index] = value;
         handleSaveCourse({ tags: newTags });
     }
+    
+    const addTag = () => {
+        const currentTags = course.tags || [];
+        handleSaveCourse({ tags: [...currentTags, "New Tag ✨"] });
+    }
 
-    const defaultTags = ["Exam Prep 🔥", "Conceptual 🧠", "Quick Revision ⚡️", "New Tag ✨"];
-    const tags = course.tags && course.tags.length > 0 ? course.tags : defaultTags;
+    const removeTag = (index: number) => {
+        const currentTags = course.tags || [];
+        const newTags = currentTags.filter((_, i) => i !== index);
+        handleSaveCourse({ tags: newTags });
+    }
+
+    const tags = course.tags && course.tags.length > 0 ? course.tags : [];
 
 
     return (
@@ -321,16 +332,27 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                 <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
                     <EditableText onSave={(contentId, value) => handleSaveCourse({ description: value })} multiline contentId={`course_description_${course.id}`} defaultValue={course.description} />
                 </div>
-               <div className="flex flex-wrap gap-2">
-                    {tags.slice(0, 4).map((tag, index) => (
-                        <EditableText 
-                            key={index}
-                            as="badge"
-                            onSave={handleBadgeSave(index)}
-                            contentId={`course_tag_${course.id}_${index}`}
-                            defaultValue={tag}
-                        />
+               <div className="flex flex-wrap items-center gap-2">
+                    {tags.map((tag, index) => (
+                         <div key={index} className="relative group">
+                            <EditableText 
+                                as="badge"
+                                onSave={handleBadgeSave(index)}
+                                contentId={`course_tag_${course.id}_${index}`}
+                                defaultValue={tag}
+                            />
+                             {isEditMode && (
+                                <button onClick={() => removeTag(index)} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <X className="w-3 h-3"/>
+                                </button>
+                             )}
+                        </div>
                     ))}
+                    {isEditMode && (
+                        <Button variant="outline" size="sm" onClick={addTag}>
+                            <PlusCircle className="w-4 h-4 mr-2"/> Add Tag
+                        </Button>
+                    )}
                </div>
           </div>
           <div className="space-y-4">
