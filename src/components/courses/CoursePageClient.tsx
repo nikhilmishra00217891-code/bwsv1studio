@@ -47,6 +47,7 @@ import { EditableText } from "@/components/common/EditableText";
 import { useEditMode } from "@/components/common/EditModeProvider";
 import Link from "next/link";
 import { EditableImage } from "../common/EditableImage";
+import { saveTextContent, getTextContent } from "@/lib/data/content";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
@@ -72,6 +73,7 @@ const extractYouTubeVideoId = (url: string): string | null => {
 
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
   const [course, setCourse] = useState(initialCourse);
+  const [textContent, setTextContent] = useState<Record<string, string>>({});
   const { user, userProfile, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
   const { isEditMode, setIsEditMode } = useEditMode();
@@ -81,11 +83,21 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
 
   useEffect(() => {
     setCourse(initialCourse);
+    const fetchContent = async () => {
+        const content = await getTextContent();
+        setTextContent(content);
+    }
+    fetchContent();
   }, [initialCourse]);
 
   useEffect(() => {
     setIsCurrentUserFaculty(userProfile?.role === 'faculty');
   }, [userProfile]);
+
+  const handleSaveText = async (contentId: string, value: string) => {
+    await saveTextContent(contentId, value);
+    setTextContent(prev => ({...prev, [contentId]: value}));
+  };
 
   const handleSaveCourse = async (data: Partial<Course>) => {
     try {
@@ -202,15 +214,15 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         />
         <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
             <div className="md:col-span-2">
-                 <EditableText as="badge" contentId={`course_category_${course.id}`} defaultValue={course.category} />
+                 <EditableText onSave={(contentId, value) => handleSaveCourse({ category: value })} as="badge" contentId={`course_category_${course.id}`} defaultValue={course.category} />
                 <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">
-                   <EditableText contentId={`course_title_${course.id}`} defaultValue={course.title} />
+                   <EditableText onSave={(contentId, value) => handleSaveCourse({ title: value })} contentId={`course_title_${course.id}`} defaultValue={course.title} />
                 </h1>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <EditableText contentId={`course_duration_${course.id}`} defaultValue="8 hours total" /></div>
-                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{totalLessons} lessons</span></div>
-                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <EditableText contentId={`course_completion_${course.id}`} defaultValue="25% complete" /></div>
+                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_duration_${course.id}`} defaultValue={textContent[`course_duration_${course.id}`] || "8 hours total"} /></div>
+                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_lessons_count_${course.id}`} defaultValue={textContent[`course_lessons_count_${course.id}`] || `${totalLessons} lessons`} /></div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_completion_${course.id}`} defaultValue={textContent[`course_completion_${course.id}`] || "25% complete"} /></div>
             </div>
         </div>
     </div>
@@ -220,11 +232,11 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       <Dialog>
           <div className="bg-card p-6 rounded-lg flex flex-col sm:flex-row items-center gap-6">
                <div className="relative">
-                    <EditableImage contentId={`course_mentor_avatar_${course.id}`} src="https://i.postimg.cc/d1W1VcYF/aman-kumar.png" alt="Mentor Avatar" width={80} height={80} className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
+                    <EditableImage contentId={`course_mentor_avatar_${course.id}`} src={textContent[`course_mentor_avatar_${course.id}`] || "https://i.postimg.cc/d1W1VcYF/aman-kumar.png"} alt="Mentor Avatar" width={80} height={80} className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
                 </div>
               <div className="flex-grow text-center sm:text-left">
                   <h3 className="text-xl font-bold font-headline">
-                    <EditableText contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} /> & Team
+                    <EditableText onSave={(contentId, value) => handleSaveCourse({ mentorName: value })} contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} /> & Team
                   </h3>
                   <p className="text-muted-foreground">Your Mentors</p>
               </div>
@@ -238,13 +250,13 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           <DialogContent>
               <DialogHeader className="items-center text-center">
                    <div className="relative w-24 h-24">
-                       <EditableImage contentId={`course_mentor_avatar_${course.id}`} src="https://i.postimg.cc/d1W1VcYF/aman-kumar.png" alt="Mentor Avatar" fill className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
+                       <EditableImage contentId={`course_mentor_avatar_${course.id}`} src={textContent[`course_mentor_avatar_${course.id}`] || "https://i.postimg.cc/d1W1VcYF/aman-kumar.png"} alt="Mentor Avatar" fill className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
                    </div>
-                  <DialogTitle className="text-2xl font-headline"><EditableText contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} /> & Team</DialogTitle>
+                  <DialogTitle className="text-2xl font-headline"><EditableText onSave={(contentId, value) => handleSaveCourse({ mentorName: value })} contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} /> & Team</DialogTitle>
                   <DialogDescription>Your guides, friends, and mentors on this journey.</DialogDescription>
               </DialogHeader>
               <div className="py-4 text-center text-muted-foreground">
-                   <EditableText multiline contentId={`course_mentor_bio_${course.id}`} defaultValue="With over a decade of experience in making complex topics feel like a story, our mentors are here to ensure you not only crack your exams but also fall in love with the subject. We believe in the 'Parivaar' philosophy - teaching with the care of an elder brother." />
+                   <EditableText onSave={handleSaveText} multiline contentId={`course_mentor_bio_${course.id}`} defaultValue={textContent[`course_mentor_bio_${course.id}`] || "With over a decade of experience in making complex topics feel like a story, our mentors are here to ensure you not only crack your exams but also fall in love with the subject. We believe in the 'Parivaar' philosophy - teaching with the care of an elder brother."} />
               </div>
           </DialogContent>
       </Dialog>
@@ -296,7 +308,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           <div className="md:col-span-2 space-y-6">
                <h3 className="text-2xl font-bold font-headline">About This Course</h3>
                 <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    <EditableText multiline contentId={`course_description_${course.id}`} defaultValue={course.description} />
+                    <EditableText onSave={(contentId, value) => handleSaveCourse({ description: value })} multiline contentId={`course_description_${course.id}`} defaultValue={course.description} />
                 </div>
                <div className="flex flex-wrap gap-2">
                   <Badge>Exam Prep 🔥</Badge>
