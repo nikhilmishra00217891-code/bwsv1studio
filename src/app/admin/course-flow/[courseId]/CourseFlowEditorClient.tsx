@@ -205,10 +205,10 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                                         <h5 className="font-semibold text-sm mb-2">Add New Lesson</h5>
                                                         <div className="space-y-3">
                                                             <div>
-                                                                <Label htmlFor={`lesson-title-${chapter.id}`} className="text-xs">Title</Label>
+                                                                <Label htmlFor={`lesson-title-${chapter.id}`} className="text-xs">Lesson Title</Label>
                                                                 <Input
                                                                     id={`lesson-title-${chapter.id}`}
-                                                                    placeholder="Lesson title..."
+                                                                    placeholder="e.g., Introduction to Kinematics"
                                                                     value={newLessonTitles[chapter.id] || ""}
                                                                     onChange={(e) => setNewLessonTitles(prev => ({ ...prev, [chapter.id]: e.target.value }))}
                                                                     disabled={isPending}
@@ -216,10 +216,10 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                                                 />
                                                             </div>
                                                             <div>
-                                                                <Label htmlFor={`lesson-url-${chapter.id}`} className="text-xs">YouTube URL</Label>
+                                                                <Label htmlFor={`lesson-url-${chapter.id}`} className="text-xs">YouTube Video URL</Label>
                                                                 <Input
                                                                     id={`lesson-url-${chapter.id}`}
-                                                                    placeholder="https://youtube.com/watch?v=..."
+                                                                    placeholder="https://www.youtube.com/watch?v=..."
                                                                     value={newLessonUrls[chapter.id] || ""}
                                                                     onChange={(e) => setNewLessonUrls(prev => ({ ...prev, [chapter.id]: e.target.value }))}
                                                                     disabled={isPending}
