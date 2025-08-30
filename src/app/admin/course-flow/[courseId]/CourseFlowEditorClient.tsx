@@ -137,11 +137,13 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                 <Accordion type="multiple" className="w-full space-y-4">
                     {(course.subjects || []).map((subject, index) => (
                         <AccordionItem value={`item-${index}`} key={subject.id} className="bg-card rounded-lg border">
-                            <AccordionTrigger className="p-4 hover:no-underline font-semibold text-lg flex justify-between w-full">
-                                <span>{subject.title}</span>
-                                 <AlertDialog>
+                            <div className="flex items-center justify-between p-4 w-full">
+                                <AccordionTrigger className="hover:no-underline font-semibold text-lg flex-grow">
+                                    <span>{subject.title}</span>
+                                </AccordionTrigger>
+                                <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                                        <Button variant="ghost" size="icon" className="shrink-0">
                                             <Trash2 className="w-4 h-4 text-destructive" />
                                         </Button>
                                     </AlertDialogTrigger>
@@ -154,16 +156,18 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                            </AccordionTrigger>
+                            </div>
                             <AccordionContent className="p-4 pt-0 space-y-4">
                                <Accordion type="multiple" className="w-full space-y-3">
                                     {subject.chapters.map(chapter => (
                                         <AccordionItem value={`chapter-${chapter.id}`} key={chapter.id} className="bg-background rounded-md border">
-                                             <AccordionTrigger className="p-3 hover:no-underline font-medium text-base flex justify-between w-full">
-                                                <span>{chapter.title}</span>
-                                                 <AlertDialog>
+                                            <div className="flex items-center justify-between p-3 w-full">
+                                                <AccordionTrigger className="hover:no-underline font-medium text-base flex-grow">
+                                                    <span>{chapter.title}</span>
+                                                </AccordionTrigger>
+                                                <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                                                             <Trash2 className="w-4 h-4 text-destructive" />
                                                         </Button>
                                                     </AlertDialogTrigger>
@@ -176,7 +180,7 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
                                                 </AlertDialog>
-                                            </AccordionTrigger>
+                                            </div>
                                             <AccordionContent className="p-3 pt-0">
                                                  <div className="space-y-2 ml-4">
                                                     {chapter.lessons.map(lesson => (
