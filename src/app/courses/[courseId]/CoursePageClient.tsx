@@ -3,19 +3,15 @@
 
 import type { Course } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { deleteCourse, updateCourse } from "@/lib/data";
-import { isFaculty as checkIsFaculty } from "@/lib/firebase/server";
-import { saveTextContent, getTextContent } from "@/lib/data/content";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -33,127 +29,46 @@ import {
   Clock,
   Heart,
   PlayCircle,
-  Video,
   Eye,
   EyeOff,
   Trash2,
   LoaderCircle,
   Youtube,
   Pencil,
+  PlusCircle,
+  Workflow,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { EditableText } from "@/components/common/EditableText";
 import { useEditMode } from "@/components/common/EditModeProvider";
 import Link from "next/link";
+import { EditableImage } from "../common/EditableImage";
+import { saveTextContent, getTextContent } from "@/lib/data/content";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
-    try {
-        const urlObj = new URL(url);
-        if (urlObj.hostname === 'youtu.be') {
-            return urlObj.pathname.slice(1);
+    let videoId: string | null = null;
+    
+    // Standard and short URLs
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regex);
+    if (match) {
+        videoId = match[1];
+    }
+
+    // Handle /live/ URLs
+    if (!videoId) {
+        const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
+        if (liveMatch) {
+            videoId = liveMatch[1];
         }
-        if (urlObj.hostname.includes('youtube.com')) {
-            const videoId = urlObj.searchParams.get('v');
-            if (videoId) {
-                return videoId;
-            }
-        }
-    } catch (e) {
-        // Fallback for invalid URLs, just in case
-        const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-        const match = url.match(regex);
-        return match ? match[1] : null;
     }
-    return null;
-}
-
-const CourseEditDialog = ({ 
-    course, 
-    isOpen, 
-    onOpenChange,
-    onSave,
-}: { 
-    course: Course, 
-    isOpen: boolean, 
-    onOpenChange: (isOpen: boolean) => void,
-    onSave: (updatedCourse: Partial<Course>) => Promise<void>
-}) => {
-    const [formData, setFormData] = useState<Partial<Course>>({
-        title: course.title,
-        category: course.category,
-        description: course.description,
-        mentorName: course.mentorName,
-        youtubeLink: course.youtubeLink || "",
-    });
-    const [isSaving, setIsSaving] = useState(false);
-
-    useEffect(() => {
-        setFormData({
-            title: course.title,
-            category: course.category,
-            description: course.description,
-            mentorName: course.mentorName,
-            youtubeLink: course.youtubeLink || "",
-        });
-    }, [course, isOpen]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    }
-
-    const handleSave = async () => {
-        setIsSaving(true);
-        await onSave(formData);
-        setIsSaving(false);
-        onOpenChange(false);
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                    <DialogTitle>Edit Course Details</DialogTitle>
-                    <DialogDescription>
-                        Make changes to the course. Click save when you're done.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="title" className="text-right">Title</Label>
-                        <Input id="title" name="title" value={formData.title} onChange={handleChange} className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="category" className="text-right">Category</Label>
-                        <Input id="category" name="category" value={formData.category} onChange={handleChange} className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="mentorName" className="text-right">Mentor</Label>
-                        <Input id="mentorName" name="mentorName" value={formData.mentorName} onChange={handleChange} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="youtubeLink" className="text-right">YouTube Link</Label>
-                        <Input id="youtubeLink" name="youtubeLink" value={formData.youtubeLink} onChange={handleChange} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-start gap-4">
-                        <Label htmlFor="description" className="text-right pt-2">Description</Label>
-                        <Textarea id="description" name="description" value={formData.description} onChange={handleChange} className="col-span-3 min-h-[150px]" />
-                    </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSave} disabled={isSaving}>
-                        {isSaving ? <LoaderCircle className="animate-spin" /> : "Save Changes"}
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
-    )
+    
+    return videoId;
 }
 
 export default function CoursePageClient({ initialCourse }: { initialCourse: Course }) {
@@ -164,6 +79,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   const { isEditMode, setIsEditMode } = useEditMode();
   const { toast } = useToast();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setCourse(initialCourse);
@@ -177,16 +93,11 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   useEffect(() => {
     setIsCurrentUserFaculty(userProfile?.role === 'faculty');
   }, [userProfile]);
-  
-  const handleSaveText = async (field: keyof Course | string, value: any) => {
-    const contentId = `course_${field}_${course.id}`;
+
+  const handleSaveText = async (contentId: string, value: string) => {
     await saveTextContent(contentId, value);
     setTextContent(prev => ({...prev, [contentId]: value}));
-    // Also update the course state if it's a direct course field
-    if (['title', 'category', 'mentorName', 'description'].includes(field as string)) {
-        handleSaveCourse({[field]: value});
-    }
-  }
+  };
 
   const handleSaveCourse = async (data: Partial<Course>) => {
     try {
@@ -238,6 +149,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             id="active-mode"
             checked={course.isActive}
             onCheckedChange={handleActiveToggle}
+            disabled={isPending}
           />
           <Label htmlFor="active-mode" className="flex items-center gap-2">
             {course.isActive ? (
@@ -252,15 +164,22 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             id="edit-mode"
             checked={isEditMode}
             onCheckedChange={setIsEditMode}
+            disabled={isPending}
           />
           <Label htmlFor="edit-mode" className="flex items-center gap-2">
             <Pencil className="w-4 h-4" /> Edit Page
           </Label>
         </div>
-        <div className="flex items-center gap-2">
+         <Button asChild variant="outline">
+            <Link href={`/admin/course-flow/${course.id}`}>
+              <Workflow className="w-4 h-4 mr-2" />
+              Edit Course Flow
+            </Link>
+          </Button>
+        <div className="flex items-center gap-2 ml-auto">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-                <Button variant="destructive"><Trash2 className="mr-2 w-4 h-4" /> Delete Course</Button>
+                <Button variant="destructive" disabled={isPending}><Trash2 className="mr-2 w-4 h-4" /> Delete Course</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
@@ -285,23 +204,25 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   const CourseHero = ({ course }: { course: Course }) => (
     <div className="relative bg-card/50 rounded-xl overflow-hidden p-6 md:p-8 border border-primary/20 shadow-lg shadow-primary/10">
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent z-10"></div>
-        <Image 
+        <EditableImage
+            contentId={`course_thumb_${course.id}`}
             src={course.thumbnail}
             alt={course.title}
             fill
             className="object-cover opacity-20"
+            data-ai-hint="learning online course"
         />
         <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
             <div className="md:col-span-2">
-                 <EditableText as="badge" contentId={`course_category_${course.id}`} defaultValue={textContent[`course_category_${course.id}`] || course.category} />
+                 <EditableText onSave={handleSaveText} as="badge" contentId={`course_category_${course.id}`} defaultValue={textContent[`course_category_${course.id}`] || course.category} />
                 <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">
-                   <EditableText contentId={`course_title_${course.id}`} defaultValue={textContent[`course_title_${course.id}`] || course.title} />
+                   <EditableText onSave={(contentId, value) => { handleSaveText(contentId, value); handleSaveCourse({ title: value }); }} contentId={`course_title_${course.id}`} defaultValue={textContent[`course_title_${course.id}`] || course.title} />
                 </h1>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <span>8 hours total</span></div>
-                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <span>{totalLessons} lessons</span></div>
-                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <span>25% complete</span></div>
+                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_duration_${course.id}`} defaultValue={textContent[`course_duration_${course.id}`] || "8 hours total"} /></div>
+                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_lessons_${course.id}`} defaultValue={textContent[`course_lessons_${course.id}`] || `${totalLessons} lessons`} /></div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_completion_${course.id}`} defaultValue={textContent[`course_completion_${course.id}`] || "25% complete"} /></div>
             </div>
         </div>
     </div>
@@ -310,13 +231,12 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   const CourseMentor = ({ course }: { course: Course }) => (
       <Dialog>
           <div className="bg-card p-6 rounded-lg flex flex-col sm:flex-row items-center gap-6">
-              <Avatar className="w-20 h-20 border-4 border-primary">
-                  <AvatarImage src="https://placehold.co/100x100.png" />
-                  <AvatarFallback>{(textContent[`course_mentor_${course.id}`] || course.mentorName).charAt(0)}</AvatarFallback>
-              </Avatar>
+               <div className="relative">
+                    <EditableImage contentId={`course_mentor_avatar_${course.id}`} src={textContent[`course_mentor_avatar_${course.id}`] || "https://i.postimg.cc/d1W1VcYF/aman-kumar.png"} alt="Mentor Avatar" width={80} height={80} className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
+                </div>
               <div className="flex-grow text-center sm:text-left">
                   <h3 className="text-xl font-bold font-headline">
-                    <EditableText contentId={`course_mentor_${course.id}`} defaultValue={textContent[`course_mentor_${course.id}`] || course.mentorName} /> & Team
+                    <EditableText onSave={(contentId, value) => { handleSaveText(contentId, value); handleSaveCourse({ mentorName: value }); }} contentId={`course_mentor_${course.id}`} defaultValue={textContent[`course_mentor_${course.id}`] || course.mentorName} /> & Team
                   </h3>
                   <p className="text-muted-foreground">Your Mentors</p>
               </div>
@@ -329,17 +249,14 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           </div>
           <DialogContent>
               <DialogHeader className="items-center text-center">
-                   <Avatar className="w-24 h-24 border-4 border-primary">
-                      <AvatarImage src="https://placehold.co/100x100.png" />
-                      <AvatarFallback>{(textContent[`course_mentor_${course.id}`] || course.mentorName).charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <DialogTitle className="text-2xl font-headline">{textContent[`course_mentor_${course.id}`] || course.mentorName} & Team</DialogTitle>
+                   <div className="relative w-24 h-24">
+                       <EditableImage contentId={`course_mentor_avatar_${course.id}`} src={textContent[`course_mentor_avatar_${course.id}`] || "https://i.postimg.cc/d1W1VcYF/aman-kumar.png"} alt="Mentor Avatar" fill className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
+                   </div>
+                  <DialogTitle className="text-2xl font-headline"><EditableText onSave={(contentId, value) => { handleSaveText(contentId, value); handleSaveCourse({ mentorName: value }); }} contentId={`course_mentor_${course.id}`} defaultValue={textContent[`course_mentor_${course.id}`] || course.mentorName} /> & Team</DialogTitle>
                   <DialogDescription>Your guides, friends, and mentors on this journey.</DialogDescription>
               </DialogHeader>
               <div className="py-4 text-center text-muted-foreground">
-                  <p>
-                      With over a decade of experience in making complex topics feel like a story, our mentors are here to ensure you not only crack your exams but also fall in love with the subject. We believe in the 'Parivaar' philosophy - teaching with the care of an elder brother.
-                  </p>
+                   <EditableText onSave={handleSaveText} multiline contentId={`course_mentor_bio_${course.id}`} defaultValue={textContent[`course_mentor_bio_${course.id}`] || "With over a decade of experience in making complex topics feel like a story, our mentors are here to ensure you not only crack your exams but also fall in love with the subject. We believe in the 'Parivaar' philosophy - teaching with the care of an elder brother."} />
               </div>
           </DialogContent>
       </Dialog>
@@ -391,7 +308,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           <div className="md:col-span-2 space-y-6">
                <h3 className="text-2xl font-bold font-headline">About This Course</h3>
                 <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    <EditableText multiline contentId={`course_description_${course.id}`} defaultValue={textContent[`course_description_${course.id}`] || course.description} />
+                    <EditableText onSave={(contentId, value) => { handleSaveText(contentId, value); handleSaveCourse({ description: value }); }} multiline contentId={`course_description_${course.id}`} defaultValue={textContent[`course_description_${course.id}`] || course.description} />
                 </div>
                <div className="flex flex-wrap gap-2">
                   <Badge>Exam Prep 🔥</Badge>
@@ -410,37 +327,6 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       </div>
   )
 
-  const CourseCurriculum = ({ course }: { course: Course }) => (
-      <div>
-          <h3 className="text-2xl font-bold font-headline mb-4">Course Curriculum</h3>
-          <Accordion type="multiple" className="w-full space-y-3">
-               {course.subjects && course.subjects.length > 0 ? (
-                course.subjects.map((subject, index) => (
-                  <AccordionItem value={`item-${index}`} key={subject.id} className="bg-card rounded-lg border-b-0">
-                      <AccordionTrigger className="p-4 hover:no-underline font-semibold">
-                          {subject.title}
-                      </AccordionTrigger>
-                      <AccordionContent className="p-4 pt-0">
-                          <p className="text-muted-foreground mb-4">Lesson content details would go here. A short description of what this lesson covers.</p>
-                          <Button variant="secondary" asChild>
-                              <Link href={`/courses/${course.id}/learnzone`}>
-                                <PlayCircle className="mr-2 h-4 w-4" /> Go to Subject
-                              </Link>
-                          </Button>
-                      </AccordionContent>
-                  </AccordionItem>
-              ))
-              ) : (
-                <Card>
-                    <CardContent className="p-6 text-center text-muted-foreground">
-                        No lessons have been added to this course yet.
-                    </CardContent>
-                </Card>
-              )}
-          </Accordion>
-      </div>
-  )
-
   if (authLoading) {
     return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
   }
@@ -450,19 +336,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
       {isCurrentUserFaculty && <CourseFacultyControls />}
       <CourseHero course={course} />
       <CourseMentor course={course} />
-
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:w-1/2 mx-auto h-auto">
-          <TabsTrigger value="overview" className="py-2.5">Overview</TabsTrigger>
-          <TabsTrigger value="curriculum" className="py-2.5">Curriculum</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="mt-8">
-          <CourseOverview course={course} />
-        </TabsContent>
-        <TabsContent value="curriculum" className="mt-8">
-          <CourseCurriculum course={course} />
-        </TabsContent>
-      </Tabs>
+      <CourseOverview course={course} />
     </div>
   );
 }
