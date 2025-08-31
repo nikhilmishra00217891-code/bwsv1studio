@@ -3,7 +3,7 @@
 
 import type { Course, Lesson, Subject, Chapter, LiveChatMessage } from "@/types";
 import { Button } from "../ui/button";
-import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles } from 'lucide-react';
+import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye } from 'lucide-react';
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardContent } from "../ui/card";
@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "../ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "../ui/badge";
 
 interface CourseContentProps {
     course: Course;
@@ -304,7 +305,17 @@ const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLesson
              <Tabs defaultValue="recorded">
                 <TabsList>
                     <TabsTrigger value="recorded">Recorded ({recordedLessons.length})</TabsTrigger>
-                    <TabsTrigger value="live">Currently Live ({liveLessons.length})</TabsTrigger>
+                     <TabsTrigger value="live" className="relative">
+                        Live ({liveLessons.length})
+                        {liveLessons.length > 0 && (
+                            <div className="absolute -top-1 -right-1 flex h-4 w-4">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 justify-center items-center text-white text-[10px] font-bold">
+                                    <Eye className="w-2.5 h-2.5"/>
+                                </span>
+                            </div>
+                        )}
+                    </TabsTrigger>
                 </TabsList>
                  <TabsContent value="recorded" className="mt-6">
                      {recordedLessons.length > 0 ? (
@@ -329,10 +340,11 @@ const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLesson
                         <div className="space-y-3">
                             {liveLessons.map(lesson => (
                                 <button key={lesson.id} onClick={() => onLessonClick(lesson)} className="w-full text-left">
-                                    <Card className="hover:bg-primary/5 hover:border-primary/40 transition-colors">
+                                    <Card className="hover:bg-primary/5 hover:border-primary/40 transition-colors border-2 border-transparent ring-2 ring-red-500/50 shadow-lg shadow-red-500/10">
                                         <CardContent className="p-4 flex items-center gap-4">
                                             <Video className="w-6 h-6 text-primary"/>
                                             <span className="font-semibold">{lesson.title}</span>
+                                            <Badge variant="destructive" className="ml-auto animate-pulse">LIVE</Badge>
                                         </CardContent>
                                     </Card>
                                 </button>
