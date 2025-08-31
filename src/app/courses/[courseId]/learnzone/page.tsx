@@ -3,9 +3,12 @@ import { getCourseById, isUserEnrolled, getEnrolledCourseData } from "@/lib/data
 import { getSession, isFaculty } from "@/lib/firebase/server";
 import { notFound, redirect } from "next/navigation";
 import CourseLearnClient from "./CourseLearnClient";
+import { cookies } from "next/headers";
 
 export default async function CourseLearnPage({ params }: { params: { courseId: string } }) {
-    const { user } = await getSession();
+    const sessionCookie = cookies().get("session")?.value;
+    // Only attempt to get user if a session cookie exists.
+    const { user } = sessionCookie ? await getSession() : { user: null };
     
     // If the user session isn't immediately available on the server,
     // we'll let the client-side AuthProvider handle loading and redirects.
