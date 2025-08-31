@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { LoaderCircle, Send, Radio, Link as LinkIcon, AlertTriangle, Info, Trash2, Pin, PinOff, Heart, BookOpen } from 'lucide-react';
+import { LoaderCircle, Send, Radio, Link as LinkIcon, AlertTriangle, Info, Trash2, Pin, PinOff, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { CourseAnnouncement, UrlMetadata } from '@/types';
 import { listenForCourseAnnouncements, createCourseAnnouncement, deleteCourseAnnouncement, toggleCourseAnnouncementReaction, toggleCourseAnnouncementPin } from '@/lib/data/announcements';
@@ -56,7 +56,13 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
         
         let metadata: UrlMetadata | null = null;
         if(attachmentUrl) {
-            metadata = await getUrlMetadata(attachmentUrl);
+            try {
+                metadata = await getUrlMetadata(attachmentUrl);
+            } catch (error) {
+                 toast({ variant: 'destructive', title: 'Invalid URL', description: 'Could not fetch preview for the provided link.' });
+                 setIsLoading(false);
+                 return;
+            }
         }
         
         try {
