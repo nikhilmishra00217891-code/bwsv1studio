@@ -47,7 +47,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         setSelectedChapter(null);
         setSelectedLesson(null);
     }
-
+    
     const renderContent = () => {
         if (isAnnouncementsPage) {
             return <CourseAnnouncementsPage />;
@@ -82,7 +82,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 onClose={() => setIsSidebarOpen(false)}
             />
 
-            <main className="flex-1 flex flex-col transition-all duration-300 md:ml-0 overflow-hidden">
+            <main className="flex-1 flex flex-col transition-all duration-300 overflow-hidden">
                 <header className="flex-shrink-0 bg-background/80 backdrop-blur-sm border-b p-3 flex items-center justify-between h-16">
                     <div className="flex items-center gap-2">
                         <Button 
@@ -111,8 +111,10 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                     </div>
                 </header>
 
-                <div className="flex-grow overflow-y-auto">
-                   {renderContent()}
+                <div className="flex-grow overflow-y-auto w-full">
+                    <div className="mx-auto w-full">
+                        {renderContent()}
+                    </div>
                 </div>
             </main>
         </div>
