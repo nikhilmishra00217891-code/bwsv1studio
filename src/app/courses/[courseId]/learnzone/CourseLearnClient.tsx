@@ -82,7 +82,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 onClose={() => setIsSidebarOpen(false)}
             />
 
-            <main className="flex-1 flex flex-col transition-all duration-300 md:ml-0">
+            <main className="flex-1 flex flex-col transition-all duration-300 md:ml-0 overflow-hidden">
                 <header className="flex-shrink-0 bg-background/80 backdrop-blur-sm border-b p-3 flex items-center justify-between h-16">
                     <div className="flex items-center gap-2">
                         <Button 
