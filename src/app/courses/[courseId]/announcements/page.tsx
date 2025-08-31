@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { CourseAnnouncement, UrlMetadata } from '@/types';
 import { listenForCourseAnnouncements, createCourseAnnouncement, deleteCourseAnnouncement, toggleCourseAnnouncementReaction, toggleCourseAnnouncementPin } from '@/lib/data/announcements';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -29,7 +29,7 @@ const LinkPreview = ({ metadata }: { metadata: UrlMetadata }) => (
         <Card className="overflow-hidden hover:bg-muted/50 transition-colors">
             <div className="flex">
                 {metadata.image && (
-                    <div className="w-24 h-24 relative flex-shrink-0">
+                    <div className="w-24 h-24 relative flex-shrink-0 bg-muted">
                         <Image src={metadata.image} alt={metadata.title} fill className="object-cover" />
                     </div>
                 )}
@@ -105,7 +105,7 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
                         disabled={isLoading}
                         required
                     />
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="space-y-4">
                         <div className="relative flex-grow">
                              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
@@ -117,21 +117,21 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
                                 type="url"
                             />
                         </div>
-                        <RadioGroup defaultValue="standard" value={announcementType} onValueChange={(v) => setAnnouncementType(v as any)} className="flex items-center gap-4" disabled={isLoading}>
-                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="standard" id="type-standard" />
-                                <Label htmlFor="type-standard" className="flex items-center gap-1.5"><Info className="w-4 h-4"/> Standard</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="alert" id="type-alert" />
-                                <Label htmlFor="type-alert" className="flex items-center gap-1.5 text-destructive"><AlertTriangle className="w-4 h-4"/> Alert</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
-                     <div className="flex justify-end">
-                        <Button type="submit" disabled={isLoading || !content.trim()}>
-                            {isLoading ? <LoaderCircle className="animate-spin" /> : 'Post Announcement'}
-                        </Button>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <RadioGroup defaultValue="standard" value={announcementType} onValueChange={(v) => setAnnouncementType(v as any)} className="flex items-center gap-4" disabled={isLoading}>
+                                 <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="standard" id="type-standard" />
+                                    <Label htmlFor="type-standard" className="flex items-center gap-1.5"><Info className="w-4 h-4"/> Standard</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="alert" id="type-alert" />
+                                    <Label htmlFor="type-alert" className="flex items-center gap-1.5 text-destructive"><AlertTriangle className="w-4 h-4"/> Alert</Label>
+                                </div>
+                            </RadioGroup>
+                             <Button type="submit" disabled={isLoading || !content.trim()} className="w-full sm:w-auto">
+                                {isLoading ? <LoaderCircle className="animate-spin" /> : 'Post Announcement'}
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </CardContent>
@@ -180,14 +180,15 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
             announcement.isPinned && "border-primary/50 bg-primary/5"
         )}>
              {announcement.isPinned && <Pin className="w-4 h-4 text-primary absolute top-3 left-3" />}
-            <CardContent className="p-4 md:p-6 relative group">
-                <div className="flex items-start gap-4">
+            <CardContent className="p-4 md:p-6 group">
+                <div className="flex items-start gap-3 sm:gap-4">
                     <Avatar>
+                        <AvatarImage src={announcement.authorAvatar} alt={announcement.authorName} />
                         <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-grow">
-                        <div className="flex items-center justify-between">
-                             <div>
+                        <div className="flex justify-between items-start">
+                             <div className="mb-2">
                                 <p className="font-bold">{announcement.authorName}</p>
                                  <p className="text-xs text-muted-foreground">
                                     {announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
@@ -223,12 +224,12 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
                             )}
                         </div>
                         {announcement.type === 'alert' && (
-                            <div className="flex items-center gap-1.5 text-destructive text-sm font-semibold mt-2">
+                            <div className="flex items-center gap-1.5 text-destructive text-sm font-semibold my-2">
                                 <AlertTriangle className="w-4 h-4" />
                                 URGENT ALERT
                             </div>
                         )}
-                        <p className="mt-2 whitespace-pre-wrap">{announcement.content}</p>
+                        <p className="whitespace-pre-wrap">{announcement.content}</p>
                         
                         {announcement.attachment && (
                             <LinkPreview metadata={announcement.attachment} />
@@ -287,7 +288,7 @@ export default function CourseAnnouncementsPage() {
     return (
         <div className="h-full flex flex-col">
             <ScrollArea className="flex-grow">
-                <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto">
+                <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl mx-auto">
                     {isFaculty && <AnnouncementComposer courseId={courseId} />}
 
                     {pinnedAnnouncements.length > 0 && (
@@ -304,7 +305,7 @@ export default function CourseAnnouncementsPage() {
                         regularAnnouncements.map(announcement => (
                              <AnnouncementCard key={announcement.id} announcement={announcement} courseId={courseId} isFaculty={isFaculty} />
                         ))
-                    ) : (
+                    ) : pinnedAnnouncements.length === 0 && (
                          <Card>
                             <CardContent className="p-8 text-center text-muted-foreground">
                                 No announcements for this course yet.
