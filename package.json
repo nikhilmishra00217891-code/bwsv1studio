@@ -43,6 +43,7 @@
     "embla-carousel-autoplay": "^8.1.1",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^11.9.1",
+    "firebase-admin": "^12.1.1",
     "framer-motion": "^11.5.1",
     "genkit": "^1.14.1",
     "jsdom": "^24.1.0",
