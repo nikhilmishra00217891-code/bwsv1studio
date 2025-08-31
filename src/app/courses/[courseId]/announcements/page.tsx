@@ -6,9 +6,9 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { LoaderCircle, Send, Radio, Link as LinkIcon, AlertTriangle, Info, Trash2, Pin, PinOff, Heart } from 'lucide-react';
+import { LoaderCircle, Send, Radio, Link as LinkIcon, AlertTriangle, Info, Trash2, Pin, PinOff, Heart, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { CourseAnnouncement } from '@/types';
+import type { CourseAnnouncement, UrlMetadata } from '@/types';
 import { listenForCourseAnnouncements, createCourseAnnouncement, deleteCourseAnnouncement, toggleCourseAnnouncementReaction, toggleCourseAnnouncementPin } from '@/lib/data/announcements';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -20,6 +20,25 @@ import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import Image from 'next/image';
+import { getUrlMetadata } from '@/app/actions';
+
+const LinkPreview = ({ metadata }: { metadata: UrlMetadata }) => (
+    <a href={metadata.url} target="_blank" rel="noopener noreferrer" className="block mt-3 group">
+        <Card className="overflow-hidden hover:bg-muted/50 transition-colors">
+            {metadata.image && (
+                <div className="aspect-video relative overflow-hidden">
+                    <Image src={metadata.image} alt={metadata.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                </div>
+            )}
+            <div className="p-3">
+                <p className="text-xs text-muted-foreground uppercase">{metadata.siteName}</p>
+                <h4 className="font-bold truncate">{metadata.title}</h4>
+                <p className="text-xs text-muted-foreground line-clamp-2">{metadata.description}</p>
+            </div>
+        </Card>
+    </a>
+)
 
 const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
     const { user, userProfile } = useAuth();
@@ -34,6 +53,12 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
         if (!content.trim() || !user || !userProfile) return;
 
         setIsLoading(true);
+        
+        let metadata: UrlMetadata | null = null;
+        if(attachmentUrl) {
+            metadata = await getUrlMetadata(attachmentUrl);
+        }
+        
         try {
             const announcementData: Omit<CourseAnnouncement, 'id' | 'createdAt' | 'reactions' | 'isPinned'> = {
                 authorId: user.uid,
@@ -41,7 +66,7 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
                 authorAvatar: userProfile.photoURL || "",
                 content: content.trim(),
                 type: announcementType,
-                attachments: attachmentUrl ? [{ type: 'link', url: attachmentUrl }] : [],
+                attachment: metadata ? { ...metadata, url: attachmentUrl } : null,
             };
             await createCourseAnnouncement(courseId, announcementData);
             toast({ title: 'Announcement Posted!' });
@@ -189,17 +214,9 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
                             </div>
                         )}
                         <p className="mt-2 whitespace-pre-wrap">{announcement.content}</p>
-                        {announcement.attachments && announcement.attachments.length > 0 && (
-                            <div className="mt-4">
-                                {announcement.attachments.map((att, index) => (
-                                    <Button key={index} asChild variant="secondary">
-                                        <Link href={att.url} target="_blank" rel="noopener noreferrer">
-                                            <LinkIcon className="w-4 h-4 mr-2"/>
-                                            View Attachment
-                                        </Link>
-                                    </Button>
-                                ))}
-                            </div>
+                        
+                        {announcement.attachment && (
+                            <LinkPreview metadata={announcement.attachment} />
                         )}
 
                         <div className="flex items-center gap-4 mt-4">

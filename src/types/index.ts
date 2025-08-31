@@ -50,6 +50,14 @@ export interface Course {
   courseCompletionPercent?: number; // Faculty-driven progress
 }
 
+export interface UrlMetadata {
+    url: string;
+    title: string;
+    description: string;
+    image: string;
+    siteName: string;
+}
+
 export interface CourseAnnouncement {
     id: string;
     authorId: string;
@@ -57,7 +65,7 @@ export interface CourseAnnouncement {
     authorAvatar: string;
     content: string;
     type: 'standard' | 'alert';
-    attachments: { type: 'link', url: string }[];
+    attachment: UrlMetadata | null;
     reactions: { emoji: string, userIds: string[] }[];
     isPinned: boolean;
     pinnedAt?: Timestamp | null;

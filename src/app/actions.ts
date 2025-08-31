@@ -5,6 +5,7 @@ import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericCha
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from "firebase/firestore";
 import type { UserProfile } from "@/types";
+import { JSDOM } from 'jsdom';
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -173,5 +174,40 @@ export async function removeKnowledgeBaseUrl(url: string): Promise<{success: boo
     } catch (error: any) {
         console.error("Error removing URL:", error);
         return { success: false, message: error.message || "An unexpected error occurred." };
+    }
+}
+
+
+export async function getUrlMetadata(url: string): Promise<{ title: string; description: string; image: string; siteName: string } | null> {
+    try {
+        const response = await fetch(url, {
+             headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
+        if (!response.ok) {
+            return null;
+        }
+
+        const html = await response.text();
+        const { document } = new JSDOM(html).window;
+
+        const getMeta = (prop: string) => document.querySelector(`meta[property='${prop}']`)?.getAttribute('content') || document.querySelector(`meta[name='${prop}']`)?.getAttribute('content');
+
+        const title = getMeta('og:title') || document.title || 'No title found';
+        const description = getMeta('og:description') || getMeta('description') || 'No description found.';
+        let image = getMeta('og:image') || getMeta('twitter:image') || '';
+        const siteName = getMeta('og:site_name') || new URL(url).hostname;
+        
+        // Ensure image URL is absolute
+        if (image && !image.startsWith('http')) {
+            const urlObj = new URL(url);
+            image = new URL(image, urlObj.origin).href;
+        }
+
+        return { title, description, image, siteName };
+    } catch (error) {
+        console.error(`Failed to fetch metadata for ${url}:`, error);
+        return null;
     }
 }
