@@ -50,6 +50,20 @@ export interface Course {
   courseCompletionPercent?: number; // Faculty-driven progress
 }
 
+export interface CourseAnnouncement {
+    id: string;
+    authorId: string;
+    authorName: string;
+    authorAvatar: string;
+    content: string;
+    type: 'standard' | 'alert';
+    attachments: { type: 'link', url: string }[];
+    reactions: { emoji: string, userIds: string[] }[];
+    isPinned: boolean;
+    createdAt: Timestamp;
+    updatedAt?: Timestamp;
+}
+
 export interface Testimonial {
   id: "t1" | "t2" | "t3" | "t4" | "t5";
   name: string;
@@ -245,4 +259,15 @@ export interface Chamber {
     channels: Channel[];
     roles?: Role[];
     createdAt: Timestamp;
+}
+
+export interface Announcement {
+    id: string;
+    text: string;
+    authorId: string;
+    authorName: string;
+    authorAvatar: string;
+    reactions: string[];
+    createdAt: Timestamp;
+    updatedAt?: Timestamp;
 }

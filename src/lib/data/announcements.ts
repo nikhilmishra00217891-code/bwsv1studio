@@ -1,4 +1,6 @@
 
+"use client";
+
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -16,7 +18,7 @@ import {
   deleteDoc,
   onSnapshot,
 } from "firebase/firestore";
-import type { Announcement } from "@/types";
+import type { Announcement, CourseAnnouncement } from "@/types";
 
 interface CreateAnnouncementData {
     text: string;
@@ -100,3 +102,30 @@ export const deleteAnnouncement = async (announcementId: string) => {
     const announcementRef = doc(db, 'announcements', announcementId);
     await deleteDoc(announcementRef);
 };
+
+
+// --- Course Specific Announcements ---
+
+export const createCourseAnnouncement = async (courseId: string, data: Omit<CourseAnnouncement, 'id' | 'createdAt' | 'reactions' | 'isPinned'>): Promise<void> => {
+    const courseAnnouncementsCol = collection(db, `courses/${courseId}/announcements`);
+    await addDoc(courseAnnouncementsCol, {
+        ...data,
+        createdAt: serverTimestamp(),
+        reactions: [],
+        isPinned: false,
+    });
+};
+
+export const listenForCourseAnnouncements = (courseId: string, callback: (announcements: CourseAnnouncement[]) => void) => {
+    const courseAnnouncementsCol = collection(db, `courses/${courseId}/announcements`);
+    const q = query(courseAnnouncementsCol, orderBy("createdAt", "desc"));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const announcements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CourseAnnouncement));
+        callback(announcements);
+    }, (error) => {
+        console.error(`Error listening for announcements in course ${courseId}:`, error);
+    });
+
+    return unsubscribe;
+}

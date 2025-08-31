@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
+import Link from 'next/link';
 
 const LessonItem = ({ lesson, isSelected, onClick, isCompleted }: { lesson: Lesson, isSelected: boolean, onClick: () => void, isCompleted: boolean }) => {
     const Icon = lesson.type === 'video' ? Video : BookText;
@@ -53,14 +54,16 @@ const ChapterItem = ({ chapter, onLessonClick, selectedLessonId }: { chapter: Ch
     )
 }
 
-const SidebarMenuItem = ({ icon: Icon, label }: { icon: React.ElementType, label: string }) => (
-    <button className="w-full flex items-center gap-3 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-        <Icon className="w-5 h-5"/>
-        <span className="font-medium">{label}</span>
-    </button>
+const SidebarMenuItem = ({ icon: Icon, label, href }: { icon: React.ElementType, label: string, href: string }) => (
+    <Button variant="ghost" asChild className="w-full justify-start gap-3">
+        <Link href={href}>
+            <Icon className="w-5 h-5"/>
+            <span className="font-medium">{label}</span>
+        </Link>
+    </Button>
 )
 
-export const CourseSidebar = ({ course, selectedSubject, onLessonClick, selectedLessonId, isOpen, onClose }: { course: Course, selectedSubject: Subject | null, onLessonClick: (lesson: Lesson) => void, selectedLessonId?: string | null, isOpen: boolean, onClose: () => void }) => {
+export const CourseSidebar = ({ course, isOpen, onClose }: { course: Course, isOpen: boolean, onClose: () => void }) => {
     return (
         <AnimatePresence>
         {isOpen && (
@@ -90,9 +93,9 @@ export const CourseSidebar = ({ course, selectedSubject, onLessonClick, selected
                     </header>
                     <ScrollArea className="flex-grow p-2">
                         <div className="p-2 space-y-2">
-                            <SidebarMenuItem icon={Megaphone} label="Announcements"/>
-                            <SidebarMenuItem icon={Calendar} label="Events"/>
-                            <SidebarMenuItem icon={FolderKanban} label="Course Resources"/>
+                            <SidebarMenuItem icon={Megaphone} label="Announcements" href={`/courses/${course.id}/announcements`} />
+                            <SidebarMenuItem icon={Calendar} label="Events" href={`/courses/${course.id}/events`} />
+                            <SidebarMenuItem icon={FolderKanban} label="Course Resources" href={`/courses/${course.id}/resources`} />
                         </div>
                     </ScrollArea>
                 </motion.div>
