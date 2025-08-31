@@ -112,7 +112,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 </header>
 
                 <div className="flex-grow overflow-y-auto w-full">
-                    <div className="mx-auto w-full">
+                    <div className="mx-auto w-full h-full">
                         {renderContent()}
                     </div>
                 </div>

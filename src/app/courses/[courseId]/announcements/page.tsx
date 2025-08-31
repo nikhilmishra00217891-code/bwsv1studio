@@ -29,11 +29,11 @@ const LinkPreview = ({ metadata }: { metadata: UrlMetadata }) => (
         <Card className="overflow-hidden hover:bg-muted/50 transition-colors">
             <div className="flex">
                 {metadata.image && (
-                    <div className="w-24 h-24 relative flex-shrink-0 bg-muted">
-                        <Image src={metadata.image} alt={metadata.title} fill className="object-cover" />
+                     <div className="flex-shrink-0 w-24 sm:w-32 h-full relative">
+                        <Image src={metadata.image} alt={metadata.title || 'Link preview'} fill className="object-cover"/>
                     </div>
                 )}
-                <div className="p-3 overflow-hidden flex-grow">
+                <div className="p-3 flex flex-col justify-center overflow-hidden">
                     <p className="text-xs text-muted-foreground uppercase truncate">{metadata.siteName}</p>
                     <h4 className="font-bold truncate">{metadata.title}</h4>
                     <p className="text-xs text-muted-foreground line-clamp-2">{metadata.description}</p>
@@ -117,7 +117,7 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
                                 type="url"
                             />
                         </div>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 flex-wrap">
                             <RadioGroup defaultValue="standard" value={announcementType} onValueChange={(v) => setAnnouncementType(v as any)} className="flex items-center gap-4" disabled={isLoading}>
                                  <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="standard" id="type-standard" />
@@ -187,15 +187,15 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
                         <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-grow min-w-0">
-                        <div className="flex justify-between items-start">
-                             <div className="mb-2">
+                        <div className="flex justify-between items-start gap-2">
+                             <div className="mb-2 flex-grow">
                                 <p className="font-bold">{announcement.authorName}</p>
                                  <p className="text-xs text-muted-foreground">
                                     {announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
                                 </p>
                              </div>
                              {isFaculty && (
-                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePin}>
                                         {announcement.isPinned ? <PinOff className="w-4 h-4 text-primary"/> : <Pin className="w-4 h-4"/>}
                                     </Button>
