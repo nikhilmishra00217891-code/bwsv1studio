@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'postimg.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'm.media-amazon.com',
       }
     ],
   },
