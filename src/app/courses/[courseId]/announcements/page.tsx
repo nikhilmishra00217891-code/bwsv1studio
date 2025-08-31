@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -146,7 +146,7 @@ export default function CourseAnnouncementsPage() {
                                         <div className="flex-grow">
                                             <div className="flex items-center justify-between">
                                                 <p className="font-bold">{announcement.authorName}</p>
-                                                <p className="text-xs text-muted-foreground">{formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true })}</p>
+                                                <p className="text-xs text-muted-foreground">{announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}</p>
                                             </div>
                                             <p className="mt-2 whitespace-pre-wrap">{announcement.content}</p>
                                         </div>
