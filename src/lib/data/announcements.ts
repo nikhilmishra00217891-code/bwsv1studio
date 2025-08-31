@@ -18,6 +18,8 @@ import {
   deleteDoc,
   onSnapshot,
   runTransaction,
+  where,
+  limit,
 } from "firebase/firestore";
 import type { Announcement, CourseAnnouncement } from "@/types";
 
@@ -187,6 +189,6 @@ export const toggleCourseAnnouncementPin = async (
     
     await updateDoc(announcementRef, {
         isPinned: !isCurrentlyPinned,
-        pinnedAt: isCurrentlyPinned ? null : serverTimestamp()
+        pinnedAt: !isCurrentlyPinned ? serverTimestamp() : null
     });
 };
