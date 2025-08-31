@@ -116,6 +116,11 @@ export const createCourseAnnouncement = async (courseId: string, data: Omit<Cour
     });
 };
 
+export const deleteCourseAnnouncement = async (courseId: string, announcementId: string): Promise<void> => {
+    const announcementRef = doc(db, `courses/${courseId}/announcements`, announcementId);
+    await deleteDoc(announcementRef);
+}
+
 export const listenForCourseAnnouncements = (courseId: string, callback: (announcements: CourseAnnouncement[]) => void) => {
     const courseAnnouncementsCol = collection(db, `courses/${courseId}/announcements`);
     const q = query(courseAnnouncementsCol, orderBy("createdAt", "desc"));

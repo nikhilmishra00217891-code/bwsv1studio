@@ -4,12 +4,12 @@
 import { useState, useEffect, FormEvent, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { LoaderCircle, Send, Radio, Link as LinkIcon, AlertTriangle, Info } from 'lucide-react';
+import { LoaderCircle, Send, Radio, Link as LinkIcon, AlertTriangle, Info, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { CourseAnnouncement } from '@/types';
-import { listenForCourseAnnouncements, createCourseAnnouncement } from '@/lib/data/announcements';
+import { listenForCourseAnnouncements, createCourseAnnouncement, deleteCourseAnnouncement } from '@/lib/data/announcements';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,6 +17,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
     const { user, userProfile } = useAuth();
@@ -98,6 +101,79 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
     )
 }
 
+const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement: CourseAnnouncement; courseId: string; isFaculty: boolean }) => {
+    const { toast } = useToast();
+
+    const handleDelete = async () => {
+        try {
+            await deleteCourseAnnouncement(courseId, announcement.id);
+            toast({ title: 'Announcement Deleted' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
+        }
+    }
+    
+    return (
+        <Card className={cn(announcement.type === 'alert' && "border-destructive/50 bg-destructive/5")}>
+            <CardContent className="p-6 relative group">
+                {isFaculty && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100">
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete this announcement. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete} className={cn(buttonVariants({variant: "destructive"}))}>
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+                <div className="flex items-start gap-4">
+                    <Avatar>
+                        <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-grow">
+                        <div className="flex items-center justify-between">
+                            <p className="font-bold">{announcement.authorName}</p>
+                            <p className="text-xs text-muted-foreground">{announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}</p>
+                        </div>
+                        {announcement.type === 'alert' && (
+                            <div className="flex items-center gap-1.5 text-destructive text-sm font-semibold mt-1">
+                                <AlertTriangle className="w-4 h-4" />
+                                URGENT ALERT
+                            </div>
+                        )}
+                        <p className="mt-2 whitespace-pre-wrap">{announcement.content}</p>
+                        {announcement.attachments && announcement.attachments.length > 0 && (
+                            <div className="mt-4">
+                                {announcement.attachments.map((att, index) => (
+                                    <Button key={index} asChild variant="secondary">
+                                        <Link href={att.url} target="_blank" rel="noopener noreferrer">
+                                            <LinkIcon className="w-4 h-4 mr-2"/>
+                                            View Attachment
+                                        </Link>
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function CourseAnnouncementsPage() {
     const params = useParams();
     const courseId = params.courseId as string;
@@ -137,22 +213,7 @@ export default function CourseAnnouncementsPage() {
 
                     {announcements.length > 0 ? (
                         announcements.map(announcement => (
-                             <Card key={announcement.id}>
-                                <CardContent className="p-6">
-                                    <div className="flex items-start gap-4">
-                                        <Avatar>
-                                            <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-grow">
-                                            <div className="flex items-center justify-between">
-                                                <p className="font-bold">{announcement.authorName}</p>
-                                                <p className="text-xs text-muted-foreground">{announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}</p>
-                                            </div>
-                                            <p className="mt-2 whitespace-pre-wrap">{announcement.content}</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                             <AnnouncementCard key={announcement.id} announcement={announcement} courseId={courseId} isFaculty={isFaculty} />
                         ))
                     ) : (
                          <Card>
