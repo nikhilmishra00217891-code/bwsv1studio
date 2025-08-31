@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -72,7 +73,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect, isDesktop = false }: { hre
 };
 
 
-const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone"];
+const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/warzone", "/dashboard", "/profile"];
 const navLinksData = [
   { href: "/", label: "Home", icon: Home },
   { href: "/courses", label: "Courses", icon: Compass },
@@ -109,7 +110,9 @@ export default function Header() {
   const { isEditMode, setIsEditMode } = useEditMode();
   const router = useRouter();
   const pathname = usePathname();
-  const showBackButton = isClient && !mainNavPaths.includes(pathname);
+  
+  const isLearnZone = pathname.startsWith('/courses/') && pathname.includes('/learnzone');
+  const showBackButton = isClient && !isLearnZone && !mainNavPaths.includes(pathname);
 
 
   useEffect(() => {
@@ -185,23 +188,9 @@ export default function Header() {
               )}
             </div>
           ) : (
-             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Open navigation menu</span>
-                  </Button>
-                </SheetTrigger>
-                {/* Fallback login for users without profile */}
-                <SheetContent side="right" className="flex flex-col p-0">
-                    <SheetTitle className="sr-only">Menu</SheetTitle>
-                    <div className="p-6 mt-auto">
-                         <Button asChild className="w-full" onClick={() => handleLinkClick()}>
-                            <Link href="/login">Login / Signup</Link>
-                        </Button>
-                    </div>
-                </SheetContent>
-            </Sheet>
+             <Button asChild variant="outline">
+                <Link href="/login">Login</Link>
+            </Button>
           )}
 
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>

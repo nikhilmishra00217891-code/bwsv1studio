@@ -4,22 +4,18 @@ import { getSession, isFaculty } from "@/lib/firebase/server";
 import { notFound, redirect } from "next/navigation";
 import CourseLearnClient from "./CourseLearnClient";
 import { cookies } from "next/headers";
+import { Suspense } from "react";
+import { LoaderCircle } from "lucide-react";
 
-export default async function CourseLearnPage({ params }: { params: { courseId: string } }) {
+const CourseLearnPageContent = async ({ params }: { params: { courseId: string } }) => {
     const sessionCookie = cookies().get("session")?.value;
-    // Only attempt to get user if a session cookie exists.
     const { user } = sessionCookie ? await getSession() : { user: null };
     
-    // If the user session isn't immediately available on the server,
-    // we'll let the client-side AuthProvider handle loading and redirects.
-    // This prevents the redirect loop.
     if (!user) {
         const course = await getCourseById(params.courseId);
         if (!course) {
             notFound();
         }
-        // Render the client component in a loading state. 
-        // It will handle the redirect to login if the user is truly not authenticated.
         return (
              <CourseLearnClient 
                 course={course}
@@ -37,7 +33,6 @@ export default async function CourseLearnPage({ params }: { params: { courseId: 
     const userIsFaculty = await isFaculty(user.uid);
 
     if (!isEnrolled && !userIsFaculty) {
-        // This is a true authorization failure, so we can deny access.
         notFound();
     }
 
@@ -48,5 +43,17 @@ export default async function CourseLearnPage({ params }: { params: { courseId: 
             course={course}
             userProgress={enrolledData?.progress || 0}
         />
+    );
+};
+
+export default function CourseLearnPage({ params }: { params: { courseId: string } }) {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen items-center justify-center">
+                <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        }>
+            <CourseLearnPageContent params={params} />
+        </Suspense>
     );
 }

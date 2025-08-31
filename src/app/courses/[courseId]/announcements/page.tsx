@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, FormEvent, useRef } from 'react';
@@ -88,7 +89,7 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
 
     return (
         <Card className="shadow-lg">
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
                 <form onSubmit={handlePost} className="space-y-4">
                     <Textarea 
                         placeholder="What's the update for your students?"
@@ -173,7 +174,7 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
             announcement.isPinned && "border-primary/50 bg-primary/5"
         )}>
              {announcement.isPinned && <Pin className="w-4 h-4 text-primary absolute top-3 left-3" />}
-            <CardContent className="p-6 relative group">
+            <CardContent className="p-4 md:p-6 relative group">
                 <div className="flex items-start gap-4">
                     <Avatar>
                         <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
@@ -182,7 +183,9 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
                         <div className="flex items-center justify-between">
                              <div>
                                 <p className="font-bold">{announcement.authorName}</p>
-                                <p className="text-xs text-muted-foreground">{announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
+                                </p>
                              </div>
                              {isFaculty && (
                                 <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -277,10 +280,7 @@ export default function CourseAnnouncementsPage() {
     
     return (
         <div className="h-full flex flex-col">
-            <header className="p-4 border-b">
-                <h1 className="text-2xl font-bold font-headline">Course Announcements</h1>
-            </header>
-             <ScrollArea className="flex-grow">
+            <ScrollArea className="flex-grow">
                 <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto">
                     {isFaculty && <AnnouncementComposer courseId={courseId} />}
 
