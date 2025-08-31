@@ -27,15 +27,17 @@ import { getUrlMetadata } from '@/app/actions';
 const LinkPreview = ({ metadata }: { metadata: UrlMetadata }) => (
     <a href={metadata.url} target="_blank" rel="noopener noreferrer" className="block mt-3 group">
         <Card className="overflow-hidden hover:bg-muted/50 transition-colors">
-            {metadata.image && (
-                <div className="aspect-video relative overflow-hidden">
-                    <Image src={metadata.image} alt={metadata.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+            <div className="flex">
+                {metadata.image && (
+                    <div className="w-24 h-24 relative flex-shrink-0">
+                        <Image src={metadata.image} alt={metadata.title} fill className="object-cover" />
+                    </div>
+                )}
+                <div className="p-3 overflow-hidden flex-grow">
+                    <p className="text-xs text-muted-foreground uppercase truncate">{metadata.siteName}</p>
+                    <h4 className="font-bold truncate">{metadata.title}</h4>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{metadata.description}</p>
                 </div>
-            )}
-            <div className="p-3">
-                <p className="text-xs text-muted-foreground uppercase">{metadata.siteName}</p>
-                <h4 className="font-bold truncate">{metadata.title}</h4>
-                <p className="text-xs text-muted-foreground line-clamp-2">{metadata.description}</p>
             </div>
         </Card>
     </a>
@@ -58,24 +60,28 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
         let metadata: UrlMetadata | null = null;
         if(attachmentUrl) {
             try {
+                // Basic client-side validation
+                new URL(attachmentUrl);
                 metadata = await getUrlMetadata(attachmentUrl);
+                 if (!metadata) {
+                    throw new Error("Could not retrieve metadata from URL.");
+                }
             } catch (error) {
-                 toast({ variant: 'destructive', title: 'Invalid URL', description: 'Could not fetch preview for the provided link.' });
+                 toast({ variant: 'destructive', title: 'Invalid Link', description: 'Could not fetch a preview for the provided link. Please check the URL and try again.' });
                  setIsLoading(false);
                  return;
             }
         }
         
         try {
-            const announcementData: Omit<CourseAnnouncement, 'id' | 'createdAt' | 'reactions' | 'isPinned'> = {
+            await createCourseAnnouncement(courseId, {
                 authorId: user.uid,
                 authorName: userProfile.displayName || "Faculty",
                 authorAvatar: userProfile.photoURL || "",
                 content: content.trim(),
                 type: announcementType,
-                attachment: metadata ? { ...metadata, url: attachmentUrl } : null,
-            };
-            await createCourseAnnouncement(courseId, announcementData);
+                attachment: metadata,
+            });
             toast({ title: 'Announcement Posted!' });
             setContent('');
             setAttachmentUrl('');
@@ -183,7 +189,7 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
                         <div className="flex items-center justify-between">
                              <div>
                                 <p className="font-bold">{announcement.authorName}</p>
-                                <p className="text-xs text-muted-foreground">
+                                 <p className="text-xs text-muted-foreground">
                                     {announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
                                 </p>
                              </div>
