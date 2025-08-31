@@ -16,7 +16,8 @@ export const getSession = async () => {
         const decodedClaims = await adminAuth().verifySessionCookie(sessionCookie, true);
         return { user: decodedClaims };
     } catch (error) {
-        console.error("Error verifying session cookie:", error);
+        // This will catch errors for expired or invalid session cookies.
+        // It's expected behavior for logged-out users or after a session expires.
         return { user: null };
     }
 }
