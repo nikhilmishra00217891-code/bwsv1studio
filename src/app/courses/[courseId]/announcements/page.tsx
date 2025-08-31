@@ -30,17 +30,17 @@ import Image from "next/image";
 const LinkPreview = ({ metadata }: { metadata: UrlMetadata }) => {
     return (
         <a href={metadata.url} target="_blank" rel="noopener noreferrer" className="block mt-3">
-            <Card className="flex h-28 sm:h-32 overflow-hidden transition-all duration-200 hover:border-primary/50">
+            <Card className="flex flex-col sm:flex-row overflow-hidden transition-all duration-200 hover:border-primary/50">
+                {metadata.image && (
+                     <div className="flex-shrink-0 w-full sm:w-32 h-32 sm:h-auto relative">
+                        <Image src={metadata.image} alt={metadata.title || 'Link preview'} fill className="object-cover"/>
+                    </div>
+                )}
                 <div className="p-3 flex flex-col justify-center overflow-hidden flex-grow">
                     <p className="text-xs text-muted-foreground truncate">{metadata.siteName}</p>
                     <p className="font-semibold truncate">{metadata.title}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2">{metadata.description}</p>
                 </div>
-                {metadata.image && (
-                     <div className="flex-shrink-0 w-24 sm:w-32 h-full relative">
-                        <Image src={metadata.image} alt={metadata.title || 'Link preview'} fill className="object-cover"/>
-                    </div>
-                )}
             </Card>
         </a>
     )
@@ -178,7 +178,7 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
                         <AvatarImage src={announcement.authorAvatar} alt={announcement.authorName} />
                         <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-grow">
+                    <div className="flex-grow overflow-hidden">
                         <div className="flex items-center justify-between">
                              <div className="flex items-center gap-3">
                                  <Avatar className="w-8 h-8 border sm:hidden">
@@ -223,7 +223,7 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
                                 </DropdownMenu>
                             )}
                         </div>
-                        <p className="mt-3 whitespace-pre-wrap">{announcement.content}</p>
+                        <p className="mt-3 whitespace-pre-wrap break-words">{announcement.content}</p>
                         {announcement.attachment && <LinkPreview metadata={announcement.attachment} />}
                         
                         <div className="mt-4">
