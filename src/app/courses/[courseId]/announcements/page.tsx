@@ -180,13 +180,13 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
             announcement.isPinned && "border-primary/50 bg-primary/5"
         )}>
              {announcement.isPinned && <Pin className="w-4 h-4 text-primary absolute top-3 left-3" />}
-            <CardContent className="p-4 md:p-6 group">
+            <CardContent className="p-4 group">
                 <div className="flex items-start gap-3 sm:gap-4">
                     <Avatar>
                         <AvatarImage src={announcement.authorAvatar} alt={announcement.authorName} />
                         <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-grow">
+                    <div className="flex-grow min-w-0">
                         <div className="flex justify-between items-start">
                              <div className="mb-2">
                                 <p className="font-bold">{announcement.authorName}</p>
@@ -229,7 +229,7 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
                                 URGENT ALERT
                             </div>
                         )}
-                        <p className="whitespace-pre-wrap">{announcement.content}</p>
+                        <p className="whitespace-pre-wrap break-words">{announcement.content}</p>
                         
                         {announcement.attachment && (
                             <LinkPreview metadata={announcement.attachment} />
@@ -317,3 +317,5 @@ export default function CourseAnnouncementsPage() {
         </div>
     )
 }
+
+    
