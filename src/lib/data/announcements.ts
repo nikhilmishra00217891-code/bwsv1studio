@@ -17,6 +17,7 @@ import {
   getDoc,
   deleteDoc,
   onSnapshot,
+  runTransaction,
 } from "firebase/firestore";
 import type { Announcement, CourseAnnouncement } from "@/types";
 
@@ -123,7 +124,7 @@ export const deleteCourseAnnouncement = async (courseId: string, announcementId:
 
 export const listenForCourseAnnouncements = (courseId: string, callback: (announcements: CourseAnnouncement[]) => void) => {
     const courseAnnouncementsCol = collection(db, `courses/${courseId}/announcements`);
-    const q = query(courseAnnouncementsCol, orderBy("createdAt", "desc"));
+    const q = query(courseAnnouncementsCol, orderBy("isPinned", "desc"), orderBy("createdAt", "desc"));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const announcements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CourseAnnouncement));
@@ -134,3 +135,58 @@ export const listenForCourseAnnouncements = (courseId: string, callback: (announ
 
     return unsubscribe;
 }
+
+export const toggleCourseAnnouncementReaction = async (
+  courseId: string,
+  announcementId: string,
+  emoji: string,
+  userId: string
+) => {
+  const announcementRef = doc(db, `courses/${courseId}/announcements`, announcementId);
+
+  await runTransaction(db, async (transaction) => {
+    const announcementDoc = await transaction.get(announcementRef);
+    if (!announcementDoc.exists()) {
+      throw new Error("Announcement not found");
+    }
+
+    const announcementData = announcementDoc.data() as CourseAnnouncement;
+    const reactions = announcementData.reactions || [];
+    const reactionIndex = reactions.findIndex(r => r.emoji === emoji);
+
+    if (reactionIndex > -1) {
+      const userIndex = reactions[reactionIndex].userIds.indexOf(userId);
+      if (userIndex > -1) {
+        reactions[reactionIndex].userIds.splice(userIndex, 1);
+        if (reactions[reactionIndex].userIds.length === 0) {
+          reactions.splice(reactionIndex, 1);
+        }
+      } else {
+        reactions[reactionIndex].userIds.push(userId);
+      }
+    } else {
+      reactions.push({ emoji, userIds: [userId] });
+    }
+
+    transaction.update(announcementRef, { reactions });
+  });
+};
+
+export const toggleCourseAnnouncementPin = async (
+  courseId: string,
+  announcementId: string
+) => {
+    const announcementRef = doc(db, `courses/${courseId}/announcements`, announcementId);
+    const announcementSnap = await getDoc(announcementRef);
+
+    if (!announcementSnap.exists()) {
+        throw new Error("Announcement not found.");
+    }
+    
+    const isCurrentlyPinned = announcementSnap.data().isPinned || false;
+    
+    await updateDoc(announcementRef, {
+        isPinned: !isCurrentlyPinned,
+        pinnedAt: isCurrentlyPinned ? null : serverTimestamp()
+    });
+};

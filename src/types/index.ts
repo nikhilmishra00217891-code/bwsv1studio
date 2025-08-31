@@ -60,6 +60,7 @@ export interface CourseAnnouncement {
     attachments: { type: 'link', url: string }[];
     reactions: { emoji: string, userIds: string[] }[];
     isPinned: boolean;
+    pinnedAt?: Timestamp | null;
     createdAt: Timestamp;
     updatedAt?: Timestamp;
 }

@@ -6,10 +6,10 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { LoaderCircle, Send, Radio, Link as LinkIcon, AlertTriangle, Info, Trash2 } from 'lucide-react';
+import { LoaderCircle, Send, Radio, Link as LinkIcon, AlertTriangle, Info, Trash2, Pin, PinOff, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { CourseAnnouncement } from '@/types';
-import { listenForCourseAnnouncements, createCourseAnnouncement, deleteCourseAnnouncement } from '@/lib/data/announcements';
+import { listenForCourseAnnouncements, createCourseAnnouncement, deleteCourseAnnouncement, toggleCourseAnnouncementReaction, toggleCourseAnnouncementPin } from '@/lib/data/announcements';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -103,6 +103,10 @@ const AnnouncementComposer = ({ courseId }: { courseId: string }) => {
 
 const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement: CourseAnnouncement; courseId: string; isFaculty: boolean }) => {
     const { toast } = useToast();
+    const { user } = useAuth();
+    
+    const heartReaction = announcement.reactions?.find(r => r.emoji === '❤️');
+    const hasUserHearted = heartReaction?.userIds.includes(user?.uid || '');
 
     const handleDelete = async () => {
         try {
@@ -113,43 +117,73 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
         }
     }
     
+    const handleReaction = async () => {
+        if (!user) return;
+        try {
+            await toggleCourseAnnouncementReaction(courseId, announcement.id, '❤️', user.uid);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Reaction Failed', description: error.message });
+        }
+    }
+    
+    const handlePin = async () => {
+        try {
+            await toggleCourseAnnouncementPin(courseId, announcement.id);
+            toast({ title: announcement.isPinned ? 'Announcement Unpinned' : 'Announcement Pinned!' });
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Action Failed', description: error.message });
+        }
+    }
+    
     return (
-        <Card className={cn(announcement.type === 'alert' && "border-destructive/50 bg-destructive/5")}>
+        <Card className={cn(
+            "relative",
+            announcement.type === 'alert' && "border-destructive/50 bg-destructive/5",
+            announcement.isPinned && "border-primary/50 bg-primary/5"
+        )}>
+             {announcement.isPinned && <Pin className="w-4 h-4 text-primary absolute top-3 left-3" />}
             <CardContent className="p-6 relative group">
-                {isFaculty && (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100">
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete this announcement. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete} className={cn(buttonVariants({variant: "destructive"}))}>
-                                    Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                )}
                 <div className="flex items-start gap-4">
                     <Avatar>
                         <AvatarFallback>{announcement.authorName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-grow">
                         <div className="flex items-center justify-between">
-                            <p className="font-bold">{announcement.authorName}</p>
-                            <p className="text-xs text-muted-foreground">{announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}</p>
+                             <div>
+                                <p className="font-bold">{announcement.authorName}</p>
+                                <p className="text-xs text-muted-foreground">{announcement.createdAt ? formatDistanceToNow(announcement.createdAt.toDate(), { addSuffix: true }) : 'Just now'}</p>
+                             </div>
+                             {isFaculty && (
+                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePin}>
+                                        {announcement.isPinned ? <PinOff className="w-4 h-4 text-primary"/> : <Pin className="w-4 h-4"/>}
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                <Trash2 className="w-4 h-4 text-destructive" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This will permanently delete this announcement. This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleDelete} className={cn(buttonVariants({variant: "destructive"}))}>
+                                                    Delete
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
+                            )}
                         </div>
                         {announcement.type === 'alert' && (
-                            <div className="flex items-center gap-1.5 text-destructive text-sm font-semibold mt-1">
+                            <div className="flex items-center gap-1.5 text-destructive text-sm font-semibold mt-2">
                                 <AlertTriangle className="w-4 h-4" />
                                 URGENT ALERT
                             </div>
@@ -167,6 +201,18 @@ const AnnouncementCard = ({ announcement, courseId, isFaculty }: { announcement:
                                 ))}
                             </div>
                         )}
+
+                        <div className="flex items-center gap-4 mt-4">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className={cn("rounded-full", hasUserHearted && "border-red-500 bg-red-500/10 text-red-500")}
+                                onClick={handleReaction}
+                            >
+                                <Heart className={cn("w-4 h-4 mr-2", hasUserHearted && "fill-current")}/>
+                                {heartReaction?.userIds.length || 0}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </CardContent>
@@ -194,6 +240,10 @@ export default function CourseAnnouncementsPage() {
         return () => unsubscribe();
     }, [courseId]);
 
+    const pinnedAnnouncements = announcements.filter(a => a.isPinned);
+    const regularAnnouncements = announcements.filter(a => !a.isPinned);
+
+
     if (authLoading || dataLoading) {
         return (
             <div className="flex h-full items-center justify-center">
@@ -211,8 +261,18 @@ export default function CourseAnnouncementsPage() {
                 <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto">
                     {isFaculty && <AnnouncementComposer courseId={courseId} />}
 
-                    {announcements.length > 0 ? (
-                        announcements.map(announcement => (
+                    {pinnedAnnouncements.length > 0 && (
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-sm text-muted-foreground uppercase flex items-center gap-2"><Pin className="w-4 h-4"/> Pinned</h3>
+                            {pinnedAnnouncements.map(announcement => (
+                                <AnnouncementCard key={announcement.id} announcement={announcement} courseId={courseId} isFaculty={isFaculty} />
+                            ))}
+                             <hr className="my-6"/>
+                        </div>
+                    )}
+
+                    {regularAnnouncements.length > 0 ? (
+                        regularAnnouncements.map(announcement => (
                              <AnnouncementCard key={announcement.id} announcement={announcement} courseId={courseId} isFaculty={isFaculty} />
                         ))
                     ) : (
