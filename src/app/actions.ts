@@ -27,32 +27,22 @@ export async function askAiMentor(
 
   // If a specific course context is provided (e.g., from a course page)
   if (courseContext) {
-    try {
-      const result = await answerQuestionsAboutCourse({
-        courseId: courseContext,
-        question: lastUserMessage,
-      });
-      return result.answer;
-    } catch (error) {
-      console.error(`AI Error for course ${courseContext}:`, error);
-      return "I seem to be having trouble recalling details about this specific course right now. Could you ask a general question instead?";
-    }
+    const result = await answerQuestionsAboutCourse({
+      courseId: courseContext,
+      question: lastUserMessage,
+    });
+    return result.answer;
   }
 
   // Default to the generic chat flow for all other cases
-  try {
-    const result = await genericChat({
-      history: history.map(m => ({
-          role: m.role as 'user' | 'assistant',
-          content: [{ text: m.content }],
-      })),
-      message: lastUserMessage,
-    });
-    return result.answer;
-  } catch(error) {
-    console.error('Generic AI chat error:', error);
-    return "That's a great question! I'm having a little trouble thinking right now, but please ask me something else.";
-  }
+  const result = await genericChat({
+    history: history.map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: [{ text: m.content }],
+    })),
+    message: lastUserMessage,
+  });
+  return result.answer;
 }
 
 export async function submitFeedback(userId: string, feedback: string): Promise<{success: boolean, message: string}> {

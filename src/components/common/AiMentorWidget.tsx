@@ -59,14 +59,14 @@ export default function AiMentorWidget() {
 
     } catch (error) {
       console.error("AI Mentor Error:", error);
-      const errorMessage = "Sorry, I'm having trouble connecting right now. Please try again in a bit.";
+      const errorMessage = "Sorry, an unexpected error occurred. Please check the browser console for details and try again later.";
        setMessages((prevMessages) => {
          return [...prevMessages, { role: "assistant", content: errorMessage }];
       });
       toast({
         variant: "destructive",
         title: "Oh no! Something went wrong.",
-        description: "BWS Buddy is taking a short break. Please try again later.",
+        description: "BWS Buddy is having technical difficulties.",
       });
     } finally {
       setIsLoading(false);
@@ -137,7 +137,6 @@ export default function AiMentorWidget() {
                   </Avatar>
                 <div className="bg-secondary rounded-2xl rounded-bl-none p-3 flex items-center gap-2">
                     <LoaderCircle className="w-4 h-4 animate-spin"/>
-                    <span className="text-sm text-muted-foreground">BWS Buddy is thinking...</span>
                 </div>
               </div>
             )}
