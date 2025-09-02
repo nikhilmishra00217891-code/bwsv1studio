@@ -458,23 +458,21 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
     const handleShare = async () => {
         if (!chamber) return;
         const inviteLink = `${window.location.origin}/parivartan/join?id=${chamber.id}`;
-        
-        try {
-            // navigator.share is only available in secure contexts (HTTPS) and on certain browsers/devices.
-            // It also requires a user gesture.
-            if (navigator.share) {
+
+        if (navigator.share) {
+            try {
                 await navigator.share({
                     title: `Join my Parivaar: ${chamber.name}`,
                     text: `Join our study group on BiharWaleSirji!`,
                     url: inviteLink,
                 });
-            } else {
-                // Fallback for browsers that don't support navigator.share
-                throw new Error("Share API not supported.");
+            } catch (error) {
+                // This catch block handles rejections from navigator.share (e.g., user cancels)
+                // or if it fails for other reasons. We can safely ignore it.
+                console.log("Share dialog was cancelled or failed.", error);
             }
-        } catch (error) {
-            // This catch block handles both rejections from navigator.share (e.g., user cancels)
-            // and the case where the API isn't supported.
+        } else {
+            // Fallback for browsers that don't support navigator.share
             navigator.clipboard.writeText(inviteLink);
             toast({
                 title: "Invite Link Copied!",
