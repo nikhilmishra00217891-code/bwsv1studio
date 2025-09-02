@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight, PinOff, ChevronsDown, ChevronsUp, XCircle, Library, Paperclip, BarChart3, FolderKanban, Target, Swords, Check } from 'lucide-react';
+import { LoaderCircle, Hash, MessageSquare, Users, Settings, Plus, Send, BrainCircuit, Bot, Menu, X, Share2, Copy, Crown, Trash2, LogOut, MoreVertical, AlertTriangle, UserCog, ShieldCheck, CheckSquare, Square, PencilRuler, Pencil, Pin, Reply, Smile, Heart, CornerDownRight, PinOff, ChevronsDown, ChevronsUp, XCircle, Library, Paperclip, BarChart3, FolderKanban, Target, Swords, Check, Link as LinkIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -26,6 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Progress } from '@/components/ui/progress';
+import Link from 'next/link';
 
 const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) => void }) => {
     const { user, userProfile } = useAuth();
@@ -454,6 +455,21 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
          toast({ title: "Chamber ID Copied!", description: chamber.id });
      }
      
+    const handleShare = () => {
+        if (!chamber) return;
+        const inviteLink = `${window.location.origin}/parivartan/join?id=${chamber.id}`;
+        if (navigator.share) {
+            navigator.share({
+                title: `Join my Parivaar: ${chamber.name}`,
+                text: `Join our study group on BiharWaleSirji!`,
+                url: inviteLink,
+            });
+        } else {
+            navigator.clipboard.writeText(inviteLink);
+            toast({ title: "Invite Link Copied!" });
+        }
+    }
+     
     const handleLeaveChamber = async () => {
         if (!user || !chamber) return;
         try {
@@ -594,6 +610,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                                 </div>
                             </DropdownMenuTrigger>
                              <DropdownMenuContent side="top" className="w-56">
+                                <DropdownMenuItem onClick={handleShare}><Share2 className="mr-2 h-4 w-4"/> Invite to Chamber</DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleCopyId}><Copy className="mr-2 h-4 w-4"/> Copy Chamber ID</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <AlertDialog>
@@ -1265,12 +1282,12 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
 
     const AttachmentMenu = () => {
         const actionItems = [
-            { icon: BarChart3, label: 'Poll', onClick: () => setIsCreatePollOpen(true) },
-            { icon: FolderKanban, label: 'Drive', onClick: () => {} },
-            { icon: Target, label: 'Focus Zone', onClick: () => {} },
-            { icon: Swords, label: 'Warzone', onClick: () => {} },
+            { icon: BarChart3, label: 'Poll', onClick: () => setIsCreatePollOpen(true), disabled: false },
+            { icon: FolderKanban, label: 'Drive', onClick: () => {}, disabled: false, href: "https://drive.google.com" },
+            { icon: Target, label: 'Focus Zone', onClick: () => {}, disabled: true },
+            { icon: Swords, label: 'Warzone', onClick: () => {}, disabled: true },
         ];
-
+    
         return (
             <Popover>
                 <PopoverTrigger asChild>
@@ -1282,15 +1299,27 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                             <Tooltip key={item.label}>
                                 <TooltipTrigger asChild>
                                     <Button
+                                        asChild={!!item.href}
                                         variant="ghost"
                                         className="flex flex-col h-20 w-20 items-center justify-center gap-1"
                                         onClick={item.onClick}
-                                        disabled={item.label !== 'Poll'} // Disable non-functional buttons
+                                        disabled={item.disabled}
                                     >
-                                        <div className={cn("p-3 rounded-full", item.label === 'Poll' ? "bg-blue-500/20 text-blue-500" : "bg-muted text-muted-foreground")}>
-                                            <item.icon className="w-6 h-6" />
-                                        </div>
-                                        <span className="text-xs">{item.label}</span>
+                                        {item.href ? (
+                                            <a href={item.href} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center gap-1">
+                                                <div className={cn("p-3 rounded-full", item.color || "bg-blue-500/20 text-blue-500")}>
+                                                    <item.icon className="w-6 h-6" />
+                                                </div>
+                                                <span className="text-xs">{item.label}</span>
+                                            </a>
+                                        ) : (
+                                            <>
+                                                <div className={cn("p-3 rounded-full", item.color || "bg-blue-500/20 text-blue-500")}>
+                                                    <item.icon className="w-6 h-6" />
+                                                </div>
+                                                <span className="text-xs">{item.label}</span>
+                                            </>
+                                        )}
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent><p>{item.label}</p></TooltipContent>

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import {
   createUserWithEmailAndPassword,
@@ -45,6 +45,8 @@ export function LoginForm() {
   const [isFacultyMode, setIsFacultyMode] = useState(false);
   
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
   const { toast } = useToast();
   const { theme } = useTheme();
 
@@ -117,7 +119,7 @@ export function LoginForm() {
         await updateProfile(user, { displayName: username });
         await createFacultyProfile(user);
         toast({ title: "Faculty Account created!", description: "Welcome to the team!" });
-        router.push("/dashboard");
+        router.push(redirectUrl);
     } catch(error: any) {
         toast({
             variant: "destructive",
@@ -134,7 +136,7 @@ export function LoginForm() {
       try {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Welcome back!" });
-        router.push("/dashboard");
+        router.push(redirectUrl);
       } catch (error: any) {
          toast({
             variant: "destructive",
