@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -58,14 +59,25 @@ export interface UrlMetadata {
     siteName: string;
 }
 
+export interface PollOption {
+    text: string;
+    voterIds: string[];
+}
+
+export interface Poll {
+    question: string;
+    options: PollOption[];
+}
+
 export interface CourseAnnouncement {
     id: string;
     authorId: string;
     authorName: string;
     authorAvatar: string;
-    content: string;
-    type: 'standard' | 'alert';
-    attachment: UrlMetadata | null;
+    type: 'standard' | 'alert' | 'poll';
+    content?: string; // Optional for polls
+    poll?: Poll;
+    attachment?: UrlMetadata | null;
     reactions: { emoji: string, userIds: string[] }[];
     isPinned: boolean;
     pinnedAt?: Timestamp | null;
@@ -223,16 +235,6 @@ export interface ReplyInfo {
     messageId: string;
     senderName: string;
     text: string;
-}
-
-export interface PollOption {
-    text: string;
-    voterIds: string[];
-}
-
-export interface Poll {
-    question: string;
-    options: PollOption[];
 }
 
 export interface ChamberMessage {

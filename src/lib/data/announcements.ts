@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { db } from "@/lib/firebase";
@@ -21,7 +22,7 @@ import {
   where,
   limit,
 } from "firebase/firestore";
-import type { Announcement, CourseAnnouncement } from "@/types";
+import type { Announcement, CourseAnnouncement, Poll } from "@/types";
 
 interface CreateAnnouncementData {
     text: string;
@@ -109,13 +110,13 @@ export const deleteAnnouncement = async (announcementId: string) => {
 
 // --- Course Specific Announcements ---
 
-export const createCourseAnnouncement = async (courseId: string, data: Omit<CourseAnnouncement, 'id' | 'createdAt' | 'reactions' | 'isPinned'>): Promise<void> => {
+export const createCourseAnnouncement = async (courseId: string, data: Partial<CourseAnnouncement>): Promise<void> => {
     const courseAnnouncementsCol = collection(db, `courses/${courseId}/announcements`);
     await addDoc(courseAnnouncementsCol, {
         ...data,
         createdAt: serverTimestamp(),
-        reactions: [],
-        isPinned: false,
+        reactions: data.reactions || [],
+        isPinned: data.isPinned || false,
     });
 };
 
@@ -136,6 +137,36 @@ export const listenForCourseAnnouncements = (courseId: string, callback: (announ
     });
 
     return unsubscribe;
+}
+
+export const voteOnCoursePoll = async (courseId: string, announcementId: string, optionIndex: number, userId: string) => {
+    const announcementRef = doc(db, `courses/${courseId}/announcements`, announcementId);
+
+    await runTransaction(db, async (transaction) => {
+        const annDoc = await transaction.get(announcementRef);
+        if (!annDoc.exists() || annDoc.data().type !== 'poll') {
+            throw new Error("Poll not found.");
+        }
+
+        const pollData = annDoc.data().poll as Poll;
+
+        pollData.options.forEach(opt => {
+            if (!opt.voterIds) opt.voterIds = [];
+        });
+        
+        const hasVoted = pollData.options.some(opt => opt.voterIds.includes(userId));
+        if (hasVoted) {
+            throw new Error("You have already voted on this poll.");
+        }
+
+        if (optionIndex < 0 || optionIndex >= pollData.options.length) {
+            throw new Error("Invalid option selected.");
+        }
+
+        pollData.options[optionIndex].voterIds.push(userId);
+
+        transaction.update(announcementRef, { poll: pollData });
+    });
 }
 
 export const toggleCourseAnnouncementReaction = async (
