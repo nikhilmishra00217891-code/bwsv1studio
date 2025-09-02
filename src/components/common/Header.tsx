@@ -20,9 +20,10 @@ import { useEditMode } from "./EditModeProvider";
 import { ScrollArea } from "../ui/scroll-area";
 import SmartSearch from "../home/SmartSearch";
 
-const NavLink = ({ href, label, icon: Icon, onSelect, isDesktop = false }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void, isDesktop?: boolean }) => {
+const NavLink = ({ href, label, icon: Icon, onSelect, isProtected, isDesktop = false }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void, isProtected?: boolean, isDesktop?: boolean }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useAuth();
   const isActive = pathname.startsWith(href) && href !== "/" || pathname === href;
 
   const content = (
@@ -34,11 +35,13 @@ const NavLink = ({ href, label, icon: Icon, onSelect, isDesktop = false }: { hre
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement> | React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (onSelect) {
-      router.push(href);
-      onSelect();
+    if (isProtected && !user) {
+        router.push('/login');
     } else {
-      router.push(href);
+        router.push(href);
+    }
+    if (onSelect) {
+      onSelect();
     }
   };
 
@@ -59,7 +62,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect, isDesktop = false }: { hre
 
   return (
     <Link
-      href={href}
+      href={isProtected && !user ? "/login" : href}
       onClick={handleClick}
       className={cn(
         "transition-colors hover:text-primary flex items-center gap-4",
@@ -75,18 +78,18 @@ const NavLink = ({ href, label, icon: Icon, onSelect, isDesktop = false }: { hre
 
 const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/warzone", "/dashboard", "/profile"];
 const navLinksData = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/courses", label: "Courses", icon: Compass },
-  { href: "/announcements", label: "Announcements", icon: Megaphone },
-  { href: "/games", label: "BWS Games", icon: Gamepad2 },
-  { href: "/about", label: "About", icon: Info },
-  { href: "/contact", label: "Contact", icon: Phone },
+  { href: "/", label: "Home", icon: Home, isProtected: false },
+  { href: "/courses", label: "Courses", icon: Compass, isProtected: false },
+  { href: "/announcements", label: "Announcements", icon: Megaphone, isProtected: true },
+  { href: "/games", label: "BWS Games", icon: Gamepad2, isProtected: true },
+  { href: "/about", label: "About", icon: Info, isProtected: false },
+  { href: "/contact", label: "Contact", icon: Phone, isProtected: false },
 ];
 const futureNavLinks = [
-  { href: "/profile", label: "My Profile", icon: UserCircle },
-  { href: "/focus-zone", label: "Focus Zone", icon: Target },
-  { href: "/warzone", label: "Warzone", icon: Swords },
-  { href: "/parivartan", label: "Parivartan Chamber", icon: Users },
+  { href: "/profile", label: "My Profile", icon: UserCircle, isProtected: true },
+  { href: "/focus-zone", label: "Focus Zone", icon: Target, isProtected: true },
+  { href: "/warzone", label: "Warzone", icon: Swords, isProtected: true },
+  { href: "/parivartan", label: "Parivartan Chamber", icon: Users, isProtected: true },
 ];
 
 
@@ -215,17 +218,17 @@ export default function Header() {
                       <SmartSearch />
                     </div>
                     <nav className="flex flex-col gap-4 text-lg p-6">
-                      {[...navLinksData, { href: "/dashboard", label: "Dashboard", icon: UserCircle }].map((link) => (
+                      {[...navLinksData, { href: "/dashboard", label: "Dashboard", icon: UserCircle, isProtected: true }].map((link) => (
                         <NavLink key={link.href} {...link} onSelect={handleLinkClick} />
                       ))}
                       {isFaculty && (
                         <>
                           <div className="my-2 border-t border-border/50"></div>
                           <p className="px-2 text-sm font-semibold text-muted-foreground">Faculty Tools</p>
-                          <NavLink href="/admin/users" label="User Management" icon={Users} onSelect={handleLinkClick} />
-                          <NavLink href="/admin/ai-controls" label="AI Controls" icon={BrainCircuit} onSelect={handleLinkClick} />
-                          <NavLink href="/admin/course-flow" label="Course Flow" icon={Workflow} onSelect={handleLinkClick} />
-                          <NavLink href="/admin/live-sessions" label="Live Sessions" icon={Radio} onSelect={handleLinkClick} />
+                          <NavLink href="/admin/users" label="User Management" icon={Users} onSelect={handleLinkClick} isProtected />
+                          <NavLink href="/admin/ai-controls" label="AI Controls" icon={BrainCircuit} onSelect={handleLinkClick} isProtected />
+                          <NavLink href="/admin/course-flow" label="Course Flow" icon={Workflow} onSelect={handleLinkClick} isProtected />
+                          <NavLink href="/admin/live-sessions" label="Live Sessions" icon={Radio} onSelect={handleLinkClick} isProtected />
                         </>
                       )}
                       <div className="my-2 border-t border-border/50"></div>
