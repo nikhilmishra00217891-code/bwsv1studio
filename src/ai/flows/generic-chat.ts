@@ -11,8 +11,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {MessageData, roleSchema} from "genkit";
-import { getTextContent } from '@/lib/data/content';
-
 
 const GenericChatInputSchema = z.object({
   history: z.array(z.object({
@@ -48,8 +46,7 @@ const genericChatFlow = ai.defineFlow(
   },
   async (input) => {
 
-    const allContent = await getTextContent();
-    const systemPrompt = allContent.bwsBuddySystemPrompt as string || defaultSystemPrompt;
+    const systemPrompt = defaultSystemPrompt;
 
     const history: MessageData[] = input.history.map(h => ({
       role: h.role,
@@ -57,6 +54,7 @@ const genericChatFlow = ai.defineFlow(
     }));
 
     const { text } = await ai.generate({
+      model: 'googleai/gemini-pro',
       system: systemPrompt,
       history,
       prompt: input.message,

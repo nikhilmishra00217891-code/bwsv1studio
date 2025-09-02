@@ -47,31 +47,21 @@ export default function AiMentorWidget() {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: "user", content: input };
-    const systemMessage: Message = { role: "system", content: "BWS Buddy is checking the knowledge base..." };
-    
-    setMessages(prev => [...prev, userMessage, systemMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      // Pass all messages except the last system message to the backend
       const response = await askAiMentor(messages.concat(userMessage));
-      
-      // Replace the system message with the actual AI response
       setMessages((prevMessages) => {
-        const newMessages = [...prevMessages];
-        newMessages[newMessages.length - 1] = { role: "assistant", content: response };
-        return newMessages;
+        return [...prevMessages, { role: "assistant", content: response }];
       });
 
     } catch (error) {
       console.error("AI Mentor Error:", error);
       const errorMessage = "Sorry, I'm having trouble connecting right now. Please try again in a bit.";
-       // Replace the system message with the error response
-      setMessages((prevMessages) => {
-        const newMessages = [...prevMessages];
-        newMessages[newMessages.length - 1] = { role: "assistant", content: errorMessage };
-        return newMessages;
+       setMessages((prevMessages) => {
+         return [...prevMessages, { role: "assistant", content: errorMessage }];
       });
       toast({
         variant: "destructive",
@@ -85,17 +75,7 @@ export default function AiMentorWidget() {
 
   const renderMessage = (message: Message, index: number) => {
       if (message.role === 'system') {
-          return (
-             <div key={index} className="flex items-start gap-3">
-                 <Avatar className="w-8 h-8 border-2 border-primary">
-                    <AvatarFallback>AI</AvatarFallback>
-                  </Avatar>
-                <div className="bg-secondary rounded-2xl rounded-bl-none p-3 flex items-center gap-2">
-                    <BookDashed className="w-4 h-4 animate-pulse"/>
-                    <span className="text-sm text-muted-foreground">{message.content}</span>
-                </div>
-              </div>
-          )
+          return null; // System messages are not rendered
       }
 
       return (
@@ -150,7 +130,7 @@ export default function AiMentorWidget() {
         <ScrollArea className="flex-grow p-6" ref={scrollAreaRef}>
           <div className="space-y-6">
             {messages.map(renderMessage)}
-            {isLoading && messages[messages.length-1].role !== 'system' && (
+            {isLoading && (
               <div className="flex items-start gap-3">
                  <Avatar className="w-8 h-8 border-2 border-primary">
                     <AvatarFallback>AI</AvatarFallback>
