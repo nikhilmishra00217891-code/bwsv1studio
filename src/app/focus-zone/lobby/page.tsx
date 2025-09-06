@@ -40,7 +40,7 @@ export default function FocusZoneLobby() {
             };
             const roomId = await createRoom('focus-zone', member);
             toast({ title: "Room created!", description: `Let's get focused!` });
-            router.push(`/focus-zone/solo?roomId=${roomId}`);
+            router.push(`/focus-zone/room/${roomId}`);
         } catch (error: any) {
             toast({ variant: "destructive", title: "Failed to create room", description: error.message });
             setIsLoading(false);
@@ -72,7 +72,7 @@ export default function FocusZoneLobby() {
             };
             const room = await joinRoom(joinRoomId.trim().toUpperCase(), member);
             if (room) {
-                 router.push(`/focus-zone/solo?roomId=${room.id}`);
+                 router.push(`/focus-zone/room/${room.id}`);
             }
         } catch (error: any) {
             toast({ variant: "destructive", title: "Failed to join room", description: error.message });

@@ -67,27 +67,38 @@ export const createRoom = async (
 
 export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room | null> => {
     const roomRef = doc(db, "rooms", roomId);
-    const roomSnap = await getDoc(roomRef);
 
-    if (!roomSnap.exists()) {
-        throw new Error("Room not found");
-    }
+    try {
+        await runTransaction(db, async (transaction) => {
+            const roomSnap = await transaction.get(roomRef);
+            if (!roomSnap.exists()) {
+                throw new Error("Room not found");
+            }
+            const roomData = roomSnap.data() as Room;
 
-    const roomData = roomSnap.data() as Room;
-    if (roomData.members.some(member => member.uid === user.uid)) {
-        return { id: roomSnap.id, ...roomData };
-    }
-    
-    if (roomData.members.length >= 20) {
-        throw new Error("This room is full.");
-    }
+            if (roomData.members.some(member => member.uid === user.uid)) {
+                return; // User is already a member, do nothing.
+            }
+            
+            if (roomData.members.length >= 20) {
+                throw new Error("This room is full.");
+            }
 
-    await updateDoc(roomRef, {
-        members: arrayUnion(user)
-    });
-    
-    const updatedSnap = await getDoc(roomRef);
-    return { id: updatedSnap.id, ...updatedSnap.data() } as Room;
+            transaction.update(roomRef, {
+                members: arrayUnion(user)
+            });
+        });
+
+        const updatedSnap = await getDoc(roomRef);
+        if (updatedSnap.exists()) {
+            return { id: updatedSnap.id, ...updatedSnap.data() } as Room;
+        }
+        return null;
+
+    } catch (error) {
+        console.error("Error joining room:", error);
+        throw error;
+    }
 }
 
 export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: string) => {
