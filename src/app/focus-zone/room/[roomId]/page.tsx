@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback, Suspense, useRef, memo } from 'react';
@@ -20,10 +21,13 @@ import {
     Send,
     LogOut,
     XCircle,
+    PartyPopper,
+    Eye,
+    EyeOff,
     Crown,
+    UserCheck,
     AlertTriangle,
     Brain,
-    Eye,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -33,7 +37,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useParams, useRouter } from 'next/navigation';
 import type { Room, RoomMember, ChatMessage } from '@/types';
-import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost } from '@/lib/data/rooms';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, admitUserToRoom, denyUserFromRoom } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -136,6 +140,32 @@ const MemberCard = memo(({ member, isHost, currentUserId, onRemove, onInspect }:
 });
 MemberCard.displayName = 'MemberCard';
 
+const JoinRequestsPanel = ({ room, onAdmit, onDeny }: { room: Room, onAdmit: (user: RoomMember) => void, onDeny: (userId: string) => void }) => {
+    const { user } = useAuth();
+    if (user?.uid !== room.hostId || !room.joinRequests || room.joinRequests.length === 0) {
+        return null;
+    }
+
+    return (
+        <Card className="shadow-lg border-amber-500/50 animate-fade-in">
+            <CardHeader>
+                <CardTitle className="text-amber-600 flex items-center gap-2"><UserCheck /> Join Requests</CardTitle>
+                <CardDescription>A member wants to join your session.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                {room.joinRequests.map(requestingUser => (
+                    <div key={requestingUser.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                        <p className="font-semibold">{requestingUser.displayName}</p>
+                        <div className="flex gap-2">
+                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => onDeny(requestingUser.uid)}>Deny</Button>
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onAdmit(requestingUser)}>Admit</Button>
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    )
+}
 
 const MemberListPanel = memo(({ room, onRemoveMember }: { room: Room | null, onRemoveMember: (memberId: string) => void }) => {
     const { user } = useAuth();
@@ -150,7 +180,7 @@ const MemberListPanel = memo(({ room, onRemoveMember }: { room: Room | null, onR
 
     const handleShare = () => {
         if (!room) return;
-        const shareUrl = `${window.location.origin}/focus-zone/room/${room.id}`;
+        const shareUrl = `${window.location.origin}/focus-zone/join/${room.id}`;
         if (navigator.share) {
             navigator.share({
                 title: 'Join my Focus Session!',
@@ -315,8 +345,7 @@ const MultiplayerFocusRoom = () => {
     const roomId = params.roomId as string;
 
     const [room, setRoom] = useState<Room | null>(null);
-    const [isJoining, setIsJoining] = useState(true);
-    const [removedMessage, setRemovedMessage] = useState<string | null>(null);
+    const [statusMessage, setStatusMessage] = useState<string | null>("Joining room...");
     
     useEffect(() => {
         if (!roomId || !user) return;
@@ -324,47 +353,28 @@ const MultiplayerFocusRoom = () => {
         const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
             if (updatedRoom) {
                 const isMember = updatedRoom.members.some(m => m.uid === user.uid);
-                
-                // If user is now a member, stop the joining process
+                const isPending = updatedRoom.joinRequests?.some(m => m.uid === user.uid);
+
                 if (isMember) {
                     setRoom(updatedRoom);
-                    setIsJoining(false);
-                } 
-                // If user was previously in the room but is no longer, they were removed.
-                else if (room && room.members.some(m => m.uid === user.uid)) {
-                    setRemovedMessage('You have been removed from the room by the host.');
-                    unsubscribe(); 
+                    setStatusMessage(null); // User is in, clear status message
+                } else if (isPending) {
+                    setRoom(updatedRoom); // Keep room data for host check
+                    setStatusMessage("Your request has been sent to the host.");
+                } else if (room) { // If user was previously in room state but is no longer member or pending
+                    setStatusMessage('You have been removed or your request was denied.');
+                    unsubscribe();
+                } else {
+                     setStatusMessage('Could not find room or you were removed.');
                 }
-                // Initial load and user is not yet a member, keep waiting.
-                else {
-                    setRoom(updatedRoom); // Keep room data for host check etc.
-                }
-
             } else {
-                setRemovedMessage('This room no longer exists.');
+                setStatusMessage('This room no longer exists.');
                 unsubscribe();
             }
         });
     
-        // If after a few seconds we're still in joining state, it's likely an issue.
-        const joinTimeout = setTimeout(() => {
-            if (isJoining && !room?.members.some(m => m.uid === user?.uid)) {
-                // To prevent this for the host who is already a member
-                if (room?.hostId !== user.uid) {
-                     setRemovedMessage("Failed to join the room. It might be full or no longer exist.");
-                     unsubscribe();
-                } else {
-                    // Host is already a member, so they are not "joining"
-                    setIsJoining(false);
-                }
-            }
-        }, 8000); // 8-second timeout
-
-        return () => {
-            clearTimeout(joinTimeout);
-            unsubscribe();
-        }
-    }, [roomId, user, room, isJoining]); // Add room and isJoining to dependency array
+        return () => unsubscribe();
+    }, [roomId, user, room]);
 
 
     const handleConfirmLeave = async () => {
@@ -404,28 +414,52 @@ const MultiplayerFocusRoom = () => {
             });
         }
     }, [roomId, toast]);
+
+    const handleAdmit = async (userToAdmit: RoomMember) => {
+        if (!room) return;
+        try {
+            await admitUserToRoom(room.id, userToAdmit);
+            toast({ title: `${userToAdmit.displayName} has joined the session!` });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Failed to admit user' });
+        }
+    }
     
-    if (removedMessage) {
+    const handleDeny = async (userIdToDeny: string) => {
+        if (!room) return;
+        try {
+            await denyUserFromRoom(room.id, userIdToDeny);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Failed to deny user' });
+        }
+    }
+    
+    if (statusMessage) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <Card className="max-w-md text-center">
                     <CardHeader>
-                        <CardTitle className="flex items-center justify-center gap-2"><LogOut className="w-6 h-6 text-destructive"/> Session Ended</CardTitle>
+                        <CardTitle className="flex items-center justify-center gap-2"><LoaderCircle className="animate-spin" /> Session Status</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground">{removedMessage}</p>
-                        <Button className="mt-4" onClick={() => router.push('/focus-zone/lobby')}>Back to Lobby</Button>
+                        <p className="text-muted-foreground">{statusMessage}</p>
+                        {statusMessage !== "Joining room..." && (
+                            <Button className="mt-4" onClick={() => router.push('/focus-zone/lobby')}>Back to Lobby</Button>
+                        )}
                     </CardContent>
                 </Card>
             </div>
         )
     }
     
-     if (isJoining || !room) {
+    if (!room) {
+        // This case should ideally not be hit if statusMessage logic is correct, but it's a good fallback.
         return (
              <div className="flex h-screen items-center justify-center">
                 <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-                <p className="ml-4">Joining Room...</p>
+                <p className="ml-4">Loading Room...</p>
             </div>
         );
     }
@@ -512,6 +546,7 @@ const MultiplayerFocusRoom = () => {
                         />
                     </div>
                      <div className="space-y-6">
+                        <JoinRequestsPanel room={room} onAdmit={handleAdmit} onDeny={handleDeny} />
                         <MemberListPanel room={room} onRemoveMember={handleRemoveMember}/>
                         <ChatBox roomId={roomId} />
                     </div>

@@ -70,10 +70,10 @@ export default function FocusZoneLobby() {
                 tasks: [],
                 isTasksPublic: false,
             };
-            const room = await joinRoom(joinRoomId.trim().toUpperCase(), member);
-            if (room) {
-                 router.push(`/focus-zone/room/${room.id}`);
-            }
+            await joinRoom(joinRoomId.trim().toUpperCase(), member);
+            // After requesting to join, redirect the user to the room page
+            // The room page will handle the "waiting for approval" state
+            router.push(`/focus-zone/room/${joinRoomId.trim().toUpperCase()}`);
         } catch (error: any) {
             toast({ variant: "destructive", title: "Failed to join room", description: error.message });
             setIsLoading(false);

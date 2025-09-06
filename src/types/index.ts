@@ -197,6 +197,7 @@ export interface Room {
     status: 'waiting' | 'in-progress' | 'finished';
     members: RoomMember[];
     createdAt: Timestamp;
+    joinRequests?: RoomMember[];
     quizSettings?: GenerateQuizInput;
     quizData?: GenerateQuizOutput | null;
 }

@@ -50,6 +50,7 @@ export const createRoom = async (
     members: [host],
     status: 'waiting',
     createdAt: serverTimestamp() as Timestamp, // Cast for type consistency
+    joinRequests: [],
   };
   
   if (type === 'warzone') {
@@ -65,43 +66,72 @@ export const createRoom = async (
   return roomId;
 };
 
-export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room | null> => {
+export const joinRoom = async (roomId: string, user: RoomMember): Promise<void> => {
     const roomRef = doc(db, "rooms", roomId);
 
-    try {
-        let joinedRoomData: Room | null = null;
-        await runTransaction(db, async (transaction) => {
-            const roomSnap = await transaction.get(roomRef);
-            if (!roomSnap.exists()) {
-                throw new Error("Room not found");
-            }
-            const roomData = roomSnap.data() as Room;
+    await runTransaction(db, async (transaction) => {
+        const roomSnap = await transaction.get(roomRef);
+        if (!roomSnap.exists()) {
+            throw new Error("Room not found");
+        }
+        const roomData = roomSnap.data() as Room;
 
-            if (roomData.members.some(member => member.uid === user.uid)) {
-                joinedRoomData = { id: roomSnap.id, ...roomData };
-                return; 
-            }
-            
-            if (roomData.members.length >= 20) {
-                throw new Error("This room is full.");
-            }
-            
-            const newMemberArray = [...roomData.members, user];
+        const isAlreadyMember = roomData.members.some(member => member.uid === user.uid);
+        const isAlreadyPending = roomData.joinRequests?.some(req => req.uid === user.uid);
 
-            transaction.update(roomRef, {
-                members: newMemberArray,
-            });
-
-            joinedRoomData = { id: roomSnap.id, ...roomData, members: newMemberArray };
+        if (isAlreadyMember || isAlreadyPending) {
+            return; // User is already in or waiting, do nothing
+        }
+        
+        if (roomData.members.length >= 20) {
+            throw new Error("This room is full.");
+        }
+        
+        transaction.update(roomRef, {
+            joinRequests: arrayUnion(user)
         });
-
-        return joinedRoomData;
-
-    } catch (error) {
-        console.error("Error joining room:", error);
-        throw error;
-    }
+    });
 }
+
+export const admitUserToRoom = async (roomId: string, userToAdmit: RoomMember) => {
+    const roomRef = doc(db, 'rooms', roomId);
+    await runTransaction(db, async (transaction) => {
+        const roomSnap = await transaction.get(roomRef);
+        if (!roomSnap.exists()) {
+            throw new Error("Room not found");
+        }
+        const roomData = roomSnap.data() as Room;
+        const pendingUser = roomData.joinRequests?.find(req => req.uid === userToAdmit.uid);
+        if (!pendingUser) {
+            return; // User is no longer in the request list
+        }
+        
+        transaction.update(roomRef, {
+            joinRequests: arrayRemove(pendingUser),
+            members: arrayUnion(pendingUser)
+        });
+    });
+};
+
+export const denyUserFromRoom = async (roomId: string, userIdToDeny: string) => {
+     const roomRef = doc(db, 'rooms', roomId);
+     await runTransaction(db, async (transaction) => {
+        const roomSnap = await transaction.get(roomRef);
+        if (!roomSnap.exists()) {
+            throw new Error("Room not found");
+        }
+        const roomData = roomSnap.data() as Room;
+        const pendingUser = roomData.joinRequests?.find(req => req.uid === userIdToDeny);
+        if (!pendingUser) {
+            return; // User is no longer in the request list
+        }
+
+        transaction.update(roomRef, {
+            joinRequests: arrayRemove(pendingUser)
+        });
+    });
+}
+
 
 export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: string) => {
     const roomRef = doc(db, 'rooms', roomId);
