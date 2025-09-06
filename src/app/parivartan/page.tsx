@@ -1128,11 +1128,11 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                 ? `/focus-zone/solo?roomId=${roomId}`
                 : `/warzone/room/${roomId}`;
 
-            const messageText = `A new ${type === 'focus-zone' ? 'Focus Zone' : 'Warzone'} has started! Click the link to join.`;
+            const messageText = `A new ${type === 'focus-zone' ? 'Focus Zone' : 'Warzone'} has started! Join here:`;
 
             await sendChannelMessage(chamber.id, channel.id, {
                 messageType: 'text',
-                text: `${messageText}\n${window.location.origin}${roomUrl}`,
+                text: `${messageText} ${window.location.origin}${roomUrl}`,
                 senderId: user.uid,
                 senderName: userProfile.displayName || 'Anonymous',
                 senderAvatar: userProfile.photoURL || '',

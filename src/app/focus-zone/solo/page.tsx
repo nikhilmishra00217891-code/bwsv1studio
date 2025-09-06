@@ -451,7 +451,12 @@ const FocusZoneUI = () => {
                     setRoom(updatedRoom);
                     // Check if current user is still in the room
                     if (user && !updatedRoom.members.some(m => m.uid === user.uid)) {
-                        setRemovedMessage('You have been removed from the room by the host.');
+                        // Add a small delay to account for Firestore propagation delays on join
+                        setTimeout(() => {
+                           if (room && !room.members.some(m => m.uid === user.uid)) {
+                               setRemovedMessage('You have been removed from the room by the host.');
+                           }
+                        }, 1500);
                     }
                 } else {
                     // Room was deleted or not found
@@ -460,7 +465,7 @@ const FocusZoneUI = () => {
             });
             return () => unsubscribe();
         }
-    }, [isMultiplayer, roomId, user]);
+    }, [isMultiplayer, roomId, user, room]);
 
     // Real-time status sync for multiplayer
     useEffect(() => {

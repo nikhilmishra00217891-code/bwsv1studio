@@ -600,7 +600,7 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
 
     const handlePrevious = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            setCurrentQuestionIndex(prev => prev + 1);
         }
     };
     
@@ -683,7 +683,12 @@ const WarzoneUI = () => {
                  if (updatedRoom) {
                     setRoom(updatedRoom);
                     if (user && !updatedRoom.members.some(m => m.uid === user.uid)) {
-                        setRemovedMessage('You have been removed from the room by the host.');
+                        // Add a small delay to account for Firestore propagation delays on join
+                        setTimeout(() => {
+                           if (room && !room.members.some(m => m.uid === user.uid)) {
+                               setRemovedMessage('You have been removed from the room by the host.');
+                           }
+                        }, 1500);
                     }
                 } else {
                     setRemovedMessage('This room no longer exists.');
@@ -691,7 +696,7 @@ const WarzoneUI = () => {
             });
             return () => unsubscribe();
         }
-    }, [roomId, user]);
+    }, [roomId, user, room]);
     
     const handleConfirmLeave = async () => {
         if (!user || !room) return;
