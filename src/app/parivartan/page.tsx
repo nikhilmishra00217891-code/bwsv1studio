@@ -983,6 +983,35 @@ const ViewVotesDialog = ({ poll, members, isOpen, onOpenChange }: { poll: Poll, 
     )
 }
 
+const LinkifiedText = ({ text }: { text: string | undefined }) => {
+    if (!text) return null;
+
+    // Regex to find URLs in a string.
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+
+    return (
+        <>
+            {parts.map((part, index) => {
+                if (part.match(urlRegex)) {
+                    return (
+                        <a 
+                            key={index} 
+                            href={part} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-blue-500 hover:underline break-all"
+                        >
+                            {part}
+                        </a>
+                    );
+                }
+                return part;
+            })}
+        </>
+    );
+};
+
 const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null, channel: Channel | null, hasPermission: (permission: Permission) => boolean }) => {
     const { user } = useAuth();
     const [messages, setMessages] = useState<ChamberMessage[]>([]);
@@ -1246,8 +1275,8 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                             msg.replyTo && "rounded-t-none"
                         )}>
                             {msg.isPinned && <Pin className="w-3 h-3 text-primary/50 absolute top-1 right-1" />}
-                            <p className={cn("whitespace-pre-wrap break-words", canExpand && "line-clamp-5")}>
-                                {msg.text}
+                            <p className={cn("whitespace-pre-wrap", canExpand && "line-clamp-5")}>
+                                <LinkifiedText text={msg.text} />
                             </p>
                             {canExpand && <Button variant="link" size="sm" className="p-0 h-auto text-current" onClick={() => setIsExpanded(true)}>See more</Button>}
                             {canCollapse && <Button variant="link" size="sm" className="p-0 h-auto text-current" onClick={() => setIsExpanded(false)}>See less</Button>}
