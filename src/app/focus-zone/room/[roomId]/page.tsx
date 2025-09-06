@@ -344,36 +344,35 @@ const MultiplayerFocusRoom = () => {
     const roomId = params.roomId as string;
 
     const [room, setRoom] = useState<Room | null>(null);
-    const [statusMessage, setStatusMessage] = useState<string>("Joining room...");
+    const [sessionStatus, setSessionStatus] = useState<'loading' | 'pending' | 'active' | 'denied' | 'not_found'>('loading');
     
     useEffect(() => {
-        if (!roomId || !user) return;
+        if (!roomId || !user) {
+            setSessionStatus('loading');
+            return;
+        };
 
         const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
             if (updatedRoom) {
                 const isMember = updatedRoom.members.some(m => m.uid === user.uid);
                 const isPending = updatedRoom.joinRequests?.some(m => m.uid === user.uid);
 
-                setRoom(updatedRoom);
-
                 if (isMember) {
-                    setStatusMessage(''); // User is in, clear status message
+                    setRoom(updatedRoom);
+                    setSessionStatus('active');
                 } else if (isPending) {
-                    setStatusMessage("Your request to join has been sent to the host.");
+                    setRoom(updatedRoom);
+                    setSessionStatus('pending');
                 } else {
-                    // Only show this error if the room data has been loaded at least once
-                    // and the user is still not a member or pending.
-                    if (room !== null) { 
-                        setStatusMessage('You are not a member of this room.');
-                    }
+                    setSessionStatus('denied');
                 }
             } else {
-                setStatusMessage('This room no longer exists.');
+                setSessionStatus('not_found');
             }
         });
     
         return () => unsubscribe();
-    }, [roomId, user, room]);
+    }, [roomId, user]);
 
 
     const handleConfirmLeave = async () => {
@@ -435,32 +434,45 @@ const MultiplayerFocusRoom = () => {
         }
     }
     
-    if (statusMessage) {
-        return (
+    if (sessionStatus === 'loading') {
+         return (
+            <div className="flex h-screen items-center justify-center">
+                <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+                <p className="ml-4">Entering Room...</p>
+            </div>
+        );
+    }
+    
+    if (sessionStatus === 'pending') {
+         return (
             <div className="flex h-screen items-center justify-center">
                 <Card className="max-w-md text-center">
                     <CardHeader>
                         <CardTitle className="flex items-center justify-center gap-2"><LoaderCircle className="animate-spin" /> Session Status</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground">{statusMessage}</p>
-                        {statusMessage !== "Joining room..." && statusMessage !== "Your request to join has been sent to the host." && (
-                            <Button className="mt-4" onClick={() => router.push('/focus-zone/lobby')}>Back to Lobby</Button>
-                        )}
+                        <p className="text-muted-foreground">Your request to join has been sent. Waiting for the host to let you in.</p>
                     </CardContent>
                 </Card>
             </div>
         )
     }
-    
-    if (!room) {
-        // This case should be covered by statusMessage, but as a fallback:
-        return (
-             <div className="flex h-screen items-center justify-center">
-                <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-                <p className="ml-4">Loading Room...</p>
+
+    if (sessionStatus === 'denied' || sessionStatus === 'not_found' || !room) {
+        const message = sessionStatus === 'not_found' ? 'This room does not exist.' : 'You are not a member of this room.';
+         return (
+            <div className="flex h-screen items-center justify-center">
+                <Card className="max-w-md text-center">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-center gap-2"><AlertTriangle className="text-destructive"/> Access Denied</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">{message}</p>
+                        <Button className="mt-4" onClick={() => router.push('/focus-zone/lobby')}>Back to Lobby</Button>
+                    </CardContent>
+                </Card>
             </div>
-        );
+        )
     }
     
     const isHost = room?.hostId === user?.uid;
@@ -567,3 +579,5 @@ export default function FocusZoneRoomPage() {
         </Suspense>
     )
 }
+
+    
