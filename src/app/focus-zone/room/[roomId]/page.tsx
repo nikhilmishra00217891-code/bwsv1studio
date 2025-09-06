@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useCallback, Suspense, useRef, memo } from 'react';
@@ -345,29 +344,27 @@ const MultiplayerFocusRoom = () => {
     const roomId = params.roomId as string;
 
     const [room, setRoom] = useState<Room | null>(null);
-    const [statusMessage, setStatusMessage] = useState<string | null>("Joining room...");
+    const [statusMessage, setStatusMessage] = useState<string>("Joining room...");
     
     useEffect(() => {
         if (!roomId || !user) return;
-    
+
         const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
             if (updatedRoom) {
                 const isMember = updatedRoom.members.some(m => m.uid === user.uid);
                 const isPending = updatedRoom.joinRequests?.some(m => m.uid === user.uid);
 
+                setRoom(updatedRoom);
+
                 if (isMember) {
-                    setRoom(updatedRoom);
-                    setStatusMessage(null);
+                    setStatusMessage(''); // User is in, clear status message
                 } else if (isPending) {
-                    setRoom(updatedRoom);
                     setStatusMessage("Your request to join has been sent to the host.");
                 } else {
-                    // This handles both explicit denial and the case where the user was never in the room.
-                    // We check if `room` state was ever set to avoid showing this on initial load for a bad link.
-                    if (room) {
-                        setStatusMessage('You have been removed or your request was denied.');
-                    } else {
-                         setStatusMessage('Could not find room or you were removed.');
+                    // Only show this error if the room data has been loaded at least once
+                    // and the user is still not a member or pending.
+                    if (room !== null) { 
+                        setStatusMessage('You are not a member of this room.');
                     }
                 }
             } else {
@@ -376,7 +373,7 @@ const MultiplayerFocusRoom = () => {
         });
     
         return () => unsubscribe();
-    }, [roomId, user, room]); // Add `room` to dependency array
+    }, [roomId, user, room]);
 
 
     const handleConfirmLeave = async () => {
@@ -457,6 +454,7 @@ const MultiplayerFocusRoom = () => {
     }
     
     if (!room) {
+        // This case should be covered by statusMessage, but as a fallback:
         return (
              <div className="flex h-screen items-center justify-center">
                 <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
