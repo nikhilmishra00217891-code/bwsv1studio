@@ -180,7 +180,7 @@ const MemberListPanel = memo(({ room, onRemoveMember }: { room: Room | null, onR
 
     const handleShare = () => {
         if (!room) return;
-        const shareUrl = `${window.location.origin}/focus-zone/join/${room.id}`;
+        const shareUrl = `${window.location.origin}/focus-zone/room/${room.id}`;
         if (navigator.share) {
             navigator.share({
                 title: 'Join my Focus Session!',
@@ -357,24 +357,26 @@ const MultiplayerFocusRoom = () => {
 
                 if (isMember) {
                     setRoom(updatedRoom);
-                    setStatusMessage(null); // User is in, clear status message
+                    setStatusMessage(null);
                 } else if (isPending) {
-                    setRoom(updatedRoom); // Keep room data for host check
-                    setStatusMessage("Your request has been sent to the host.");
-                } else if (room) { // If user was previously in room state but is no longer member or pending
-                    setStatusMessage('You have been removed or your request was denied.');
-                    unsubscribe();
+                    setRoom(updatedRoom);
+                    setStatusMessage("Your request to join has been sent to the host.");
                 } else {
-                     setStatusMessage('Could not find room or you were removed.');
+                    // This handles both explicit denial and the case where the user was never in the room.
+                    // We check if `room` state was ever set to avoid showing this on initial load for a bad link.
+                    if (room) {
+                        setStatusMessage('You have been removed or your request was denied.');
+                    } else {
+                         setStatusMessage('Could not find room or you were removed.');
+                    }
                 }
             } else {
                 setStatusMessage('This room no longer exists.');
-                unsubscribe();
             }
         });
     
         return () => unsubscribe();
-    }, [roomId, user, room]);
+    }, [roomId, user, room]); // Add `room` to dependency array
 
 
     const handleConfirmLeave = async () => {
@@ -445,7 +447,7 @@ const MultiplayerFocusRoom = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">{statusMessage}</p>
-                        {statusMessage !== "Joining room..." && (
+                        {statusMessage !== "Joining room..." && statusMessage !== "Your request to join has been sent to the host." && (
                             <Button className="mt-4" onClick={() => router.push('/focus-zone/lobby')}>Back to Lobby</Button>
                         )}
                     </CardContent>
@@ -455,7 +457,6 @@ const MultiplayerFocusRoom = () => {
     }
     
     if (!room) {
-        // This case should ideally not be hit if statusMessage logic is correct, but it's a good fallback.
         return (
              <div className="flex h-screen items-center justify-center">
                 <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
