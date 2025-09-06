@@ -6,19 +6,30 @@
 "use client";
 
 import { useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 
 export default function FocusZoneRedirect() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const roomId = params.roomId as string;
+    
+    // This allows passing through any other query params that might exist
+    const otherParams = new URLSearchParams(searchParams);
+    if(roomId) {
+        otherParams.set('roomId', roomId);
+    }
+    const queryString = otherParams.toString();
+
 
     useEffect(() => {
         if (roomId) {
-            router.replace(`/focus-zone/solo`);
+            router.replace(`/focus-zone/solo?${queryString}`);
+        } else {
+            router.replace('/focus-zone/solo');
         }
-    }, [roomId, router]);
+    }, [roomId, router, queryString]);
 
     return (
         <div className="flex h-screen items-center justify-center">
