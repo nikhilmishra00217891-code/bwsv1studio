@@ -1125,19 +1125,19 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
             const roomId = await createRoom(type, member);
 
             const roomUrl = type === 'focus-zone' 
-                ? `${window.location.origin}/focus-zone/solo?roomId=${roomId}`
-                : `${window.location.origin}/warzone/room/${roomId}`;
+                ? `/focus-zone/solo?roomId=${roomId}`
+                : `/warzone/room/${roomId}`;
 
-            const messageText = `A new ${type === 'focus-zone' ? 'Focus Zone' : 'Warzone'} has started! Click here to join:\n${roomUrl}`;
+            const messageText = `A new ${type === 'focus-zone' ? 'Focus Zone' : 'Warzone'} has started! Click the link to join.`;
 
             await sendChannelMessage(chamber.id, channel.id, {
                 messageType: 'text',
-                text: messageText,
+                text: `${messageText}\n${window.location.origin}${roomUrl}`,
                 senderId: user.uid,
                 senderName: userProfile.displayName || 'Anonymous',
                 senderAvatar: userProfile.photoURL || '',
             });
-
+            
             router.push(roomUrl);
 
         } catch (error: any) {
@@ -1314,9 +1314,9 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                             msg.replyTo && "rounded-t-none"
                         )}>
                             {msg.isPinned && <Pin className="w-3 h-3 text-primary/50 absolute top-1 right-1" />}
-                            <p className={cn("whitespace-pre-wrap", canExpand && "line-clamp-5")}>
+                            <div className={cn("whitespace-pre-wrap", canExpand && "line-clamp-5")}>
                                 <LinkifiedText text={msg.text} />
-                            </p>
+                            </div>
                             {canExpand && <Button variant="link" size="sm" className="p-0 h-auto text-current" onClick={() => setIsExpanded(true)}>See more</Button>}
                             {canCollapse && <Button variant="link" size="sm" className="p-0 h-auto text-current" onClick={() => setIsExpanded(false)}>See less</Button>}
                              {heartReaction && heartReaction.userIds.length > 0 && (
