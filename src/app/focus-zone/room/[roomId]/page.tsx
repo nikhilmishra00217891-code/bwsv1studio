@@ -36,7 +36,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useParams, useRouter } from 'next/navigation';
 import type { Room, RoomMember, ChatMessage } from '@/types';
-import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, admitUserToRoom, denyUserFromRoom } from '@/lib/data/rooms';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, admitUserToRoom, denyUserFromRoom, joinRoom } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -338,7 +338,7 @@ const ChatBox = ({ roomId }: { roomId: string }) => {
 const MultiplayerFocusRoom = () => {
     const params = useParams();
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
     const { toast } = useToast();
     
     const roomId = params.roomId as string;
@@ -347,8 +347,7 @@ const MultiplayerFocusRoom = () => {
     const [sessionStatus, setSessionStatus] = useState<'loading' | 'pending' | 'active' | 'denied' | 'not_found'>('loading');
     
     useEffect(() => {
-        if (!roomId || !user) {
-            setSessionStatus('loading');
+        if (!roomId || !user || !userProfile) {
             return;
         };
 
@@ -356,15 +355,26 @@ const MultiplayerFocusRoom = () => {
             if (updatedRoom) {
                 const isMember = updatedRoom.members.some(m => m.uid === user.uid);
                 const isPending = updatedRoom.joinRequests?.some(m => m.uid === user.uid);
+                
+                setRoom(updatedRoom);
 
                 if (isMember) {
-                    setRoom(updatedRoom);
                     setSessionStatus('active');
                 } else if (isPending) {
-                    setRoom(updatedRoom);
                     setSessionStatus('pending');
                 } else {
-                    setSessionStatus('denied');
+                    // This is a new user trying to join via a link
+                    const member: RoomMember = {
+                        uid: user.uid,
+                        displayName: userProfile.displayName || "Anonymous",
+                        photoURL: userProfile.photoURL || "",
+                        avatar: userProfile.avatar || "brain",
+                    };
+                    joinRoom(roomId, member).catch(err => {
+                        console.error("Failed to auto-join room:", err);
+                        toast({ variant: 'destructive', title: "Failed to join", description: "Could not request to join the room."});
+                        setSessionStatus('denied');
+                    })
                 }
             } else {
                 setSessionStatus('not_found');
@@ -372,7 +382,7 @@ const MultiplayerFocusRoom = () => {
         });
     
         return () => unsubscribe();
-    }, [roomId, user]);
+    }, [roomId, user, userProfile, toast]);
 
 
     const handleConfirmLeave = async () => {
@@ -434,7 +444,7 @@ const MultiplayerFocusRoom = () => {
         }
     }
     
-    if (sessionStatus === 'loading') {
+    if (!user || !userProfile || sessionStatus === 'loading') {
          return (
             <div className="flex h-screen items-center justify-center">
                 <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -448,7 +458,7 @@ const MultiplayerFocusRoom = () => {
             <div className="flex h-screen items-center justify-center">
                 <Card className="max-w-md text-center">
                     <CardHeader>
-                        <CardTitle className="flex items-center justify-center gap-2"><LoaderCircle className="animate-spin" /> Session Status</CardTitle>
+                        <CardTitle className="flex items-center justify-center gap-2"><LoaderCircle className="animate-spin" /> Request Sent</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">Your request to join has been sent. Waiting for the host to let you in.</p>
@@ -579,7 +589,3 @@ export default function FocusZoneRoomPage() {
         </Suspense>
     )
 }
-
-    
-
-    

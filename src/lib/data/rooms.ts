@@ -66,31 +66,43 @@ export const createRoom = async (
   return roomId;
 };
 
-export const joinRoom = async (roomId: string, user: RoomMember): Promise<void> => {
+export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room | null> => {
     const roomRef = doc(db, "rooms", roomId);
 
-    await runTransaction(db, async (transaction) => {
-        const roomSnap = await transaction.get(roomRef);
-        if (!roomSnap.exists()) {
-            throw new Error("Room not found");
-        }
-        const roomData = roomSnap.data() as Room;
+    try {
+        const updatedRoom = await runTransaction(db, async (transaction) => {
+            const roomSnap = await transaction.get(roomRef);
+            if (!roomSnap.exists()) {
+                throw new Error("Room not found");
+            }
+            const roomData = roomSnap.data() as Room;
 
-        const isAlreadyMember = roomData.members.some(member => member.uid === user.uid);
-        const isAlreadyPending = roomData.joinRequests?.some(req => req.uid === user.uid);
+            const isAlreadyMember = roomData.members.some(member => member.uid === user.uid);
+            const isAlreadyPending = roomData.joinRequests?.some(req => req.uid === user.uid);
 
-        if (isAlreadyMember || isAlreadyPending) {
-            return; // User is already in or waiting, do nothing
-        }
-        
-        if (roomData.members.length >= 20) {
-            throw new Error("This room is full.");
-        }
-        
-        transaction.update(roomRef, {
-            joinRequests: arrayUnion(user)
+            if (isAlreadyMember || isAlreadyPending) {
+                return roomData; // User is already in or waiting, do nothing but return room data
+            }
+            
+            if (roomData.members.length >= 20) {
+                throw new Error("This room is full.");
+            }
+            
+            transaction.update(roomRef, {
+                joinRequests: arrayUnion(user)
+            });
+            
+            // Return optimistic data
+            return {
+                ...roomData,
+                joinRequests: [...(roomData.joinRequests || []), user]
+            };
         });
-    });
+        return updatedRoom;
+    } catch(error) {
+        console.error("Error joining room:", error);
+        throw error;
+    }
 }
 
 export const admitUserToRoom = async (roomId: string, userToAdmit: RoomMember) => {
