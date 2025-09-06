@@ -469,13 +469,7 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                     url: inviteLink,
                 });
             } catch (error) {
-                // This catch block handles both rejections from navigator.share (e.g., user cancels)
-                // and the case where the API isn't supported.
-                navigator.clipboard.writeText(inviteLink);
-                toast({
-                    title: "Invite Link Copied!",
-                    description: "The share feature isn't available, but you can paste the link.",
-                });
+                // User probably cancelled the share action, do nothing.
             }
         } else {
             // Fallback for browsers that don't support navigator.share
