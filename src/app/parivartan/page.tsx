@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { listenForUserChambers, createChamber, joinChamber, listenForChannelMessages, sendChannelMessage, removeMember, deleteChamber, createChannel, updateChannel, deleteChannel, createRole, deleteRole, assignRole, transferHost, updateRolePermissions, toggleReaction, togglePinMessage, voteOnPoll } from '@/lib/data/parivartan';
+import { createRoom } from '@/lib/data/rooms';
 import type { Chamber, ChamberMessage, Channel, RoomMember, Role, Permission, Poll, PollOption } from '@/types';
 import { PERMISSIONS } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -27,6 +28,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) => void }) => {
     const { user, userProfile } = useAuth();
@@ -467,9 +469,13 @@ const ChannelPanel = ({ chamber, activeChannelId, onChannelSelect, className, on
                     url: inviteLink,
                 });
             } catch (error) {
-                // This catch block handles rejections from navigator.share (e.g., user cancels)
-                // or if it fails for other reasons. We can safely ignore it.
-                console.log("Share dialog was cancelled or failed.", error);
+                // This catch block handles both rejections from navigator.share (e.g., user cancels)
+                // and the case where the API isn't supported.
+                navigator.clipboard.writeText(inviteLink);
+                toast({
+                    title: "Invite Link Copied!",
+                    description: "The share feature isn't available, but you can paste the link.",
+                });
             }
         } else {
             // Fallback for browsers that don't support navigator.share
@@ -1013,7 +1019,9 @@ const LinkifiedText = ({ text }: { text: string | undefined }) => {
 };
 
 const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null, channel: Channel | null, hasPermission: (permission: Permission) => boolean }) => {
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
+    const router = useRouter();
+    const { toast } = useToast();
     const [messages, setMessages] = useState<ChamberMessage[]>([]);
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -1109,6 +1117,43 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
             setIsSending(false);
         }
     };
+
+    const handleCreateSession = async (type: 'focus-zone' | 'warzone') => {
+        if (!user || !userProfile || !chamber || !channel) return;
+
+        try {
+            const member: RoomMember = {
+                uid: user.uid,
+                displayName: userProfile.displayName || "Anonymous",
+                photoURL: userProfile.photoURL || "",
+                avatar: userProfile.avatar || "brain",
+            };
+            const roomId = await createRoom(type, member);
+
+            const roomUrl = type === 'focus-zone' 
+                ? `${window.location.origin}/focus-zone/solo?roomId=${roomId}`
+                : `${window.location.origin}/warzone/room/${roomId}`;
+
+            const messageText = `A new ${type === 'focus-zone' ? 'Focus Zone' : 'Warzone'} has started! Click here to join:\n${roomUrl}`;
+
+            await sendChannelMessage(chamber.id, channel.id, {
+                messageType: 'text',
+                text: messageText,
+                senderId: user.uid,
+                senderName: userProfile.displayName || 'Anonymous',
+                senderAvatar: userProfile.photoURL || '',
+            });
+
+            router.push(roomUrl);
+
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: `Failed to create ${type}`,
+                description: error.message
+            });
+        }
+    }
     
     const PollMessage = ({ msg }: { msg: ChamberMessage }) => {
         const poll = msg.poll;
@@ -1322,10 +1367,10 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
 
     const AttachmentMenu = () => {
         const actionItems = [
-            { icon: BarChart3, label: 'Poll', onClick: () => setIsCreatePollOpen(true), disabled: false },
-            { icon: FolderKanban, label: 'Drive', onClick: () => {}, disabled: false, href: "https://drive.google.com" },
-            { icon: Target, label: 'Focus Zone', onClick: () => {}, disabled: true },
-            { icon: Swords, label: 'Warzone', onClick: () => {}, disabled: true },
+            { icon: BarChart3, label: 'Poll', onClick: () => setIsCreatePollOpen(true) },
+            { icon: FolderKanban, label: 'Drive', onClick: () => window.open('https://drive.google.com', '_blank') },
+            { icon: Target, label: 'Focus Zone', onClick: () => handleCreateSession('focus-zone') },
+            { icon: Swords, label: 'Warzone', onClick: () => handleCreateSession('warzone') },
         ];
     
         return (
@@ -1339,27 +1384,15 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                             <Tooltip key={item.label}>
                                 <TooltipTrigger asChild>
                                     <Button
-                                        asChild={!!item.href}
                                         variant="ghost"
                                         className="flex flex-col h-20 w-20 items-center justify-center gap-1"
                                         onClick={item.onClick}
-                                        disabled={item.disabled}
+                                        disabled={item.label === 'Drive' ? false : !channel}
                                     >
-                                        {item.href ? (
-                                            <a href={item.href} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center gap-1">
-                                                <div className={cn("p-3 rounded-full", item.color || "bg-blue-500/20 text-blue-500")}>
-                                                    <item.icon className="w-6 h-6" />
-                                                </div>
-                                                <span className="text-xs">{item.label}</span>
-                                            </a>
-                                        ) : (
-                                            <>
-                                                <div className={cn("p-3 rounded-full", item.color || "bg-blue-500/20 text-blue-500")}>
-                                                    <item.icon className="w-6 h-6" />
-                                                </div>
-                                                <span className="text-xs">{item.label}</span>
-                                            </>
-                                        )}
+                                        <div className={cn("p-3 rounded-full", item.color || "bg-blue-500/20 text-blue-500")}>
+                                            <item.icon className="w-6 h-6" />
+                                        </div>
+                                        <span className="text-xs">{item.label}</span>
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent><p>{item.label}</p></TooltipContent>
