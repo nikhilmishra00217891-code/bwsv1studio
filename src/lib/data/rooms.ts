@@ -69,6 +69,7 @@ export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room |
     const roomRef = doc(db, "rooms", roomId);
 
     try {
+        let joinedRoomData: Room | null = null;
         await runTransaction(db, async (transaction) => {
             const roomSnap = await transaction.get(roomRef);
             if (!roomSnap.exists()) {
@@ -77,23 +78,24 @@ export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room |
             const roomData = roomSnap.data() as Room;
 
             if (roomData.members.some(member => member.uid === user.uid)) {
-                return; // User is already a member, do nothing.
+                joinedRoomData = { id: roomSnap.id, ...roomData };
+                return; 
             }
             
             if (roomData.members.length >= 20) {
                 throw new Error("This room is full.");
             }
+            
+            const newMemberArray = [...roomData.members, user];
 
             transaction.update(roomRef, {
-                members: arrayUnion(user)
+                members: newMemberArray,
             });
+
+            joinedRoomData = { id: roomSnap.id, ...roomData, members: newMemberArray };
         });
 
-        const updatedSnap = await getDoc(roomRef);
-        if (updatedSnap.exists()) {
-            return { id: updatedSnap.id, ...updatedSnap.data() } as Room;
-        }
-        return null;
+        return joinedRoomData;
 
     } catch (error) {
         console.error("Error joining room:", error);

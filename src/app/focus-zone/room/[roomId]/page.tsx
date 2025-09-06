@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useCallback, Suspense, useRef, memo } from 'react';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { 
@@ -23,15 +23,17 @@ import {
     Crown,
     AlertTriangle,
     Brain,
+    Eye,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useParams, useRouter } from 'next/navigation';
 import type { Room, RoomMember, ChatMessage } from '@/types';
-import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateMemberStatusInRoom } from '@/lib/data/rooms';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -48,43 +50,97 @@ const avatarIcons: { [key: string]: React.ElementType } = {
   dragon: FerrisWheel,
 };
 
-const MemberCard = React.memo(({ member, isHost, currentUserId, onRemove }: { member: RoomMember, isHost: boolean, currentUserId: string, onRemove: (memberId: string) => void }) => {
+const MemberDetailDialog = ({ member }: { member: RoomMember }) => (
+    <DialogContent>
+        <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+                 <Avatar>
+                    <AvatarFallback className="bg-primary/20">
+                        <UserCheck className="w-5 h-5 text-primary" />
+                    </AvatarFallback>
+                </Avatar>
+                {member.displayName}'s Session Goals
+            </DialogTitle>
+            <DialogDescription>
+                Here's what this member is focusing on right now.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+            {member.isTasksPublic && member.tasks && member.tasks.length > 0 ? (
+                <ul className="space-y-2">
+                    {member.tasks.map(task => (
+                        <li key={task.id} className={cn("flex items-center gap-2 p-2 rounded-md bg-muted/50", task.completed && "line-through text-muted-foreground")}>
+                            <div className={cn("w-2 h-2 rounded-full", task.completed ? "bg-green-500" : "bg-amber-500")}></div>
+                            {task.text}
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="text-center text-muted-foreground">This member's tasks are private or they haven't set any yet.</p>
+            )}
+        </div>
+    </DialogContent>
+);
+
+
+const MemberCard = memo(({ member, isHost, currentUserId, onRemove, onInspect }: { member: RoomMember, isHost: boolean, currentUserId: string, onRemove: (memberId: string) => void, onInspect: (member: RoomMember) => void }) => {
     const AvatarIcon = avatarIcons[member.avatar] || Brain;
     const canRemove = isHost && member.uid !== currentUserId;
 
     return (
-        <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-lg group">
-            <Avatar>
-                <AvatarFallback className="bg-primary/20">
-                    <AvatarIcon className="w-5 h-5 text-primary" />
-                </AvatarFallback>
-            </Avatar>
-            <span className="font-semibold text-sm flex-grow text-left">{member.displayName}</span>
-            {member.uid === currentUserId && <span className="text-xs text-muted-foreground">(You)</span>}
-            {isHost && member.uid === currentUserId && (
-                <div className="ml-auto" title="Room Host">
-                    <Crown className="w-4 h-4 text-amber-500" />
+        <DialogTrigger asChild>
+            <div onClick={() => onInspect(member)} className="flex items-center gap-4 p-2 bg-muted/50 rounded-lg group cursor-pointer hover:bg-muted transition-colors">
+                <Avatar>
+                    <AvatarFallback className="bg-primary/20">
+                        <AvatarIcon className="w-5 h-5 text-primary" />
+                    </AvatarFallback>
+                </Avatar>
+                <div className="flex-grow text-left">
+                    <span className="font-semibold text-sm">{member.displayName}</span>
+                    <div className="flex items-center gap-1">
+                        <div className={cn("w-2 h-2 rounded-full", member.currentCycle === 'work' ? 'bg-green-500' : 'bg-amber-500')} />
+                        <p className="text-xs text-muted-foreground capitalize">{member.currentCycle}</p>
+                    </div>
                 </div>
-            )}
-             {canRemove && (
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                    onClick={() => onRemove(member.uid)}
-                >
-                    <XCircle className="w-4 h-4 text-destructive"/>
-                </Button>
-             )}
-        </div>
+                {member.uid === currentUserId && <span className="text-xs text-muted-foreground">(You)</span>}
+                {isHost && member.uid === currentUserId && (
+                    <div className="ml-auto" title="Room Host">
+                        <Crown className="w-4 h-4 text-amber-500" />
+                    </div>
+                )}
+                {canRemove && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 opacity-0 group-hover:opacity-100 z-10"
+                                onClick={(e) => e.stopPropagation()} // Stop propagation to prevent DialogTrigger
+                            >
+                                <XCircle className="w-4 h-4 text-destructive"/>
+                            </Button>
+                        </AlertDialogTrigger>
+                         <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Remove {member.displayName}?</AlertDialogTitle></AlertDialogHeader>
+                            <AlertDialogDescription>This will remove the member from the focus room.</AlertDialogDescription>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onRemove(member.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Remove</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+            </div>
+        </DialogTrigger>
     )
 });
 MemberCard.displayName = 'MemberCard';
 
 
-const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | null, onRemoveMember: (memberId: string) => void }) => {
+const MemberListPanel = memo(({ room, onRemoveMember }: { room: Room | null, onRemoveMember: (memberId: string) => void }) => {
     const { user } = useAuth();
     const { toast } = useToast();
+    const [selectedMember, setSelectedMember] = useState<RoomMember | null>(null);
 
     const handleCopyRoomId = () => {
         if (!room) return;
@@ -128,39 +184,43 @@ const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | nul
 
 
      return (
-        <Card className="w-full max-w-sm">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Users/> Member List
-                </CardTitle>
-                <CardDescription>
-                    {room.members.length} member(s) in room. Ranked by focus time.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center gap-2 mb-4">
-                    <Input readOnly value={room.id} className="font-mono text-center bg-muted" />
-                    <Button variant="outline" size="icon" onClick={handleCopyRoomId}><Copy className="w-4 h-4"/></Button>
-                    <Button variant="outline" size="icon" onClick={handleShare}><Share2 className="w-4 h-4"/></Button>
-                </div>
-                <ScrollArea className="h-48">
-                    <div className="space-y-2 pr-4">
-                        {sortedMembers.map(member => (
-                            <MemberCard 
-                                key={member.uid} 
-                                member={member} 
-                                isHost={isHost} 
-                                currentUserId={user.uid}
-                                onRemove={onRemoveMember}
-                            />
-                        ))}
+        <Dialog>
+            <Card className="w-full max-w-sm">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Users/> Member List
+                    </CardTitle>
+                    <CardDescription>
+                        {room.members.length} member(s) in room. Click to inspect.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Input readOnly value={room.id} className="font-mono text-center bg-muted" />
+                        <Button variant="outline" size="icon" onClick={handleCopyRoomId}><Copy className="w-4 h-4"/></Button>
+                        <Button variant="outline" size="icon" onClick={handleShare}><Share2 className="w-4 h-4"/></Button>
                     </div>
-                </ScrollArea>
-                 {isHost && (
-                    <Button disabled className="w-full mt-4">Start Synced Session (Coming Soon)</Button>
-                )}
-            </CardContent>
-        </Card>
+                    <ScrollArea className="h-48">
+                        <div className="space-y-2 pr-4">
+                            {sortedMembers.map(member => (
+                                <MemberCard 
+                                    key={member.uid} 
+                                    member={member} 
+                                    isHost={isHost} 
+                                    currentUserId={user.uid}
+                                    onRemove={onRemoveMember}
+                                    onInspect={setSelectedMember}
+                                />
+                            ))}
+                        </div>
+                    </ScrollArea>
+                    {isHost && (
+                        <Button disabled className="w-full mt-4">Start Synced Session (Coming Soon)</Button>
+                    )}
+                </CardContent>
+            </Card>
+            {selectedMember && <MemberDetailDialog member={selectedMember} />}
+        </Dialog>
     );
 });
 MemberListPanel.displayName = 'MemberListPanel';
@@ -179,7 +239,6 @@ const ChatBox = ({ roomId }: { roomId: string }) => {
     }, [roomId]);
 
      useEffect(() => {
-        // Scroll to bottom when new messages arrive
         if (scrollAreaRef.current) {
             const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
             if (viewport) {
@@ -258,28 +317,54 @@ const MultiplayerFocusRoom = () => {
     const [room, setRoom] = useState<Room | null>(null);
     const [isJoining, setIsJoining] = useState(true);
     const [removedMessage, setRemovedMessage] = useState<string | null>(null);
-    const [showExitDialog, setShowExitDialog] = useState(false);
     
     useEffect(() => {
-        if (roomId) {
-            const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
-                if (updatedRoom) {
+        if (!roomId || !user) return;
+    
+        const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
+            if (updatedRoom) {
+                const isMember = updatedRoom.members.some(m => m.uid === user.uid);
+                
+                // If user is now a member, stop the joining process
+                if (isMember) {
                     setRoom(updatedRoom);
-                    // If user is now in the member list, stop the joining process
-                    if (user && updatedRoom.members.some(m => m.uid === user.uid)) {
-                        setIsJoining(false);
-                    }
-                    // If user was previously in the room but is no longer, they were removed.
-                    else if (room && room.members.some(m => m.uid === user.uid) && !updatedRoom.members.some(m => m.uid === user.uid)) {
-                        setRemovedMessage('You have been removed from the room by the host.');
-                    }
-                } else {
-                    setRemovedMessage('This room no longer exists.');
+                    setIsJoining(false);
+                } 
+                // If user was previously in the room but is no longer, they were removed.
+                else if (room && room.members.some(m => m.uid === user.uid)) {
+                    setRemovedMessage('You have been removed from the room by the host.');
+                    unsubscribe(); 
                 }
-            });
-            return () => unsubscribe();
+                // Initial load and user is not yet a member, keep waiting.
+                else {
+                    setRoom(updatedRoom); // Keep room data for host check etc.
+                }
+
+            } else {
+                setRemovedMessage('This room no longer exists.');
+                unsubscribe();
+            }
+        });
+    
+        // If after a few seconds we're still in joining state, it's likely an issue.
+        const joinTimeout = setTimeout(() => {
+            if (isJoining && !room?.members.some(m => m.uid === user?.uid)) {
+                // To prevent this for the host who is already a member
+                if (room?.hostId !== user.uid) {
+                     setRemovedMessage("Failed to join the room. It might be full or no longer exist.");
+                     unsubscribe();
+                } else {
+                    // Host is already a member, so they are not "joining"
+                    setIsJoining(false);
+                }
+            }
+        }, 8000); // 8-second timeout
+
+        return () => {
+            clearTimeout(joinTimeout);
+            unsubscribe();
         }
-    }, [roomId, user, room]);
+    }, [roomId, user, room, isJoining]); // Add room and isJoining to dependency array
 
 
     const handleConfirmLeave = async () => {
@@ -293,7 +378,6 @@ const MultiplayerFocusRoom = () => {
         if (room && room.hostId === user?.uid) {
             await deleteRoom(room.id);
             toast({ title: "Room Deleted", description: "The focus room has been disbanded." });
-            setShowExitDialog(false);
             router.push('/focus-zone/lobby');
         }
     }
@@ -301,10 +385,8 @@ const MultiplayerFocusRoom = () => {
     const handleHostTransfer = async (newHostId: string) => {
         if(room && user) {
             await transferHost(room.id, newHostId);
-            // After transferring, leave the room.
             await removeMemberFromRoom(room.id, user.uid);
             toast({ title: "Host Transferred & Left Room!", description: "You are no longer the host."});
-            setShowExitDialog(false);
             router.push('/focus-zone/lobby');
         }
     }
@@ -323,9 +405,6 @@ const MultiplayerFocusRoom = () => {
         }
     }, [roomId, toast]);
     
-    const isHost = room?.hostId === user?.uid;
-    const hasOtherMembers = room ? room.members.length > 1 : false;
-
     if (removedMessage) {
         return (
             <div className="flex h-screen items-center justify-center">
@@ -350,13 +429,78 @@ const MultiplayerFocusRoom = () => {
             </div>
         );
     }
+    
+    const isHost = room?.hostId === user?.uid;
+    const hasOtherMembers = room ? room.members.length > 1 : false;
 
     return (
         <div className="min-h-screen bg-card/50 py-16 md:py-24 animate-fade-in flex flex-col">
-            <div className="absolute top-6 left-6 z-50">
-                <Button variant="outline" onClick={() => setShowExitDialog(true)}>
-                    Leave Room
-                </Button>
+             <div className="absolute top-6 left-6 z-50">
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <Button variant="outline">Leave Room</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        {isHost && hasOtherMembers ? (
+                            <>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        As the host, if you leave, the room will be deleted for everyone. To prevent this, you can make someone else the host before you go.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <p className="font-semibold">Transfer Host & Leave</p>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                                        {room.members.filter(m => m.uid !== user?.uid).map(member => (
+                                            <div key={member.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                                                <span className="font-semibold">{member.displayName}</span>
+                                                <Button size="sm" variant="outline" onClick={() => handleHostTransfer(member.uid)}>
+                                                    <Crown className="mr-2 h-4 w-4"/> Make Host
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" className="w-full sm:w-auto">Leave & Delete Room</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                This will permanently delete the room for all members. This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleHostDeleteRoom} className={cn(buttonVariants({variant: "destructive"}))}>
+                                                    Yes, delete room
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </AlertDialogFooter>
+                            </>
+                        ) : (
+                            <>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        {isHost && !hasOtherMembers ? "Since you are the last one here, the room will be deleted." : "You will be removed from the room."}
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={isHost ? handleHostDeleteRoom : handleConfirmLeave}>Confirm Leave</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </>
+                        )}
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
             
             <div className="container mx-auto px-6 flex-grow">
@@ -373,69 +517,6 @@ const MultiplayerFocusRoom = () => {
                     </div>
                 </div>
             </div>
-
-             <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-                <AlertDialogContent>
-                    {isHost && hasOtherMembers ? (
-                        <>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Host Controls</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    As the host, if you leave, the room will be deleted for everyone. To prevent this, you can make someone else the host before you go.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <div className="space-y-4 py-4">
-                                <p className="font-semibold">Transfer Host & Leave</p>
-                                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                                    {room.members.filter(m => m.uid !== user?.uid).map(member => (
-                                        <div key={member.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
-                                            <span className="font-semibold">{member.displayName}</span>
-                                            <Button size="sm" variant="outline" onClick={() => handleHostTransfer(member.uid)}>
-                                                <Crown className="mr-2 h-4 w-4"/> Make Host
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
-                                <Button variant="secondary" onClick={() => setShowExitDialog(false)} className="w-full sm:w-auto">Cancel</Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" className="w-full sm:w-auto">Leave & Delete Room</Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                            This will permanently delete the room for all members. This action cannot be undone.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleHostDeleteRoom} className={cn(buttonVariants({variant: "destructive"}))}>
-                                                Yes, delete room
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </AlertDialogFooter>
-                        </>
-                    ) : (
-                         <>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    {isHost && !hasOtherMembers ? "Since you are the last one here, the room will be deleted." : "You will be removed from the room."}
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleConfirmLeave}>Confirm Leave</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </>
-                    )}
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
     );
 };
