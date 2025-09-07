@@ -1511,20 +1511,12 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
                         <AttachmentMenu />
                         <Input
                             placeholder={`Message in π ${channel?.name || '...'}`}
-                            className={cn("h-12 pl-12 pr-24 bg-card/50", replyToMessage && "rounded-t-none")}
+                            className={cn("h-12 pl-12 pr-12 bg-card/50", replyToMessage && "rounded-t-none")}
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             disabled={!channel || isSending}
                         />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button type="button" size="icon" variant="ghost" className="text-muted-foreground"><Bot /></Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Mention @bws to ask the AI</p>
-                                </TooltipContent>
-                            </Tooltip>
                             <Button type="submit" size="icon" variant="ghost" disabled={!message.trim() || isSending}>
                                 {isSending ? <LoaderCircle className="animate-spin"/> : <Send />}
                             </Button>
