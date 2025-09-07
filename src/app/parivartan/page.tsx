@@ -29,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { askAiMentor } from '@/app/actions';
 
 const CreateJoinDialog = ({ onChamberSelect }: { onChamberSelect: (id: string) => void }) => {
     const { user, userProfile } = useAuth();
@@ -1058,35 +1059,85 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!message.trim() || !user || !chamber || !channel) return;
+        if (!message.trim() || !user || !userProfile || !chamber || !channel) return;
         
+        const originalMessage = message;
+        setMessage(''); // Clear input immediately
         setIsSending(true);
 
-        const messageData: Partial<ChamberMessage> = {
-            messageType: 'text',
-            text: message,
-            senderId: user.uid,
-            senderName: user.displayName || 'Anonymous',
-            senderAvatar: user.photoURL || '',
-        };
-
-        if (replyToMessage) {
-            messageData.replyTo = {
-                messageId: replyToMessage.id,
-                senderName: replyToMessage.senderName,
-                text: replyToMessage.text || replyToMessage.poll?.question || '',
+        // Regular message sending logic
+        const sendRegularMessage = async (msgText: string, isAiResponse?: boolean) => {
+            const messageData: Partial<ChamberMessage> = {
+                messageType: 'text',
+                text: msgText,
+                senderId: user.uid,
+                senderName: user.displayName || 'Anonymous',
+                senderAvatar: user.photoURL || '',
+                isAiResponse: isAiResponse || false,
             };
+    
+            if (replyToMessage) {
+                messageData.replyTo = {
+                    messageId: replyToMessage.id,
+                    senderName: replyToMessage.senderName,
+                    text: replyToMessage.text || replyToMessage.poll?.question || '',
+                };
+            }
+            await sendChannelMessage(chamber.id, channel.id, messageData);
+        };
+        
+        // AI buddy logic
+        if (originalMessage.trim().toLowerCase().startsWith('@bws')) {
+            const aiQuery = originalMessage.trim().substring(4).trim();
+            
+            // Post the user's question first
+            await sendRegularMessage(originalMessage);
+
+            if (aiQuery) {
+                try {
+                    const aiResponse = await askAiMentor([
+                        ...messages.slice(-5).map(m => ({
+                            role: m.isAiResponse ? 'assistant' : 'user',
+                            content: m.text || '',
+                        })),
+                        { role: 'user', content: aiQuery }
+                    ]);
+
+                    await sendChannelMessage(chamber.id, channel.id, {
+                         messageType: 'text',
+                         text: aiResponse,
+                         senderId: 'bws-buddy',
+                         senderName: 'BWS Buddy',
+                         senderAvatar: '', // Use a default AI avatar
+                         isAiResponse: true,
+                    });
+                } catch (error) {
+                     await sendChannelMessage(chamber.id, channel.id, {
+                         messageType: 'text',
+                         text: 'Sorry, I had trouble connecting to my brain. Please try again.',
+                         senderId: 'bws-buddy',
+                         senderName: 'BWS Buddy',
+                         senderAvatar: '',
+                         isAiResponse: true,
+                    });
+                }
+            } else {
+                 await sendChannelMessage(chamber.id, channel.id, {
+                    messageType: 'text',
+                    text: 'How can I help you? Just type @bws followed by your question.',
+                    senderId: 'bws-buddy',
+                    senderName: 'BWS Buddy',
+                    senderAvatar: '',
+                    isAiResponse: true,
+                });
+            }
+        } else {
+             // Standard message
+            await sendRegularMessage(originalMessage);
         }
 
-        try {
-            await sendChannelMessage(chamber.id, channel.id, messageData);
-            setMessage('');
-            setReplyToMessage(null);
-        } catch (error) {
-            console.error("Failed to send message", error);
-        } finally {
-            setIsSending(false);
-        }
+        setReplyToMessage(null);
+        setIsSending(false);
     };
     
     const handleSendPoll = async (poll: Poll) => {
@@ -1293,8 +1344,10 @@ const ChatArea = ({ chamber, channel, hasPermission }: { chamber: Chamber | null
             <div ref={(el) => { if (el) messageRefs.current.set(msg.id, el); }} className={cn("flex items-start gap-3", isSelf ? "flex-row-reverse" : "flex-row")}>
                 {!isSelf && (
                     <Avatar className="w-8 h-8">
-                        <AvatarImage src={msg.senderAvatar}/>
-                        <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                        {msg.isAiResponse ? <AvatarFallback><Bot/></AvatarFallback> : <>
+                            <AvatarImage src={msg.senderAvatar}/>
+                            <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                        </>}
                     </Avatar>
                 )}
                 <div className={cn("flex flex-col group max-w-md", isSelf ? "items-end" : "items-start")}>
