@@ -55,16 +55,15 @@ export default function WarzoneLobbyPage() {
         }
         setIsLoading(true);
         try {
-            const member: RoomMember = {
-                uid: user.uid,
+            // The joinRoom function now adds user to joinRequests. 
+            // The room page will handle the logic.
+            await joinRoom(joinRoomId.trim().toUpperCase(), {
+                 uid: user.uid,
                 displayName: userProfile.displayName || "Anonymous",
                 photoURL: userProfile.photoURL || "",
                 avatar: userProfile.avatar || "brain",
-            };
-            const room = await joinRoom(joinRoomId.trim().toUpperCase(), member);
-            if (room) {
-                 router.push(`/warzone/room/${room.id}`);
-            }
+            });
+            router.push(`/warzone/room/${joinRoomId.trim().toUpperCase()}`);
         } catch (error: any) {
             toast({ variant: "destructive", title: "Failed to join room", description: error.message });
             setIsLoading(false);

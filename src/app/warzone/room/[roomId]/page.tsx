@@ -37,6 +37,7 @@ import {
     Timer,
     Percent,
     Eye,
+    UserCheck,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -46,7 +47,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useParams, useRouter } from 'next/navigation';
 import type { Room, RoomMember, ChatMessage, Question } from '@/types';
-import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateQuizSettings, startQuiz, submitAnswer, finishQuizForMember, resetRoomForNewQuiz } from '@/lib/data/rooms';
+import { listenForRoomUpdates, removeMemberFromRoom, listenForChatMessages, sendChatMessage, deleteRoom, transferHost, updateQuizSettings, startQuiz, submitAnswer, finishQuizForMember, resetRoomForNewQuiz, admitUserToRoom, denyUserFromRoom, joinRoom } from '@/lib/data/rooms';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -88,19 +89,57 @@ const MemberCard = React.memo(({ member, isHost, currentUserId, onRemove }: { me
                 </div>
             )}
              {canRemove && (
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                    onClick={() => onRemove(member.uid)}
-                >
-                    <XCircle className="w-4 h-4 text-destructive"/>
-                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                        >
+                            <XCircle className="w-4 h-4 text-destructive"/>
+                        </Button>
+                    </AlertDialogTrigger>
+                     <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Remove {member.displayName}?</AlertDialogTitle></AlertDialogHeader>
+                        <AlertDialogDescription>This will remove the member from the warzone.</AlertDialogDescription>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onRemove(member.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Remove</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
              )}
         </div>
     )
 });
 MemberCard.displayName = 'MemberCard';
+
+const JoinRequestsPanel = ({ room, onAdmit, onDeny }: { room: Room, onAdmit: (user: RoomMember) => void, onDeny: (userId: string) => void }) => {
+    const { user } = useAuth();
+    if (user?.uid !== room.hostId || !room.joinRequests || room.joinRequests.length === 0) {
+        return null;
+    }
+
+    return (
+        <Card className="shadow-lg border-amber-500/50 animate-fade-in">
+            <CardHeader>
+                <CardTitle className="text-amber-600 flex items-center gap-2"><UserCheck /> Join Requests</CardTitle>
+                <CardDescription>A player wants to join your warzone.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                {room.joinRequests.map(requestingUser => (
+                    <div key={requestingUser.uid} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                        <p className="font-semibold">{requestingUser.displayName}</p>
+                        <div className="flex gap-2">
+                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => onDeny(requestingUser.uid)}>Deny</Button>
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => onAdmit(requestingUser)}>Admit</Button>
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    )
+}
 
 const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | null, onRemoveMember: (memberId: string) => void }) => {
     const { user } = useAuth();
@@ -114,15 +153,16 @@ const MemberListPanel = React.memo(({ room, onRemoveMember }: { room: Room | nul
 
     const handleShare = () => {
         if (!room) return;
+        const shareUrl = `${window.location.origin}/warzone/room/${room.id}`;
         if (navigator.share) {
             navigator.share({
                 title: 'Join my Warzone!',
                 text: `Join my quiz battle on BiharWaleSirji! Room ID: ${room.id}`,
-                url: window.location.href,
+                url: shareUrl,
             });
         } else {
-            handleCopyRoomId();
-            toast({ description: "Share feature not supported, Room ID copied instead." });
+            navigator.clipboard.writeText(shareUrl);
+            toast({ title: "Invite Link Copied!", description: "Share feature not supported, invite link copied instead." });
         }
     };
     
@@ -464,7 +504,7 @@ const QuizResults = ({ room }: { room: Room }) => {
         setIsResetting(true);
         try {
             await resetRoomForNewQuiz(room.id);
-            router.refresh();
+            // No need to refresh, listener will update the state
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Failed to reset room", description: error.message });
         } finally {
@@ -600,7 +640,7 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
 
     const handlePrevious = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev + 1);
+            setCurrentQuestionIndex(prev => prev - 1);
         }
     };
     
@@ -668,36 +708,54 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
 const WarzoneUI = () => {
     const params = useParams();
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
     const { toast } = useToast();
     
     const roomId = params.roomId as string;
 
     const [room, setRoom] = useState<Room | null>(null);
-    const [removedMessage, setRemovedMessage] = useState<string | null>(null);
-    const [showHostLeaveDialog, setShowHostLeaveDialog] = useState(false);
-
-    useEffect(() => {
-        if (roomId) {
-            const unsubscribe = listenForRoomUpdates(roomId, (updatedRoom) => {
-                 if (updatedRoom) {
-                    setRoom(updatedRoom);
-                    if (user && !updatedRoom.members.some(m => m.uid === user.uid)) {
-                        // Add a small delay to account for Firestore propagation delays on join
-                        setTimeout(() => {
-                           if (room && !room.members.some(m => m.uid === user.uid)) {
-                               setRemovedMessage('You have been removed from the room by the host.');
-                           }
-                        }, 1500);
-                    }
-                } else {
-                    setRemovedMessage('This room no longer exists.');
-                }
-            });
-            return () => unsubscribe();
-        }
-    }, [roomId, user, room]);
+    const [sessionStatus, setSessionStatus] = useState<'loading' | 'pending' | 'active' | 'denied' | 'not_found'>('loading');
     
+    useEffect(() => {
+        if (!roomId || !user || !userProfile) return;
+
+        const unsubscribe = listenForRoomUpdates(roomId, async (updatedRoom) => {
+            if (updatedRoom) {
+                const isMember = updatedRoom.members.some(m => m.uid === user.uid);
+                const isPending = updatedRoom.joinRequests?.some(m => m.uid === user.uid);
+                
+                setRoom(updatedRoom);
+
+                if (isMember) {
+                    setSessionStatus('active');
+                } else if (isPending) {
+                    setSessionStatus('pending');
+                } else {
+                    // Not a member and not pending, so attempt to join.
+                    // This handles users joining via a direct link.
+                    try {
+                        await joinRoom(roomId, {
+                            uid: user.uid,
+                            displayName: userProfile.displayName || "Anonymous",
+                            photoURL: userProfile.photoURL || "",
+                            avatar: userProfile.avatar || "brain",
+                        });
+                        // After joinRoom, the listener will fire again with updated data,
+                        // moving the user to 'pending' state.
+                    } catch (err: any) {
+                        toast({ variant: 'destructive', title: "Failed to join", description: err.message });
+                        setSessionStatus('denied');
+                    }
+                }
+            } else {
+                setSessionStatus('not_found');
+            }
+        });
+    
+        return () => unsubscribe();
+    }, [roomId, user, userProfile, toast]);
+
+
     const handleConfirmLeave = async () => {
         if (!user || !room) return;
         
@@ -709,7 +767,6 @@ const WarzoneUI = () => {
         if (room && room.hostId === user?.uid) {
             await deleteRoom(room.id);
             toast({ title: "Room Deleted", description: "The warzone has been disbanded." });
-            setShowHostLeaveDialog(false);
             router.push('/warzone/lobby');
         }
     }
@@ -719,7 +776,6 @@ const WarzoneUI = () => {
             await transferHost(room.id, newHostId);
             await removeMemberFromRoom(room.id, user.uid);
             toast({ title: "Host Transferred & Left Room!", description: "You are no longer the host."});
-            setShowHostLeaveDialog(false);
             router.push('/warzone/lobby');
         }
     }
@@ -737,20 +793,62 @@ const WarzoneUI = () => {
             });
         }
     }, [roomId, toast]);
-    
-    const isHost = room?.hostId === user?.uid;
-    const currentUser = room?.members.find(m => m.uid === user?.uid);
-    const hasOtherMembers = room ? room.members.length > 1 : false;
 
-    if (removedMessage) {
-        return (
+    const handleAdmit = async (userToAdmit: RoomMember) => {
+        if (!room) return;
+        try {
+            await admitUserToRoom(room.id, userToAdmit);
+            toast({ title: `${userToAdmit.displayName} has joined the session!` });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Failed to admit user' });
+        }
+    }
+    
+    const handleDeny = async (userIdToDeny: string) => {
+        if (!room) return;
+        try {
+            await denyUserFromRoom(room.id, userIdToDeny);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Failed to deny user' });
+        }
+    }
+    
+    if (!user || !userProfile || sessionStatus === 'loading') {
+         return (
+            <div className="flex h-screen items-center justify-center">
+                <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+                <p className="ml-4">Entering Warzone...</p>
+            </div>
+        );
+    }
+    
+    if (sessionStatus === 'pending') {
+         return (
             <div className="flex h-screen items-center justify-center">
                 <Card className="max-w-md text-center">
                     <CardHeader>
-                        <CardTitle className="flex items-center justify-center gap-2"><LogOut className="w-6 h-6 text-destructive"/> Battle Ended</CardTitle>
+                        <CardTitle className="flex items-center justify-center gap-2"><LoaderCircle className="animate-spin" /> Request Sent</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground">{removedMessage}</p>
+                        <p className="text-muted-foreground">Your request to join has been sent. Waiting for the host to let you in.</p>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
+    if (sessionStatus === 'denied' || sessionStatus === 'not_found' || !room) {
+        const message = sessionStatus === 'not_found' ? 'This room does not exist.' : 'You were not admitted to this room.';
+         return (
+            <div className="flex h-screen items-center justify-center">
+                <Card className="max-w-md text-center">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-center gap-2"><AlertTriangle className="text-destructive"/> Access Denied</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">{message}</p>
                         <Button className="mt-4" onClick={() => router.push('/warzone/lobby')}>Back to Lobby</Button>
                     </CardContent>
                 </Card>
@@ -758,15 +856,10 @@ const WarzoneUI = () => {
         )
     }
     
-    if (!room) {
-        return (
-             <div className="flex h-screen items-center justify-center">
-                <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-                <p className="ml-4">Entering Warzone...</p>
-            </div>
-        );
-    }
-    
+    const isHost = room?.hostId === user?.uid;
+    const currentUser = room?.members.find(m => m.uid === user?.uid);
+    const hasOtherMembers = room ? room.members.length > 1 : false;
+
     if (room.status === 'finished' || currentUser?.status === 'finished') {
         return <QuizResults room={room} />
     }
@@ -806,7 +899,7 @@ const WarzoneUI = () => {
                                     </div>
                                 </div>
                                 <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
-                                    <Button variant="secondary" onClick={() => (document.querySelector('[data-radix-alert-dialog-cancel]') as HTMLElement)?.click()} className="w-full sm:w-auto">Cancel</Button>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="destructive" className="w-full sm:w-auto">Disband Warzone</Button>
@@ -838,7 +931,7 @@ const WarzoneUI = () => {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Stay</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleConfirmLeave}>Leave</AlertDialogAction>
+                                    <AlertDialogAction onClick={isHost ? handleHostDeleteRoom : handleConfirmLeave}>Leave</AlertDialogAction>
                                 </AlertDialogFooter>
                             </>
                         )}
@@ -855,6 +948,7 @@ const WarzoneUI = () => {
                 </div>
                 <div className="grid lg:grid-cols-3 gap-8 items-start">
                     <div className="lg:col-span-2 space-y-8">
+                        <JoinRequestsPanel room={room} onAdmit={handleAdmit} onDeny={handleDeny} />
                         {isHost ? <WarzoneHostSetup roomId={room.id} settings={room.quizSettings} /> : <WaitingForHost settings={room.quizSettings} />}
                         <ChatBox roomId={roomId} />
                     </div>
