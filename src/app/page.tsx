@@ -9,6 +9,7 @@ import AnnouncementSlider from "@/components/home/AnnouncementSlider";
 import QuickActions from "@/components/home/QuickActions";
 import { useAuth } from "@/components/auth/AuthProvider";
 import WhyBws from "@/components/home/WhyBws";
+import AboutUsTeaser from "@/components/home/AboutUsTeaser";
 
 
 export default function Home() {
@@ -20,6 +21,7 @@ export default function Home() {
       <Hero />
       <WhyBws />
       <FeaturedCourses />
+      <AboutUsTeaser />
       {user && <QuickActions />}
       <Testimonials />
     </div>
