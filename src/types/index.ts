@@ -117,6 +117,20 @@ export interface Task {
     completed: boolean;
 }
 
+export type PatraType = 'praise' | 'warning' | 'encouragement' | 'info';
+
+export interface Patra {
+    id: string;
+    senderId: string;
+    senderName: string;
+    recipientId: string;
+    type: PatraType;
+    title: string;
+    content: string;
+    isRead: boolean;
+    createdAt: Timestamp;
+}
+
 export interface UserProfile {
     uid: string;
     email: string | null;
