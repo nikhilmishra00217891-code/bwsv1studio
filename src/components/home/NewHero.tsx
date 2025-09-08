@@ -1,57 +1,46 @@
+
 "use client";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { ArrowRight, BookCheck, Flame, Sun, Sunset, Moon, Target } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-
-const ProgressCard = ({ label, value, icon: Icon, color }: { label: string, value: string, icon: React.ElementType, color: string }) => (
-    <Card className="bg-background/50 backdrop-blur-sm p-4 flex-1">
-        <div className="flex items-center gap-4">
-            <div className={cn("p-3 rounded-lg", color)}>
-                <Icon className="w-6 h-6 text-white" />
-            </div>
-            <div>
-                <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="text-lg font-bold">{value}</p>
-            </div>
-        </div>
-    </Card>
-);
+import Image from "next/image";
 
 export default function NewHero() {
-    const { user, userProfile } = useAuth();
-    const [greeting, setGreeting] = useState({ text: 'Welcome', icon: Sun });
-
-    useEffect(() => {
-        const hour = new Date().getHours();
-        if (hour < 12) {
-            setGreeting({ text: 'Good Morning', icon: Sun });
-        } else if (hour < 18) {
-            setGreeting({ text: 'Good Afternoon', icon: Sunset });
-        } else {
-            setGreeting({ text: 'Good Evening', icon: Moon });
-        }
-    }, []);
-
-    const GreetingIcon = greeting.icon;
+    const { user } = useAuth();
 
     return (
         <section className="container mx-auto px-6">
-            <div className="max-w-5xl mx-auto">
-                <div className="flex items-center gap-3 mb-6">
-                     <GreetingIcon className="w-8 h-8 text-amber-500"/>
-                     <h1 className="text-3xl md:text-4xl font-bold font-headline">
-                        {greeting.text}, {userProfile?.displayName || 'Achiever'}!
-                     </h1>
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div className="text-center md:text-left">
+                    <h1 className="text-4xl md:text-6xl font-bold font-headline text-primary tracking-tight leading-tight">
+                        Parivaar. Pratishtha. Parivartan.
+                    </h1>
+                    <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-xl mx-auto md:mx-0">
+                        India's first platform that teaches like an elder brother, not a stranger.
+                    </p>
+                    <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                        <Button asChild size="lg">
+                            <Link href="/courses">
+                                Browse Courses <ArrowRight className="ml-2 w-5 h-5" />
+                            </Link>
+                        </Button>
+                        <Button asChild size="lg" variant="outline">
+                            <Link href="#ai-mentor">
+                                Ask Our AI Mentor
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex flex-col md:flex-row gap-4">
-                    <ProgressCard label="Today's Target" value="Revise Chapter 5" icon={Target} color="bg-blue-500" />
-                    <ProgressCard label="Current Streak" value="12 Days" icon={Flame} color="bg-orange-500" />
-                    <ProgressCard label="Courses Completed" value="3 Courses" icon={BookCheck} color="bg-green-500" />
+                <div className="relative w-full h-80 md:h-96">
+                    <Image 
+                        src="https://i.postimg.cc/kG8f4k5K/DALL-E-2024-05-15-13-11-13-A-vibrant-and-inspiring-illustration-for-an-educational-platform-named-B.png"
+                        alt="An inspiring illustration of a student learning with a mentor"
+                        fill
+                        className="object-contain"
+                        data-ai-hint="inspiring education mentor"
+                    />
                 </div>
             </div>
         </section>
