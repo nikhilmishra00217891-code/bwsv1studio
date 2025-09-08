@@ -14,11 +14,14 @@ import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { EditableImage } from "../common/EditableImage";
 import { useAuth } from "../auth/AuthProvider";
+import { useEditMode } from "../common/EditModeProvider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Label } from "../ui/label";
 
 const initialAnnouncements = [
     {
         id: 1,
-        contentId: "announcement_1_image",
+        contentIdPrefix: "announcement_1",
         defaultSrc: 'https://i.postimg.cc/kX2yL1B4/Parivartan-Ad-Banner.png',
         alt: 'Special Offer Announcement',
         href: '#',
@@ -26,7 +29,7 @@ const initialAnnouncements = [
     },
     {
         id: 2,
-        contentId: "announcement_2_image",
+        contentIdPrefix: "announcement_2",
         defaultSrc: 'https://placehold.co/1280x720.png',
         alt: 'New Course Announcement',
         href: '/courses',
@@ -34,7 +37,7 @@ const initialAnnouncements = [
     },
     {
         id: 3,
-        contentId: "announcement_3_image",
+        contentIdPrefix: "announcement_3",
         defaultSrc: 'https://placehold.co/1280x720.png',
         alt: 'Live Class Announcement',
         href: '#',
@@ -42,7 +45,7 @@ const initialAnnouncements = [
     },
     {
         id: 4,
-        contentId: "announcement_4_image",
+        contentIdPrefix: "announcement_4",
         defaultSrc: 'https://placehold.co/1280x720.png',
         alt: 'Mock Test Series Announcement',
         href: '#',
@@ -50,7 +53,7 @@ const initialAnnouncements = [
     },
     {
         id: 5,
-        contentId: "announcement_5_image",
+        contentIdPrefix: "announcement_5",
         defaultSrc: 'https://placehold.co/1280x720.png',
         alt: 'Community Event Announcement',
         href: '#',
@@ -58,11 +61,15 @@ const initialAnnouncements = [
     }
 ]
 
+const gradeOptions = ['General', '6th', '7th', '8th', '9th', '10th', '11th', '12th', 'Competitive Exams'];
+
 export default function AnnouncementSlider() {
     const [api, setApi] = useState<CarouselApi>()
     const [current, setCurrent] = useState(0)
     const [count, setCount] = useState(0)
-    const { textContent } = useAuth();
+    const { userProfile, textContent } = useAuth();
+    const { isEditMode } = useEditMode();
+    const [editingGrade, setEditingGrade] = useState('General');
 
     const plugin = useRef(
       Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })
@@ -81,10 +88,52 @@ export default function AnnouncementSlider() {
         })
     }, [api])
 
+    const getAdSource = (contentIdPrefix: string) => {
+        let gradeToShow = 'general'; // Default for logged-out users
+
+        if (isEditMode) {
+            gradeToShow = editingGrade.toLowerCase().replace(/\s+/g, '_');
+        } else if (userProfile?.grade) {
+            gradeToShow = userProfile.grade.toLowerCase().replace(/\s+/g, '_');
+        }
+        
+        const specificContentId = `${contentIdPrefix}_${gradeToShow}`;
+        const generalContentId = `${contentIdPrefix}_general`;
+        
+        // Return specific ad if it exists, otherwise fall back to general ad
+        return textContent[specificContentId] as string || textContent[generalContentId] as string;
+    }
+    
+    const contentIdForEditing = (contentIdPrefix: string) => {
+        const gradeSlug = editingGrade.toLowerCase().replace(/\s+/g, '_');
+        return `${contentIdPrefix}_${gradeSlug}`;
+    }
+
 
     return (
         <section className="container mx-auto px-6 -mt-16 md:-mt-24 mb-8">
             <div>
+                 {isEditMode && (
+                     <Card className="p-4 mb-4 max-w-sm mx-auto">
+                        <Label htmlFor="grade-filter">Editing Ads For</Label>
+                        <Select value={editingGrade} onValueChange={setEditingGrade}>
+                            <SelectTrigger id="grade-filter">
+                                <SelectValue placeholder="Select Grade" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {gradeOptions.map(grade => (
+                                    <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-2">
+                           {editingGrade === 'General' 
+                            ? "These ads are shown to logged-out users."
+                            : `Editing ads for students in ${editingGrade}.`
+                           }
+                        </p>
+                    </Card>
+                 )}
                  <Carousel
                     setApi={setApi}
                     opts={{
@@ -104,8 +153,8 @@ export default function AnnouncementSlider() {
                                         <CardContent className="p-0 flex items-center justify-center aspect-[16/9] relative">
                                             <Link href={item.href} className="w-full h-full">
                                                 <EditableImage
-                                                    contentId={item.contentId}
-                                                    src={textContent[item.contentId] as string || item.defaultSrc}
+                                                    contentId={contentIdForEditing(item.contentIdPrefix)}
+                                                    src={getAdSource(item.contentIdPrefix) || item.defaultSrc}
                                                     alt={item.alt}
                                                     fill
                                                     className="object-cover transition-transform duration-300 group-hover:scale-105"
