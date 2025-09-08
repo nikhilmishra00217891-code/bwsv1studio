@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -76,7 +76,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect, isProtected, isDesktop = f
 };
 
 
-const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/warzone", "/dashboard", "/profile"];
+const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/warzone", "/dashboard", "/profile", "/patra"];
 const navLinksData = [
   { href: "/", label: "Home", icon: Home, isProtected: false },
   { href: "/courses", label: "Courses", icon: Compass, isProtected: false },
@@ -87,6 +87,7 @@ const navLinksData = [
 ];
 const futureNavLinks = [
   { href: "/profile", label: "My Profile", icon: UserCircle, isProtected: true },
+  { href: "/patra", label: "My Mailbox", icon: Mailbox, isProtected: true },
   { href: "/focus-zone", label: "Focus Zone", icon: Target, isProtected: true },
   { href: "/warzone", label: "Warzone", icon: Swords, isProtected: true },
   { href: "/parivartan", label: "Parivartan Chamber", icon: Users, isProtected: true },
