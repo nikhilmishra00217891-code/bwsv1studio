@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useTransition } from 'react';
-import type { UserProfile } from "@/types";
+import type { UserProfile, PatraType } from "@/types";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -36,11 +36,14 @@ import {
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { suspendUser, unsuspendUser } from '@/app/actions';
+import { sendPatra } from '@/lib/data/patra';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 const suspensionReasons = [
     "Violation of Terms of Service",
@@ -48,6 +51,101 @@ const suspensionReasons = [
     "Hacking or security exploit attempt",
     "Payment or subscription issue",
 ];
+
+const PatraDialog = ({
+    user,
+    isOpen,
+    onOpenChange,
+}: {
+    user: UserProfile | null,
+    isOpen: boolean,
+    onOpenChange: (open: boolean) => void,
+}) => {
+    const { userProfile: facultyProfile } = useAuth();
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [type, setType] = useState<PatraType>('info');
+    const [isSending, setIsSending] = useState(false);
+    const { toast } = useToast();
+
+    React.useEffect(() => {
+        if (!isOpen) {
+            setTitle('');
+            setContent('');
+            setType('info');
+        }
+    }, [isOpen]);
+
+    if (!user || !facultyProfile) return null;
+
+    const handleSendPatra = async () => {
+        if (!title.trim() || !content.trim()) {
+            toast({ variant: 'destructive', title: "Missing fields", description: "Please provide a title and content for the letter." });
+            return;
+        }
+
+        setIsSending(true);
+        try {
+            await sendPatra({
+                senderId: facultyProfile.uid,
+                senderName: facultyProfile.displayName || 'Faculty',
+                recipientId: user.uid,
+                type,
+                title,
+                content,
+            });
+            toast({ title: "Patra Sent!", description: `Your letter has been sent to ${user.displayName}.` });
+            onOpenChange(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Send Failed", description: error.message || "Could not send the letter." });
+        } finally {
+            setIsSending(false);
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Send a Patra to {user.displayName}</DialogTitle>
+                    <DialogDescription>
+                        Compose a personal letter to guide, praise, or warn the student.
+                    </DialogDescription>
+                </DialogHeader>
+                 <div className="py-4 space-y-4">
+                    <div>
+                        <Label htmlFor="patra-type">Letter Type / Vibe</Label>
+                         <Select value={type} onValueChange={(v) => setType(v as PatraType)}>
+                            <SelectTrigger id="patra-type">
+                                <SelectValue placeholder="Select a type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="info">Informational</SelectItem>
+                                <SelectItem value="praise">Praise / Shabashi</SelectItem>
+                                <SelectItem value="encouragement">Encouragement</SelectItem>
+                                <SelectItem value="warning">Warning</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label htmlFor="patra-title">Title</Label>
+                        <Input id="patra-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Great Job on the Mock Test!" />
+                    </div>
+                    <div>
+                        <Label htmlFor="patra-content">Content</Label>
+                        <Textarea id="patra-content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write your letter here..." className="min-h-[150px]"/>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSendPatra} disabled={isSending}>
+                        {isSending ? <LoaderCircle className="animate-spin" /> : "Send Patra"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 const SuspensionDialog = ({ 
     user,
@@ -190,6 +288,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
   const [filter, setFilter] = useState<'all' | 'active' | 'suspended'>('all');
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
+  const [showPatraDialog, setShowPatraDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -226,9 +325,13 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
     });
   };
 
-  const handleManageSuspensionClick = (user: UserProfile) => {
+  const openActionDialog = (user: UserProfile, action: 'suspend' | 'patra') => {
     setSelectedUser(user);
-    setShowSuspensionDialog(true);
+    if (action === 'suspend') {
+        setShowSuspensionDialog(true);
+    } else if (action === 'patra') {
+        setShowPatraDialog(true);
+    }
   }
 
   const handleUserUpdate = (updatedUser: UserProfile) => {
@@ -316,13 +419,18 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => openActionDialog(user, 'patra')}>
+                                    <MessageSquarePlus className="mr-2 h-4 w-4" />
+                                    Send Patra
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 {user.suspension?.isSuspended ? (
-                                    <DropdownMenuItem onSelect={() => handleManageSuspensionClick(user)} className="text-green-600 focus:text-green-600 focus:bg-green-50">
+                                    <DropdownMenuItem onSelect={() => openActionDialog(user, 'suspend')} className="text-green-600 focus:text-green-600 focus:bg-green-50">
                                         <UserCheck className="mr-2 h-4 w-4" />
                                         Unsuspend User
                                     </DropdownMenuItem>
                                 ) : (
-                                    <DropdownMenuItem onSelect={() => handleManageSuspensionClick(user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                    <DropdownMenuItem onSelect={() => openActionDialog(user, 'suspend')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                         <Ban className="mr-2 h-4 w-4" />
                                         Suspend User
                                     </DropdownMenuItem>
@@ -349,6 +457,11 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
         isOpen={showSuspensionDialog}
         onOpenChange={setShowSuspensionDialog}
         onUserUpdate={handleUserUpdate}
+    />
+    <PatraDialog
+        user={selectedUser}
+        isOpen={showPatraDialog}
+        onOpenChange={setShowPatraDialog}
     />
     </>
   );
