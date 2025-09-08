@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -38,7 +38,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { suspendUser, unsuspendUser } from '@/app/actions';
-import { sendPatra } from '@/lib/data/patra';
+import { sendPatra, sendBulkPatra } from '@/lib/data/patra';
+import { generatePatra } from '@/ai/flows';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -54,10 +55,12 @@ const suspensionReasons = [
 
 const PatraDialog = ({
     user,
+    users, // For bulk sending
     isOpen,
     onOpenChange,
 }: {
     user: UserProfile | null,
+    users?: UserProfile[],
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
 }) => {
@@ -65,18 +68,25 @@ const PatraDialog = ({
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [type, setType] = useState<PatraType>('info');
+    const [customInstructions, setCustomInstructions] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const { toast } = useToast();
+    
+    const isBulkMode = !!users;
 
     React.useEffect(() => {
         if (!isOpen) {
             setTitle('');
             setContent('');
+            setCustomInstructions('');
             setType('info');
         }
     }, [isOpen]);
 
-    if (!user || !facultyProfile) return null;
+    if (!facultyProfile) return null;
+    if (!user && !isBulkMode) return null;
+
 
     const handleSendPatra = async () => {
         if (!title.trim() || !content.trim()) {
@@ -86,15 +96,27 @@ const PatraDialog = ({
 
         setIsSending(true);
         try {
-            await sendPatra({
-                senderId: facultyProfile.uid,
-                senderName: facultyProfile.displayName || 'Faculty',
-                recipientId: user.uid,
-                type,
-                title,
-                content,
-            });
-            toast({ title: "Patra Sent!", description: `Your letter has been sent to ${user.displayName}.` });
+            if (isBulkMode) {
+                await sendBulkPatra({
+                    senderId: facultyProfile.uid,
+                    senderName: facultyProfile.displayName || 'Faculty',
+                    recipientIds: users.map(u => u.uid),
+                    type,
+                    title,
+                    content
+                });
+                toast({ title: "Bulk Patra Sent!", description: `Your letter has been sent to ${users.length} users.` });
+            } else if (user) {
+                await sendPatra({
+                    senderId: facultyProfile.uid,
+                    senderName: facultyProfile.displayName || 'Faculty',
+                    recipientId: user.uid,
+                    type,
+                    title,
+                    content,
+                });
+                toast({ title: "Patra Sent!", description: `Your letter has been sent to ${user.displayName}.` });
+            }
             onOpenChange(false);
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Send Failed", description: error.message || "Could not send the letter." });
@@ -102,17 +124,38 @@ const PatraDialog = ({
             setIsSending(false);
         }
     }
+    
+    const handleGenerateAI = async () => {
+        if (!user || isBulkMode) return; // AI generation only for single user
+        
+        setIsGenerating(true);
+        try {
+            const result = await generatePatra({
+                studentName: user.displayName || 'Student',
+                studentGrade: user.grade,
+                patraType: type,
+                customInstructions: customInstructions,
+            });
+            setTitle(result.title);
+            setContent(result.content);
+            toast({ title: "Content Generated!", description: "The AI has drafted a letter for you." });
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: "AI Generation Failed", description: error.message || "Could not generate content." });
+        } finally {
+            setIsGenerating(false);
+        }
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Send a Patra to {user.displayName}</DialogTitle>
+                    <DialogTitle>{isBulkMode ? `Send Patra to ${users.length} Users` : `Send a Patra to ${user?.displayName}`}</DialogTitle>
                     <DialogDescription>
-                        Compose a personal letter to guide, praise, or warn the student.
+                        {isBulkMode ? 'Compose a letter to send to all currently filtered users.' : 'Compose a personal letter to guide, praise, or warn the student.'}
                     </DialogDescription>
                 </DialogHeader>
-                 <div className="py-4 space-y-4">
+                 <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                     <div>
                         <Label htmlFor="patra-type">Letter Type / Vibe</Label>
                          <Select value={type} onValueChange={(v) => setType(v as PatraType)}>
@@ -127,13 +170,29 @@ const PatraDialog = ({
                             </SelectContent>
                         </Select>
                     </div>
+                     {!isBulkMode && (
+                        <div>
+                            <Label htmlFor="custom-instructions">AI Instructions (Optional)</Label>
+                             <Textarea 
+                                id="custom-instructions" 
+                                value={customInstructions} 
+                                onChange={(e) => setCustomInstructions(e.target.value)} 
+                                placeholder="e.g., Mention their recent low score in the Physics test but praise their effort."
+                                className="min-h-[80px]"
+                            />
+                             <Button type="button" variant="outline" size="sm" className="mt-2" onClick={handleGenerateAI} disabled={isGenerating}>
+                                {isGenerating ? <LoaderCircle className="animate-spin w-4 h-4 mr-2"/> : <BrainCircuit className="w-4 h-4 mr-2"/>}
+                                Generate with AI
+                            </Button>
+                        </div>
+                     )}
                     <div>
                         <Label htmlFor="patra-title">Title</Label>
                         <Input id="patra-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Great Job on the Mock Test!" />
                     </div>
                     <div>
                         <Label htmlFor="patra-content">Content</Label>
-                        <Textarea id="patra-content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write your letter here..." className="min-h-[150px]"/>
+                        <Textarea id="patra-content" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write your letter here..." className="min-h-[200px]"/>
                     </div>
                 </div>
                 <DialogFooter>
@@ -289,6 +348,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
   const [showPatraDialog, setShowPatraDialog] = useState(false);
+  const [showBulkPatraDialog, setShowBulkPatraDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -364,6 +424,10 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                 <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending}>
                     <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
                     <span className="sr-only">Refresh</span>
+                </Button>
+                 <Button variant="outline" onClick={() => setShowBulkPatraDialog(true)} disabled={filteredUsers.length === 0}>
+                    <MessageSquarePlus className="w-4 h-4 mr-2" />
+                    Send to Filtered ({filteredUsers.length})
                 </Button>
             </div>
         </div>
@@ -462,6 +526,12 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
         user={selectedUser}
         isOpen={showPatraDialog}
         onOpenChange={setShowPatraDialog}
+    />
+     <PatraDialog
+        user={null}
+        users={filteredUsers}
+        isOpen={showBulkPatraDialog}
+        onOpenChange={setShowBulkPatraDialog}
     />
     </>
   );

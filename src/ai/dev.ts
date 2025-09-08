@@ -4,3 +4,4 @@ import '@/ai/flows/summarize-course-content.ts';
 import '@/ai/flows/generic-chat.ts';
 import '@/ai/flows/recommend-content-flow.ts';
 import '@/ai/flows/generate-quiz-flow.ts';
+import '@/ai/flows/generate-patra-flow.ts';

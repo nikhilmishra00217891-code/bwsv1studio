@@ -12,6 +12,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  writeBatch,
 } from "firebase/firestore";
 import type { Patra, PatraType } from "@/types";
 
@@ -19,6 +20,15 @@ interface SendPatraData {
     senderId: string;
     senderName: string;
     recipientId: string;
+    type: PatraType;
+    title: string;
+    content: string;
+}
+
+interface SendBulkPatraData {
+    senderId: string;
+    senderName: string;
+    recipientIds: string[];
     type: PatraType;
     title: string;
     content: string;
@@ -36,6 +46,30 @@ export const sendPatra = async (data: SendPatraData): Promise<void> => {
         createdAt: serverTimestamp(),
     });
 };
+
+/**
+ * Sends the same letter to multiple users.
+ */
+export const sendBulkPatra = async (data: SendBulkPatraData): Promise<void> => {
+    const batch = writeBatch(db);
+
+    data.recipientIds.forEach(recipientId => {
+        const patraDocRef = doc(collection(db, `users/${recipientId}/patra`));
+        const patraData = {
+            senderId: data.senderId,
+            senderName: data.senderName,
+            recipientId: recipientId,
+            type: data.type,
+            title: data.title,
+            content: data.content,
+            isRead: false,
+            createdAt: serverTimestamp(),
+        };
+        batch.set(patraDocRef, patraData);
+    });
+
+    await batch.commit();
+}
 
 /**
  * Listens for incoming letters for a specific user in real-time.
