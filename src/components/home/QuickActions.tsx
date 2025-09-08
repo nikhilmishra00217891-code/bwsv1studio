@@ -15,7 +15,7 @@ interface ActionItem {
 }
 
 const actions: ActionItem[] = [
-    { title: "Ask Doubt", icon: Bot, href: "#ai-mentor", color: "bg-blue-500/20 text-blue-500" },
+    { title: "Ask BWS Buddy", icon: Bot, href: "#ai-mentor", color: "bg-blue-500/20 text-blue-500" },
     { title: "Focus Zone", icon: Target, href: "/focus-zone", color: "bg-green-500/20 text-green-500" },
     { title: "Warzone", icon: Swords, href: "/warzone", color: "bg-red-500/20 text-red-500" },
     { title: "Parivartan Chamber", icon: Users, href: "/parivartan", color: "bg-purple-500/20 text-purple-500" },

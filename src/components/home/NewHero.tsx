@@ -28,7 +28,7 @@ export default function NewHero() {
                         </Button>
                         <Button asChild size="lg" variant="outline">
                             <Link href="#ai-mentor">
-                                Ask Our AI Mentor
+                                Ask BWS Buddy
                             </Link>
                         </Button>
                     </div>
