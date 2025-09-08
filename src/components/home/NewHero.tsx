@@ -10,6 +10,10 @@ import Image from "next/image";
 export default function NewHero() {
     const { user } = useAuth();
 
+    const openAiMentor = () => {
+        document.getElementById('ai-mentor')?.click();
+    }
+
     return (
         <section className="container mx-auto px-6">
             <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -26,10 +30,8 @@ export default function NewHero() {
                                 Browse Courses <ArrowRight className="ml-2 w-5 h-5" />
                             </Link>
                         </Button>
-                        <Button asChild size="lg" variant="outline">
-                            <Link href="#ai-mentor">
-                                Ask BWS Buddy
-                            </Link>
+                        <Button size="lg" variant="outline" onClick={openAiMentor}>
+                            Ask BWS Buddy
                         </Button>
                     </div>
                 </div>
