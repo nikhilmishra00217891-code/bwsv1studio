@@ -102,7 +102,7 @@ export default function PatraPage() {
                     <div className="inline-block bg-primary/10 p-4 rounded-full mb-4">
                         <Mailbox className="w-12 h-12 text-primary" />
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Your Mailbox</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">आपका पत्र (Your Mailbox)</h1>
                     <p className="text-lg text-muted-foreground mt-4">
                         Personal letters and important updates from your BWS mentors will appear here.
                     </p>

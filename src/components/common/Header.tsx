@@ -19,6 +19,7 @@ import { Label } from "../ui/label";
 import { useEditMode } from "./EditModeProvider";
 import { ScrollArea } from "../ui/scroll-area";
 import SmartSearch from "../home/SmartSearch";
+import { listenForUserPatra } from "@/lib/data/patra";
 
 const NavLink = ({ href, label, icon: Icon, onSelect, isProtected, isDesktop = false }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void, isProtected?: boolean, isDesktop?: boolean }) => {
   const pathname = usePathname();
@@ -87,7 +88,7 @@ const navLinksData = [
 ];
 const futureNavLinks = [
   { href: "/profile", label: "My Profile", icon: UserCircle, isProtected: true },
-  { href: "/patra", label: "My Mailbox", icon: Mailbox, isProtected: true },
+  { href: "/patra", label: "पत्र", icon: Mailbox, isProtected: true },
   { href: "/focus-zone", label: "Focus Zone", icon: Target, isProtected: true },
   { href: "/warzone", label: "Warzone", icon: Swords, isProtected: true },
   { href: "/parivartan", label: "Parivartan Chamber", icon: Users, isProtected: true },
@@ -114,6 +115,7 @@ export default function Header() {
   const { isEditMode, setIsEditMode } = useEditMode();
   const router = useRouter();
   const pathname = usePathname();
+  const [hasUnreadPatra, setHasUnreadPatra] = useState(false);
   
   const isLearnZone = pathname.startsWith('/courses/') && pathname.includes('/learnzone');
   const showBackButton = isClient && !isLearnZone && !mainNavPaths.includes(pathname);
@@ -122,6 +124,18 @@ export default function Header() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = listenForUserPatra(user.uid, (letters) => {
+        const hasUnread = letters.some(letter => !letter.isRead);
+        setHasUnreadPatra(hasUnread);
+      });
+      return () => unsubscribe();
+    } else {
+        setHasUnreadPatra(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!loading) {
@@ -179,17 +193,28 @@ export default function Header() {
           <ThemeToggle />
           
           {loading ? null : user ? (
-            <div className="relative flex flex-col items-center justify-center">
-              <Link href="/profile" aria-label="View Profile">
-                <Avatar className={cn("h-9 w-9", isFaculty && "ring-2 ring-offset-2 ring-offset-background ring-primary")}>
-                  <AvatarFallback className="flex items-center justify-center text-primary">
-                    {renderAvatarContent()}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-              {isClient && isFaculty && (
-                 <span className="absolute -bottom-4 text-[10px] font-bold text-primary">FACULTY</span>
-              )}
+             <div className="flex items-center gap-2">
+                <Link href="/patra" className="relative">
+                    <Button variant="outline" size="icon">
+                        <Mailbox className="h-[1.2rem] w-[1.2rem]" />
+                        <span className="sr-only">Mailbox</span>
+                    </Button>
+                    {hasUnreadPatra && (
+                        <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background" />
+                    )}
+                </Link>
+                <div className="relative flex flex-col items-center justify-center">
+                <Link href="/profile" aria-label="View Profile">
+                    <Avatar className={cn("h-9 w-9", isFaculty && "ring-2 ring-offset-2 ring-offset-background ring-primary")}>
+                    <AvatarFallback className="flex items-center justify-center text-primary">
+                        {renderAvatarContent()}
+                    </AvatarFallback>
+                    </Avatar>
+                </Link>
+                {isClient && isFaculty && (
+                    <span className="absolute -bottom-4 text-[10px] font-bold text-primary">FACULTY</span>
+                )}
+                </div>
             </div>
           ) : (
              <Button asChild variant="outline">
