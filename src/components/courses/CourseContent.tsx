@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Course, Lesson, Subject, Chapter, LiveChatMessage } from "@/types";
@@ -12,13 +13,14 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { listenForLiveChatMessages } from "@/lib/data";
 import { sendLiveChatMessage } from "@/lib/data/courses";
-import { useEffect, useRef, useState, FormEvent } from "react";
+import { useEffect, useRef, useState, FormEvent, useCallback } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "../ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "../ui/badge";
+import StudyMaterialEditor from "./StudyMaterialEditor";
 
 interface CourseContentProps {
     course: Course;
@@ -187,7 +189,10 @@ const SubjectGrid = ({ course, onSubjectSelect }: { course: Course, onSubjectSel
     )
 }
 
-const ChapterGrid = ({ subject, onChapterSelect }: { subject: Subject, onChapterSelect: (chapter: Chapter) => void; }) => {
+const ChapterGrid = ({ course, subject, onChapterSelect }: { course: Course; subject: Subject, onChapterSelect: (chapter: Chapter) => void; }) => {
+    const { userProfile } = useAuth();
+    const isFaculty = userProfile?.role === 'faculty';
+
     return (
         <div className="p-4 md:p-8">
              <div className="mb-8">
@@ -217,9 +222,12 @@ const ChapterGrid = ({ subject, onChapterSelect }: { subject: Subject, onChapter
                     </div>
                 </TabsContent>
                  <TabsContent value="material" className="mt-6">
-                     <Card className="p-8 text-center">
-                        <p className="text-muted-foreground">Study material for {subject.title} will be available here.</p>
-                     </Card>
+                     <StudyMaterialEditor
+                        courseId={course.id}
+                        subjectId={subject.id}
+                        chapters={subject.chapters}
+                        isFaculty={isFaculty}
+                     />
                 </TabsContent>
             </Tabs>
         </div>
@@ -370,7 +378,7 @@ export function CourseContent({ course, selectedSubject, selectedChapter, select
     }
 
     if (selectedSubject) {
-        return <ChapterGrid subject={selectedSubject} onChapterSelect={onChapterSelect} />;
+        return <ChapterGrid course={course} subject={selectedSubject} onChapterSelect={onChapterSelect} />;
     }
 
     return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;

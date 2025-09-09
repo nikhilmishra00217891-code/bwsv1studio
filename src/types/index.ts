@@ -21,10 +21,28 @@ export interface Lesson {
   status: 'live' | 'recorded';
 }
 
+export interface StudyMaterialLink {
+  id: string;
+  type: 'link';
+  title: string;
+  url: string;
+}
+
+export interface StudyMaterialTopic {
+  id: string;
+  type: 'topic';
+  title: string;
+  subtopics: StudyMaterial[];
+}
+
+export type StudyMaterial = StudyMaterialLink | StudyMaterialTopic;
+
+
 export interface Chapter {
     id: string;
     title: string;
     lessons: Lesson[];
+    studyMaterials?: StudyMaterial[];
 }
 
 export interface Subject {

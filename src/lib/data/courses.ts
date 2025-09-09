@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { db } from "@/lib/firebase";
@@ -18,7 +19,7 @@ import {
   onSnapshot,
   limit,
 } from "firebase/firestore";
-import type { Course, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
+import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial } from "@/types";
 
 export const addSubject = async (courseId: string, subjectTitle: string): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
@@ -62,6 +63,7 @@ export const addChapter = async (courseId: string, subjectId: string, chapterTit
         id: chapterTitle.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now(),
         title: chapterTitle,
         lessons: [],
+        studyMaterials: [],
     };
 
     courseData.subjects[subjectIndex].chapters.push(newChapter);
@@ -159,4 +161,136 @@ export const deleteLiveChatHistory = async (courseId: string, subjectId: string,
     });
     
     await batch.commit();
+}
+
+
+// --- Study Material Functions ---
+
+const findAndModifyMaterial = (
+  materials: StudyMaterial[],
+  parentId: string | null,
+  callback: (items: StudyMaterial[], container?: StudyMaterial) => void
+) => {
+  if (parentId === null) {
+    callback(materials);
+    return;
+  }
+  for (const item of materials) {
+    if (item.id === parentId && item.type === 'topic') {
+      callback(item.subtopics, item);
+      return;
+    }
+    if (item.type === 'topic') {
+      findAndModifyMaterial(item.subtopics, parentId, callback);
+    }
+  }
+};
+
+const findAndDeleteMaterial = (materials: StudyMaterial[], idToDelete: string): boolean => {
+    for (let i = 0; i < materials.length; i++) {
+        if (materials[i].id === idToDelete) {
+            materials.splice(i, 1);
+            return true;
+        }
+        if (materials[i].type === 'topic') {
+            if (findAndDeleteMaterial((materials[i] as any).subtopics, idToDelete)) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
+
+const findAndUpdateMaterial = (materials: StudyMaterial[], updatedMaterial: Partial<StudyMaterial>): boolean => {
+    for (let i = 0; i < materials.length; i++) {
+        if (materials[i].id === updatedMaterial.id) {
+            materials[i] = { ...materials[i], ...updatedMaterial } as StudyMaterial;
+            return true;
+        }
+        if (materials[i].type === 'topic') {
+            if (findAndUpdateMaterial((materials[i] as any).subtopics, updatedMaterial)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+export const addStudyMaterial = async (
+    courseId: string,
+    subjectId: string,
+    chapterId: string,
+    parentId: string | null,
+    item: Omit<StudyMaterial, 'id'>
+): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) throw new Error("Course not found");
+
+    const courseData = courseSnap.data() as Course;
+    const subject = courseData.subjects.find(s => s.id === subjectId);
+    if (!subject) throw new Error("Subject not found");
+
+    const chapter = subject.chapters.find(c => c.id === chapterId);
+    if (!chapter) throw new Error("Chapter not found");
+
+    if (!chapter.studyMaterials) chapter.studyMaterials = [];
+
+    const newItem: StudyMaterial = {
+        ...item,
+        id: `${item.type}_${Date.now()}`
+    };
+
+    findAndModifyMaterial(chapter.studyMaterials, parentId, (items) => {
+        items.push(newItem);
+    });
+
+    await updateDoc(courseRef, { subjects: courseData.subjects });
+    return courseData;
+}
+
+export const deleteStudyMaterial = async (
+    courseId: string,
+    subjectId: string,
+    chapterId: string,
+    materialId: string
+): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) throw new Error("Course not found");
+
+    const courseData = courseSnap.data() as Course;
+    const subject = courseData.subjects.find(s => s.id === subjectId);
+    if (!subject) throw new Error("Subject not found");
+
+    const chapter = subject.chapters.find(c => c.id === chapterId);
+    if (!chapter || !chapter.studyMaterials) throw new Error("Chapter not found");
+    
+    findAndDeleteMaterial(chapter.studyMaterials, materialId);
+
+    await updateDoc(courseRef, { subjects: courseData.subjects });
+    return courseData;
+};
+
+export const updateStudyMaterial = async (
+    courseId: string,
+    subjectId: string,
+    chapterId: string,
+    updatedMaterial: Partial<StudyMaterial> & { id: string }
+): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) throw new Error("Course not found");
+
+    const courseData = courseSnap.data() as Course;
+    const subject = courseData.subjects.find(s => s.id === subjectId);
+    if (!subject) throw new Error("Subject not found");
+    
+    const chapter = subject.chapters.find(c => c.id === chapterId);
+    if (!chapter || !chapter.studyMaterials) throw new Error("Chapter not found");
+
+    findAndUpdateMaterial(chapter.studyMaterials, updatedMaterial);
+    
+    await updateDoc(courseRef, { subjects: courseData.subjects });
+    return courseData;
 }
