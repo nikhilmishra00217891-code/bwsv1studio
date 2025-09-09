@@ -20,6 +20,7 @@ import {
   limit,
 } from "firebase/firestore";
 import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial } from "@/types";
+import { getUrlMetadata } from "@/app/actions";
 
 export const addSubject = async (courseId: string, subjectTitle: string): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
@@ -236,10 +237,30 @@ export const addStudyMaterial = async (
 
     if (!chapter.studyMaterials) chapter.studyMaterials = [];
 
-    const newItem: StudyMaterial = {
-        ...item,
-        id: `${item.type}_${Date.now()}`
-    };
+    let newItem: StudyMaterial;
+
+    if (item.type === 'link') {
+        const metadata = await getUrlMetadata(item.url);
+        if (!metadata) {
+            throw new Error("Could not fetch metadata for the provided URL.");
+        }
+        newItem = {
+            id: `link_${Date.now()}`,
+            type: 'link',
+            title: metadata.title,
+            url: metadata.url,
+            description: metadata.description,
+            image: metadata.image,
+            siteName: metadata.siteName,
+        };
+    } else {
+        newItem = {
+            id: `topic_${Date.now()}`,
+            type: 'topic',
+            title: item.title,
+            subtopics: [],
+        };
+    }
 
     findAndModifyMaterial(chapter.studyMaterials, parentId, (items) => {
         items.push(newItem);

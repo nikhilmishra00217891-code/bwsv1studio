@@ -1,22 +1,22 @@
 
+
 "use client";
 
-import * as React from 'react';
-import { useState } from 'react';
-import type { Chapter, StudyMaterial } from '@/types';
+import React, { useState } from 'react';
+import type { Chapter, StudyMaterial, StudyMaterialLink } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlusCircle, Folder, Link as LinkIcon, Edit, Trash2, LoaderCircle } from 'lucide-react';
+import { PlusCircle, Folder, Link as LinkIcon, Edit, Trash2, LoaderCircle, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addStudyMaterial, updateStudyMaterial, deleteStudyMaterial } from '@/lib/data/courses';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import Image from 'next/image';
 
 const MaterialFormDialog = ({
     isOpen,
@@ -27,48 +27,42 @@ const MaterialFormDialog = ({
 }: {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (title: string, url?: string) => void;
+    onSubmit: (titleOrUrl: string) => void;
     initialData?: Partial<StudyMaterial>;
     type: 'topic' | 'link';
 }) => {
-    const [title, setTitle] = useState('');
-    const [url, setUrl] = useState('');
+    const [value, setValue] = useState('');
     
     React.useEffect(() => {
-        setTitle(initialData?.title || '');
         if (type === 'link') {
-            setUrl((initialData as any)?.url || '');
+            setValue((initialData as any)?.url || '');
         } else {
-            setUrl('');
+            setValue(initialData?.title || '');
         }
     }, [initialData, type, isOpen]);
 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(title, type === 'link' ? url : undefined);
+        onSubmit(value);
     };
+    
+    const isLink = type === 'link';
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} {type === 'topic' ? 'Topic' : 'Link'}</DialogTitle>
+                    <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} {isLink ? 'Link' : 'Topic'}</DialogTitle>
                      <DialogDescription>
-                        {type === 'link' ? "Provide a title and URL for the resource." : "Provide a title for the new topic folder."}
+                        {isLink ? "Paste the URL of the resource. The title and details will be fetched automatically." : "Provide a title for the new topic folder."}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <Label htmlFor="title">Title</Label>
-                        <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                        <Label htmlFor="material-value">{isLink ? 'URL' : 'Title'}</Label>
+                        <Input id="material-value" value={value} onChange={(e) => setValue(e.target.value)} required placeholder={isLink ? 'https://docs.google.com/...' : ''}/>
                     </div>
-                    {type === 'link' && (
-                        <div>
-                            <Label htmlFor="url">URL</Label>
-                            <Input id="url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} required placeholder="https://docs.google.com/..." />
-                        </div>
-                    )}
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                         <Button type="submit">Save</Button>
@@ -98,15 +92,14 @@ const MaterialNode = ({
     const [modalState, setModalState] = useState<{ open: boolean; type: 'topic' | 'link'; mode: 'add' | 'edit', parentId: string | null, initialData?: Partial<StudyMaterial> }>({ open: false, type: 'topic', mode: 'add', parentId: null });
     const [isLoading, setIsLoading] = useState(false);
     
-    const handleAdd = async (title: string, url?: string) => {
+    const handleAdd = async (value: string) => {
         setIsLoading(true);
         try {
-            await addStudyMaterial(courseId, subjectId, chapterId, modalState.parentId, {
-                type: modalState.type,
-                title,
-                url,
-                subtopics: modalState.type === 'topic' ? [] : undefined,
-            });
+            const itemData: Omit<StudyMaterial, 'id'> = modalState.type === 'link' 
+                ? { type: 'link', url: value, title: '' } // Title will be fetched by backend
+                : { type: 'topic', title: value, subtopics: [] };
+
+            await addStudyMaterial(courseId, subjectId, chapterId, modalState.parentId, itemData);
             toast({ title: 'Material Added!' });
             onUpdate();
         } catch (error: any) {
@@ -117,11 +110,11 @@ const MaterialNode = ({
         }
     };
     
-    const handleEdit = async (title: string, url?: string) => {
+    const handleEdit = async (title: string) => {
         setIsLoading(true);
         try {
-            await updateStudyMaterial(courseId, subjectId, chapterId, { id: material.id, title, url });
-            toast({ title: 'Material Updated!' });
+            await updateStudyMaterial(courseId, subjectId, chapterId, { id: material.id, title });
+            toast({ title: 'Topic Updated!' });
             onUpdate();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -145,42 +138,45 @@ const MaterialNode = ({
     }
 
     if (material.type === 'link') {
+        const link = material as StudyMaterialLink;
         return (
-            <>
-                <div className="flex items-center group gap-2 p-2 rounded-md hover:bg-muted">
-                    <LinkIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <a href={material.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline flex-grow truncate">{material.title}</a>
-                    {isFaculty && (
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'edit', parentId: null, initialData: material })}>
-                                <Edit className="w-4 h-4" />
-                             </Button>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLoading}>
-                                        <Trash2 className="w-4 h-4 text-destructive" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
-                                    <AlertDialogDescriptionComponent>This cannot be undone.</AlertDialogDescriptionComponent>
-                                    <AlertDialogFooterComponent>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                                    </AlertDialogFooterComponent>
-                                </AlertDialogContent>
-                             </AlertDialog>
-                        </div>
-                    )}
-                </div>
-                 <MaterialFormDialog 
-                    isOpen={modalState.open && modalState.mode === 'edit' && modalState.initialData?.id === material.id}
-                    onOpenChange={(open) => setModalState({ ...modalState, open, mode: 'edit' })}
-                    onSubmit={handleEdit} 
-                    initialData={material}
-                    type="link"
-                />
-            </>
+            <div className="flex items-center group gap-2 pl-2">
+                <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline flex-grow truncate">
+                    <Card className="flex items-center gap-3 p-2 hover:bg-muted transition-colors">
+                         {link.image ? (
+                             <Image src={link.image} alt={link.title} width={48} height={48} className="w-12 h-12 rounded-md object-cover"/>
+                         ) : (
+                             <div className="w-12 h-12 rounded-md bg-secondary flex items-center justify-center">
+                                 <LinkIcon className="h-6 w-6 text-muted-foreground" />
+                             </div>
+                         )}
+                         <div className="flex-grow overflow-hidden">
+                            <p className="font-semibold truncate">{link.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">{link.description || link.siteName}</p>
+                         </div>
+                         <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0"/>
+                    </Card>
+                </a>
+                {isFaculty && (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLoading}>
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Delete "{link.title}"?</AlertDialogTitle></AlertDialogHeader>
+                                <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+                                <AlertDialogFooterComponent>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                                </AlertDialogFooterComponent>
+                            </AlertDialogContent>
+                         </AlertDialog>
+                    </div>
+                )}
+            </div>
         )
     }
 
@@ -215,7 +211,7 @@ const MaterialNode = ({
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
-                                        <AlertDialogDescriptionComponent>This will delete the topic and all its contents. This cannot be undone.</AlertDialogDescriptionComponent>
+                                        <AlertDialogDescription>This will delete the topic and all its contents. This cannot be undone.</AlertDialogDescription>
                                         <AlertDialogFooterComponent>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                             <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>

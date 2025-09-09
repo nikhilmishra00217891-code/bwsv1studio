@@ -26,6 +26,9 @@ export interface StudyMaterialLink {
   type: 'link';
   title: string;
   url: string;
+  description?: string;
+  image?: string;
+  siteName?: string;
 }
 
 export interface StudyMaterialTopic {
@@ -68,6 +71,7 @@ export interface Course {
   isActive: boolean;
   youtubeLink?: string;
   courseCompletionPercent?: number; // Faculty-driven progress
+  isFree?: boolean;
 }
 
 export interface UrlMetadata {
