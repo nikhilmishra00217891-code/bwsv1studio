@@ -12,6 +12,8 @@ import {
     where,
     getDocs,
     Timestamp,
+    addDoc,
+    orderBy,
 } from "firebase/firestore";
 import type { DailyMission } from "@/types";
 
@@ -22,32 +24,23 @@ interface SetMissionData {
 }
 
 /**
- * Sets or updates the mission for a specific subject on the current day.
- * The document ID is a combination of date and subject ID to ensure one mission per subject per day.
+ * Sets a mission for a specific subject on the current day.
+ * This now creates a new document for every save, preserving history.
  */
 export const setMission = async (data: SetMissionData) => {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const missionId = `${today}_${data.subjectId}`;
-    const missionRef = doc(db, `courses/${data.courseId}/missions`, missionId);
+    const missionColRef = collection(db, `courses/${data.courseId}/missions`);
 
-    const missionDoc = await getDoc(missionRef);
-
-    const missionData: Partial<DailyMission> = {
+    const missionData: Omit<DailyMission, 'id'> = {
         courseId: data.courseId,
         subjectId: data.subjectId,
         details: data.details,
         missionDate: today,
-        updatedAt: serverTimestamp() as Timestamp,
+        createdAt: serverTimestamp() as Timestamp,
+        updatedAt: serverTimestamp() as Timestamp, // Can be used to show last edit time
     };
 
-    if (missionDoc.exists()) {
-        await setDoc(missionRef, missionData, { merge: true });
-    } else {
-        await setDoc(missionRef, {
-            ...missionData,
-            createdAt: serverTimestamp() as Timestamp,
-        });
-    }
+    await addDoc(missionColRef, missionData);
 };
 
 /**
@@ -73,7 +66,7 @@ export const getMissionHistoryForSubject = async (courseId: string, subjectId: s
     const q = query(
         missionsCol, 
         where("subjectId", "==", subjectId),
-        orderBy("missionDate", "desc")
+        orderBy("createdAt", "desc")
     );
     
     const snapshot = await getDocs(q);
