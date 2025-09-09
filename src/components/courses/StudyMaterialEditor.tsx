@@ -211,7 +211,7 @@ const MaterialNode = ({
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                         <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
                                     </AlertDialogFooterComponent>
-                                </AlertDialog>
+                                </AlertDialogContent>
                             </AlertDialog>
                          </div>
                      )}
