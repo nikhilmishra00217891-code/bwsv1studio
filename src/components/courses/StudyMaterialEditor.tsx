@@ -239,7 +239,7 @@ const MaterialNode = ({
                 type="topic"
             />
         </Accordion>
-    )
+    );
 };
 
 
