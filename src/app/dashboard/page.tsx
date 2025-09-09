@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getEnrolledCoursesForUser } from "@/lib/data";
-import type { EnrolledCourse } from "@/types";
+import type { EnrolledCourse, UserMission } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -15,6 +15,8 @@ import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { getMissionsForUser } from "@/lib/data/missions";
+import TodaysMissionDashboard from "@/components/dashboard/TodaysMissionDashboard";
 
 const FocusStatsCard = () => {
     const { userProfile } = useAuth();
@@ -52,19 +54,22 @@ const FocusStatsCard = () => {
 export default function DashboardPage() {
   const { user, userProfile, loading } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [todaysMissions, setTodaysMissions] = useState<UserMission[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [userIsFaculty, setUserIsFaculty] = useState(false);
 
   useEffect(() => {
     if (user) {
-      const fetchCourses = async () => {
+      const fetchDashboardData = async () => {
         setDataLoading(true);
         const courses = await getEnrolledCoursesForUser(user.uid);
+        const missions = await getMissionsForUser(user.uid);
         setUserIsFaculty(userProfile?.role === 'faculty');
         setEnrolledCourses(courses);
+        setTodaysMissions(missions);
         setDataLoading(false);
       };
-      fetchCourses();
+      fetchDashboardData();
     }
   }, [user, userProfile]);
   
@@ -96,52 +101,56 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold font-headline mb-6">Your Enrolled Courses</h2>
-            <div className="space-y-6">
-              {enrolledCourses.length > 0 ? (
-                enrolledCourses.map(course => (
-                  <Card key={course.courseId} className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
-                    <div className="flex flex-col sm:flex-row">
-                      <div className="sm:w-1/3 h-48 sm:h-auto relative flex-shrink-0">
-                           <Image 
-                              src={course.thumbnail} 
-                              alt={course.title} 
-                              layout="fill"
-                              objectFit="cover"
-                              data-ai-hint={`${course.category} education`}
-                              className="transition-transform duration-300 group-hover:scale-105"
-                           />
-                      </div>
-                      <div className="p-6 flex flex-col flex-grow">
-                        <p className="text-sm text-primary font-semibold mb-1">{course.category}</p>
-                        <CardTitle className="text-xl font-headline mb-3">{course.title}</CardTitle>
-                        <div className="flex items-center gap-4 mb-4 mt-auto">
-                          <Progress value={course.progress} className="w-full h-3" />
-                          <span className="text-sm font-semibold text-muted-foreground">{course.progress}%</span>
+          <div className="lg:col-span-2 space-y-8">
+            <TodaysMissionDashboard missions={todaysMissions} />
+
+            <div>
+                <h2 className="text-2xl font-bold font-headline mb-6">Your Enrolled Courses</h2>
+                <div className="space-y-6">
+                {enrolledCourses.length > 0 ? (
+                    enrolledCourses.map(course => (
+                    <Card key={course.courseId} className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
+                        <div className="flex flex-col sm:flex-row">
+                        <div className="sm:w-1/3 h-48 sm:h-auto relative flex-shrink-0">
+                            <Image 
+                                src={course.thumbnail} 
+                                alt={course.title} 
+                                layout="fill"
+                                objectFit="cover"
+                                data-ai-hint={`${course.category} education`}
+                                className="transition-transform duration-300 group-hover:scale-105"
+                            />
                         </div>
-                        <Button asChild className="w-full sm:w-auto self-start">
-                          <Link href={`/courses/${course.courseId}/learnzone`}>
-                              <Play className="mr-2 h-4 w-4" /> Continue Learning
-                          </Link>
+                        <div className="p-6 flex flex-col flex-grow">
+                            <p className="text-sm text-primary font-semibold mb-1">{course.category}</p>
+                            <CardTitle className="text-xl font-headline mb-3">{course.title}</CardTitle>
+                            <div className="flex items-center gap-4 mb-4 mt-auto">
+                            <Progress value={course.progress} className="w-full h-3" />
+                            <span className="text-sm font-semibold text-muted-foreground">{course.progress}%</span>
+                            </div>
+                            <Button asChild className="w-full sm:w-auto self-start">
+                            <Link href={`/courses/${course.courseId}/learnzone`}>
+                                <Play className="mr-2 h-4 w-4" /> Continue Learning
+                            </Link>
+                            </Button>
+                        </div>
+                        </div>
+                    </Card>
+                    ))
+                ) : (
+                    <Card>
+                    <CardContent className="p-8 text-center">
+                        <h3 className="text-xl font-headline">No courses yet!</h3>
+                        <p className="text-muted-foreground mt-2 mb-4">It looks like you haven't enrolled in any courses.</p>
+                        <Button asChild>
+                        <Link href="/courses">
+                            Explore Courses <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
                         </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))
-              ) : (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <h3 className="text-xl font-headline">No courses yet!</h3>
-                    <p className="text-muted-foreground mt-2 mb-4">It looks like you haven't enrolled in any courses.</p>
-                    <Button asChild>
-                      <Link href="/courses">
-                        Explore Courses <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                    </Card>
+                )}
+                </div>
             </div>
           </div>
 

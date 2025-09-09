@@ -62,6 +62,12 @@ export interface DailyMission {
   updatedAt: Timestamp;
 }
 
+export interface UserMission {
+    courseTitle: string;
+    subjectTitle: string;
+    details: string;
+}
+
 export interface Course {
   id: string;
   title: string;

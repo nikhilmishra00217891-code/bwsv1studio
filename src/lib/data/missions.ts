@@ -15,7 +15,7 @@ import {
     addDoc,
     orderBy,
 } from "firebase/firestore";
-import type { DailyMission } from "@/types";
+import type { DailyMission, Course, UserMission } from "@/types";
 
 interface SetMissionData {
     courseId: string;
@@ -55,7 +55,17 @@ export const getMissionsForDate = async (courseId: string, date: string): Promis
         return [];
     }
     
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DailyMission));
+    // De-duplicate missions for the same subject, keeping only the latest one
+    const missionsBySubject: Record<string, DailyMission> = {};
+    snapshot.docs.forEach(doc => {
+        const mission = { id: doc.id, ...doc.data() } as DailyMission;
+        if (!missionsBySubject[mission.subjectId] || 
+            mission.createdAt.toMillis() > missionsBySubject[mission.subjectId].createdAt.toMillis()) {
+            missionsBySubject[mission.subjectId] = mission;
+        }
+    });
+
+    return Object.values(missionsBySubject);
 };
 
 /**
@@ -75,4 +85,44 @@ export const getMissionHistoryForSubject = async (courseId: string, subjectId: s
     }
     
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DailyMission));
+};
+
+
+/**
+ * Gets all active missions for a user based on their enrolled courses.
+ */
+export const getMissionsForUser = async (userId: string): Promise<UserMission[]> => {
+    const userDocRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userDocRef);
+
+    if (!userSnap.exists() || !userSnap.data().enrolledCourses) {
+        return [];
+    }
+
+    const enrolledCourses: string[] = userSnap.data().enrolledCourses;
+    const today = new Date().toISOString().split('T')[0];
+    const allMissions: UserMission[] = [];
+
+    for (const courseId of enrolledCourses) {
+        const courseDocRef = doc(db, 'courses', courseId);
+        const courseSnap = await getDoc(courseDocRef);
+
+        if (courseSnap.exists()) {
+            const courseData = courseSnap.data() as Course;
+            const dailyMissions = await getMissionsForDate(courseId, today);
+
+            for (const mission of dailyMissions) {
+                const subject = courseData.subjects.find(s => s.id === mission.subjectId);
+                if (subject) {
+                    allMissions.push({
+                        courseTitle: courseData.title,
+                        subjectTitle: subject.title,
+                        details: mission.details,
+                    });
+                }
+            }
+        }
+    }
+
+    return allMissions;
 };
