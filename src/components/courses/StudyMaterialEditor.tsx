@@ -6,16 +6,16 @@ import { useState } from 'react';
 import type { Chapter, StudyMaterial } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlusCircle, FileText, Folder, Link as LinkIcon, Edit, Trash2, LoaderCircle, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Folder, Link as LinkIcon, Edit, Trash2, LoaderCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addStudyMaterial, updateStudyMaterial, deleteStudyMaterial } from '@/lib/data/courses';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogDescription as AlertDialogDescriptionComponent } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 const MaterialFormDialog = ({
@@ -38,6 +38,8 @@ const MaterialFormDialog = ({
         setTitle(initialData?.title || '');
         if (type === 'link' && initialData?.url) {
             setUrl(initialData.url);
+        } else {
+            setUrl('');
         }
     }, [initialData, type, isOpen]);
 
@@ -157,7 +159,7 @@ const MaterialNode = ({
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
-                                <AlertDialogDescriptionComponent>This cannot be undone.</AlertDialogDescriptionComponent>
+                                <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
                                 <AlertDialogFooterComponent>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
@@ -179,61 +181,63 @@ const MaterialNode = ({
 
     // It's a topic
     return (
-        <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value={material.id} className="border-none">
-                <div className="flex items-center group p-2 rounded-md hover:bg-muted">
-                    <AccordionTrigger className="p-0 hover:no-underline flex-grow">
-                        <div className="flex items-center gap-2">
-                            <Folder className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <span className="text-sm font-semibold">{material.title}</span>
-                        </div>
-                    </AccordionTrigger>
-                    {isFaculty && (
-                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'add' })} title="Add Sub-Topic">
-                                <Folder className="w-4 h-4"/><PlusCircle className="w-2.5 h-2.5 absolute bottom-0 right-0"/>
-                             </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'add' })} title="Add Link">
-                                <LinkIcon className="w-4 h-4" />
-                             </Button>
-                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'edit', initialData: material })}>
-                                <Edit className="w-4 h-4" />
-                             </Button>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLoading}>
-                                        <Trash2 className="w-4 h-4 text-destructive" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
-                                    <AlertDialogDescriptionComponent>This will delete the topic and all its contents. This cannot be undone.</AlertDialogDescriptionComponent>
-                                    <AlertDialogFooterComponent>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                                    </AlertDialogFooterComponent>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                         </div>
-                     )}
-                </div>
-                <AccordionContent className="pl-6 border-l-2 ml-2 mt-2 space-y-1">
-                    {(material.subtopics || []).map(sub => (
-                        <MaterialNode 
-                            key={sub.id} 
-                            material={sub} 
-                            courseId={courseId} 
-                            subjectId={subjectId} 
-                            chapterId={chapterId} 
-                            isFaculty={isFaculty} 
-                            onUpdate={onUpdate}
-                        />
-                    ))}
-                    {(material.subtopics || []).length === 0 && (
-                        <p className="text-xs text-muted-foreground italic pl-2">No materials in this topic yet.</p>
-                    )}
-                </AccordionContent>
-            </AccordionItem>
+        <>
+            <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value={material.id} className="border-none">
+                    <div className="flex items-center group p-2 rounded-md hover:bg-muted">
+                        <AccordionTrigger className="p-0 hover:no-underline flex-grow">
+                            <div className="flex items-center gap-2">
+                                <Folder className="h-4 w-4 text-muted-foreground shrink-0" />
+                                <span className="text-sm font-semibold">{material.title}</span>
+                            </div>
+                        </AccordionTrigger>
+                        {isFaculty && (
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'add' })} title="Add Sub-Topic">
+                                    <Folder className="w-4 h-4"/><PlusCircle className="w-2.5 h-2.5 absolute bottom-0 right-0"/>
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'add' })} title="Add Link">
+                                    <LinkIcon className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'edit', initialData: material })}>
+                                    <Edit className="w-4 h-4" />
+                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLoading}>
+                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
+                                        <AlertDialogDescription>This will delete the topic and all its contents. This cannot be undone.</AlertDialogDescription>
+                                        <AlertDialogFooterComponent>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                                        </AlertDialogFooterComponent>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        )}
+                    </div>
+                    <AccordionContent className="pl-6 border-l-2 ml-2 mt-2 space-y-1">
+                        {(material.subtopics || []).map(sub => (
+                            <MaterialNode 
+                                key={sub.id} 
+                                material={sub} 
+                                courseId={courseId} 
+                                subjectId={subjectId} 
+                                chapterId={chapterId} 
+                                isFaculty={isFaculty} 
+                                onUpdate={onUpdate}
+                            />
+                        ))}
+                        {(material.subtopics || []).length === 0 && (
+                            <p className="text-xs text-muted-foreground italic pl-2">No materials in this topic yet.</p>
+                        )}
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
             <MaterialFormDialog 
                 isOpen={modalState.open && modalState.mode === 'add'} 
                 onOpenChange={(open) => setModalState({ ...modalState, open })} 
@@ -247,7 +251,7 @@ const MaterialNode = ({
                 initialData={material}
                 type="topic"
             />
-        </Accordion>
+        </>
     );
 };
 
@@ -318,14 +322,12 @@ export default function StudyMaterialEditor({ courseId, subjectId, chapters, isF
                            )}
                         </div>
                     </AccordionContent>
-                    {isAdding === chapter.id && (
-                        <MaterialFormDialog 
-                            isOpen={isAdding === chapter.id} 
-                            onOpenChange={() => setIsAdding(null)} 
-                            onSubmit={(title) => handleAdd(chapter.id, title)}
-                            type="topic"
-                        />
-                    )}
+                    <MaterialFormDialog 
+                        isOpen={isAdding === chapter.id} 
+                        onOpenChange={() => setIsAdding(null)} 
+                        onSubmit={(title) => handleAdd(chapter.id, title)}
+                        type="topic"
+                    />
                 </AccordionItem>
             ))}
         </Accordion>
