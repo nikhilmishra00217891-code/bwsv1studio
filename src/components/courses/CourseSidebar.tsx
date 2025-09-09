@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, BookText, ChevronRight, Video, CheckCircle2, X, Megaphone, Calendar, FolderKanban } from 'lucide-react';
+import { BookOpen, BookText, ChevronRight, Video, CheckCircle2, X, Megaphone, Calendar, FolderKanban, Target } from 'lucide-react';
 import type { Course, Subject, Chapter, Lesson } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -63,7 +64,7 @@ const SidebarMenuItem = ({ icon: Icon, label, href }: { icon: React.ElementType,
     </Button>
 )
 
-export const CourseSidebar = ({ course, isOpen, onClose }: { course: Course, isOpen: boolean, onClose: () => void }) => {
+export const CourseSidebar = ({ course, isOpen, onClose, isFaculty }: { course: Course, isOpen: boolean, onClose: () => void, isFaculty: boolean }) => {
     return (
         <AnimatePresence>
         {isOpen && (
@@ -93,9 +94,16 @@ export const CourseSidebar = ({ course, isOpen, onClose }: { course: Course, isO
                     </header>
                     <ScrollArea className="flex-grow p-2">
                         <div className="p-2 space-y-2">
-                            <SidebarMenuItem icon={Megaphone} label="Announcements" href={`/courses/${course.id}/announcements`} />
-                            <SidebarMenuItem icon={Calendar} label="Events" href={`/courses/${course.id}/events`} />
-                            <SidebarMenuItem icon={FolderKanban} label="Course Resources" href={`/courses/${course.id}/resources`} />
+                            <SidebarMenuItem icon={Megaphone} label="Announcements" href={`/courses/${course.id}/learnzone/announcements`} />
+                            <SidebarMenuItem icon={Calendar} label="Events" href={`/courses/${course.id}/learnzone/events`} />
+                            <SidebarMenuItem icon={FolderKanban} label="Course Resources" href={`/courses/${course.id}/learnzone/resources`} />
+                             {isFaculty && (
+                                <>
+                                 <div className="my-2 border-t -mx-4" />
+                                    <p className="px-2 text-xs font-semibold text-muted-foreground uppercase">Faculty Tools</p>
+                                    <SidebarMenuItem icon={Target} label="Today's Mission" href={`/courses/${course.id}/learnzone/todays-mission`} />
+                                </>
+                             )}
                         </div>
                     </ScrollArea>
                 </motion.div>

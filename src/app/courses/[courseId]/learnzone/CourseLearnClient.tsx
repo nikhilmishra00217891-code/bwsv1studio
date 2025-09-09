@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Course, Subject, Chapter, Lesson } from "@/types";
 import { CourseSidebar } from '@/components/courses/CourseSidebar';
 import { CourseContent } from '@/components/courses/CourseContent';
@@ -12,9 +12,12 @@ import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import CourseAnnouncementsPage from '../announcements/page';
+import { useAuth } from '@/components/auth/AuthProvider';
+import TodaysMissionPage from './todays-mission/page';
 
 export default function CourseLearnClient({ course, userProgress }: { course: Course; userProgress: number; }) {
     const pathname = usePathname();
+    const { userProfile } = useAuth();
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
     const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
@@ -23,6 +26,9 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
     const isAnnouncementsPage = pathname.endsWith('/announcements');
     const isEventsPage = pathname.endsWith('/events');
     const isResourcesPage = pathname.endsWith('/resources');
+    const isTodaysMissionPage = pathname.endsWith('/todays-mission');
+    
+    const isFaculty = userProfile?.role === 'faculty';
 
     const handleLessonClick = (lesson: Lesson) => {
         setSelectedLesson(lesson);
@@ -52,6 +58,9 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         if (isAnnouncementsPage) {
             return <CourseAnnouncementsPage />;
         }
+        if (isTodaysMissionPage) {
+            return <TodaysMissionPage />
+        }
         // Add similar checks for events and resources when they are built
         
         return (
@@ -69,6 +78,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
     
     const renderHeaderTitle = () => {
         if (isAnnouncementsPage) return "Course Announcements";
+        if (isTodaysMissionPage) return "Today's Mission";
         if (isEventsPage) return "Events";
         if (isResourcesPage) return "Course Resources";
         return "Course Content";
@@ -80,6 +90,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 course={course}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
+                isFaculty={isFaculty}
             />
 
             <main className="flex-1 flex flex-col transition-all duration-300 overflow-hidden">

@@ -52,6 +52,16 @@ export interface Subject {
     progress?: number;
 }
 
+export interface DailyMission {
+  id: string;
+  courseId: string;
+  subjectId: string;
+  missionDate: string; // YYYY-MM-DD format for easy querying
+  details: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export interface Course {
   id: string;
   title: string;
