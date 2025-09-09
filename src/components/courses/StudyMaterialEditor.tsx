@@ -6,7 +6,7 @@ import { useState } from 'react';
 import type { Chapter, StudyMaterial } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { addStudyMaterial, updateStudyMaterial, deleteStudyMaterial } from '@/lib/data/courses';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 const MaterialFormDialog = ({
@@ -36,8 +36,8 @@ const MaterialFormDialog = ({
     
     React.useEffect(() => {
         setTitle(initialData?.title || '');
-        if (type === 'link' && initialData?.url) {
-            setUrl(initialData.url);
+        if (type === 'link') {
+            setUrl((initialData as any)?.url || '');
         } else {
             setUrl('');
         }
@@ -54,6 +54,9 @@ const MaterialFormDialog = ({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} {type === 'topic' ? 'Topic' : 'Link'}</DialogTitle>
+                     <DialogDescription>
+                        {type === 'link' ? "Provide a title and URL for the resource." : "Provide a title for the new topic folder."}
+                    </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -92,13 +95,13 @@ const MaterialNode = ({
     onUpdate: () => void;
 }) => {
     const { toast } = useToast();
-    const [modalState, setModalState] = useState<{ open: boolean; type: 'topic' | 'link'; mode: 'add' | 'edit', initialData?: Partial<StudyMaterial> }>({ open: false, type: 'topic', mode: 'add' });
+    const [modalState, setModalState] = useState<{ open: boolean; type: 'topic' | 'link'; mode: 'add' | 'edit', parentId: string | null, initialData?: Partial<StudyMaterial> }>({ open: false, type: 'topic', mode: 'add', parentId: null });
     const [isLoading, setIsLoading] = useState(false);
     
     const handleAdd = async (title: string, url?: string) => {
         setIsLoading(true);
         try {
-            await addStudyMaterial(courseId, subjectId, chapterId, material.id, {
+            await addStudyMaterial(courseId, subjectId, chapterId, modalState.parentId, {
                 type: modalState.type,
                 title,
                 url,
@@ -110,7 +113,7 @@ const MaterialNode = ({
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         } finally {
             setIsLoading(false);
-            setModalState({ open: false, type: 'topic', mode: 'add' });
+            setModalState({ open: false, type: 'topic', mode: 'add', parentId: null });
         }
     };
     
@@ -124,7 +127,7 @@ const MaterialNode = ({
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         } finally {
             setIsLoading(false);
-            setModalState({ open: false, type: 'topic', mode: 'edit' });
+            setModalState({ open: false, type: 'topic', mode: 'edit', parentId: null });
         }
     }
     
@@ -143,45 +146,47 @@ const MaterialNode = ({
 
     if (material.type === 'link') {
         return (
-            <div className="flex items-center group gap-2 p-2 rounded-md hover:bg-muted">
-                <LinkIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                <a href={material.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline flex-grow truncate">{material.title}</a>
-                {isFaculty && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'edit', initialData: material })}>
-                            <Edit className="w-4 h-4" />
-                         </Button>
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLoading}>
-                                    <Trash2 className="w-4 h-4 text-destructive" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
-                                <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
-                                <AlertDialogFooterComponent>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                                </AlertDialogFooterComponent>
-                            </AlertDialogContent>
-                         </AlertDialog>
-                    </div>
-                )}
-                <MaterialFormDialog 
-                    isOpen={modalState.open && modalState.mode === 'edit' && material.type === 'link'}
+            <>
+                <div className="flex items-center group gap-2 p-2 rounded-md hover:bg-muted">
+                    <LinkIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <a href={material.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline flex-grow truncate">{material.title}</a>
+                    {isFaculty && (
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'edit', parentId: null, initialData: material })}>
+                                <Edit className="w-4 h-4" />
+                             </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLoading}>
+                                        <Trash2 className="w-4 h-4 text-destructive" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
+                                    <AlertDialogDescriptionComponent>This cannot be undone.</AlertDialogDescriptionComponent>
+                                    <AlertDialogFooterComponent>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                                    </AlertDialogFooterComponent>
+                                </AlertDialogContent>
+                             </AlertDialog>
+                        </div>
+                    )}
+                </div>
+                 <MaterialFormDialog 
+                    isOpen={modalState.open && modalState.mode === 'edit' && modalState.initialData?.id === material.id}
                     onOpenChange={(open) => setModalState({ ...modalState, open, mode: 'edit' })}
                     onSubmit={handleEdit} 
                     initialData={material}
                     type="link"
                 />
-            </div>
+            </>
         )
     }
 
     // It's a topic
     return (
-        <>
+       <>
             <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value={material.id} className="border-none">
                     <div className="flex items-center group p-2 rounded-md hover:bg-muted">
@@ -193,13 +198,13 @@ const MaterialNode = ({
                         </AccordionTrigger>
                         {isFaculty && (
                             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'add' })} title="Add Sub-Topic">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'add', parentId: material.id })} title="Add Sub-Topic">
                                     <Folder className="w-4 h-4"/><PlusCircle className="w-2.5 h-2.5 absolute bottom-0 right-0"/>
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'add' })} title="Add Link">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'add', parentId: material.id })} title="Add Link">
                                     <LinkIcon className="w-4 h-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'edit', initialData: material })}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'edit', parentId: null, initialData: material })}>
                                     <Edit className="w-4 h-4" />
                                 </Button>
                                 <AlertDialog>
@@ -210,7 +215,7 @@ const MaterialNode = ({
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
-                                        <AlertDialogDescription>This will delete the topic and all its contents. This cannot be undone.</AlertDialogDescription>
+                                        <AlertDialogDescriptionComponent>This will delete the topic and all its contents. This cannot be undone.</AlertDialogDescriptionComponent>
                                         <AlertDialogFooterComponent>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                                             <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
@@ -238,20 +243,20 @@ const MaterialNode = ({
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>
-            <MaterialFormDialog 
-                isOpen={modalState.open && modalState.mode === 'add'} 
+             <MaterialFormDialog 
+                isOpen={modalState.open && modalState.parentId === material.id} 
                 onOpenChange={(open) => setModalState({ ...modalState, open })} 
                 onSubmit={handleAdd}
                 type={modalState.type}
             />
-            <MaterialFormDialog 
-                isOpen={modalState.open && modalState.mode === 'edit' && material.type === 'topic'}
+             <MaterialFormDialog 
+                isOpen={modalState.open && modalState.mode === 'edit' && modalState.initialData?.id === material.id}
                 onOpenChange={(open) => setModalState({ ...modalState, open, mode: 'edit' })}
                 onSubmit={handleEdit}
                 initialData={material}
                 type="topic"
             />
-        </>
+       </>
     );
 };
 
@@ -259,17 +264,18 @@ const MaterialNode = ({
 export default function StudyMaterialEditor({ courseId, subjectId, chapters, isFaculty }: { courseId: string; subjectId: string; chapters: Chapter[], isFaculty: boolean }) {
     const router = useRouter();
     const { toast } = useToast();
-    const [isAdding, setIsAdding] = useState<string | null>(null);
+    const [modalState, setModalState] = useState<{ open: boolean; chapterId: string | null }>({ open: false, chapterId: null });
     const [isLoading, setIsLoading] = useState(false);
     
     const forceRerender = () => {
         router.refresh();
     }
     
-    const handleAdd = async (chapterId: string, title: string) => {
+    const handleAdd = async (title: string) => {
+        if (!modalState.chapterId) return;
         setIsLoading(true);
         try {
-            await addStudyMaterial(courseId, subjectId, chapterId, null, {
+            await addStudyMaterial(courseId, subjectId, modalState.chapterId, null, {
                 type: 'topic',
                 title: title,
                 subtopics: []
@@ -280,7 +286,7 @@ export default function StudyMaterialEditor({ courseId, subjectId, chapters, isF
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         } finally {
             setIsLoading(false);
-            setIsAdding(null);
+            setModalState({ open: false, chapterId: null });
         }
     };
     
@@ -293,13 +299,14 @@ export default function StudyMaterialEditor({ courseId, subjectId, chapters, isF
     }
 
     return (
-        <Accordion type="multiple" className="w-full space-y-4">
+       <>
+         <Accordion type="multiple" className="w-full space-y-4">
             {chapters.map(chapter => (
                 <AccordionItem key={chapter.id} value={chapter.id} className="border rounded-lg p-4 bg-card">
                     <div className="flex items-center justify-between w-full">
                         <AccordionTrigger className="text-lg font-bold hover:no-underline">{chapter.title}</AccordionTrigger>
                         {isFaculty && (
-                            <Button size="sm" variant="outline" onClick={() => setIsAdding(chapter.id)}>
+                            <Button size="sm" variant="outline" onClick={() => setModalState({ open: true, chapterId: chapter.id })}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Topic
                             </Button>
                         )}
@@ -322,14 +329,15 @@ export default function StudyMaterialEditor({ courseId, subjectId, chapters, isF
                            )}
                         </div>
                     </AccordionContent>
-                    <MaterialFormDialog 
-                        isOpen={isAdding === chapter.id} 
-                        onOpenChange={() => setIsAdding(null)} 
-                        onSubmit={(title) => handleAdd(chapter.id, title)}
-                        type="topic"
-                    />
                 </AccordionItem>
             ))}
         </Accordion>
+         <MaterialFormDialog 
+            isOpen={modalState.open} 
+            onOpenChange={() => setModalState({ open: false, chapterId: null })} 
+            onSubmit={handleAdd}
+            type="topic"
+        />
+       </>
     );
 }
