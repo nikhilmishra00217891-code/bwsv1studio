@@ -5,7 +5,7 @@ import type { Course, Subject } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState, useMemo, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, updateCourse } from "@/lib/data";
+import { deleteCourse, updateCourse, isUserEnrolled } from "@/lib/data";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,7 @@ import {
   Workflow,
   X,
   IndianRupee,
+  LogIn,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -78,6 +79,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   const [textContent, setTextContent] = useState<Record<string, string>>({});
   const { user, userProfile, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
   const { isEditMode, setIsEditMode } = useEditMode();
   const { toast } = useToast();
   const router = useRouter();
@@ -94,7 +96,12 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
 
   useEffect(() => {
     setIsCurrentUserFaculty(userProfile?.role === 'faculty');
-  }, [userProfile]);
+     if (user) {
+      isUserEnrolled(user.uid, course.id).then(setIsEnrolled);
+    } else {
+      setIsEnrolled(false);
+    }
+  }, [userProfile, user, course.id]);
 
   const handleSaveText = async (contentId: string, value: string) => {
     await saveTextContent(contentId, value);
@@ -314,6 +321,27 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     )
   }
 
+  const CourseActionButton = () => {
+    if (isCurrentUserFaculty || isEnrolled) {
+      return (
+        <Button size="lg" className="w-full !h-14 text-lg" asChild>
+          <Link href={`/courses/${course.id}/learnzone`}>
+            <PlayCircle className="mr-2 h-6 w-6" /> Go to Course
+          </Link>
+        </Button>
+      );
+    }
+
+    return (
+      <Button size="lg" className="w-full !h-14 text-lg" asChild>
+        <Link href={`/courses/${course.id}/checkout`}>
+          <LogIn className="mr-2 h-6 w-6" /> Enroll Now
+        </Link>
+      </Button>
+    );
+  };
+
+
   const CourseOverview = ({ course }: { course: Course }) => {
     const handleBadgeSave = (index: number) => (contentId: string, value: string) => {
         const newTags = [...(course.tags || [])];
@@ -367,11 +395,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
           </div>
           <div className="space-y-4">
               <CourseVideo course={course} />
-               <Button size="lg" className="w-full !h-14 text-lg" asChild>
-                  <Link href={`/courses/${course.id}/learnzone`}>
-                    <PlayCircle className="mr-2 h-6 w-6" /> Go to Course
-                  </Link>
-              </Button>
+               <CourseActionButton />
           </div>
       </div>
     )

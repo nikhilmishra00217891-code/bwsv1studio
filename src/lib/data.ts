@@ -2,7 +2,7 @@
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion, writeBatch, limit } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> => {
@@ -332,70 +332,4 @@ export const listenForLiveChatMessages = (
     });
 
     return unsubscribe;
-};
-
-export const endLiveSession = async (
-  courseId: string,
-  subjectId: string,
-  chapterId: string,
-  lessonId: string
-): Promise<{success: boolean, message: string}> => {
-  const courseRef = doc(db, "courses", courseId);
-  try {
-    const courseSnap = await getDoc(courseRef);
-    if (!courseSnap.exists()) {
-      throw new Error("Course not found");
-    }
-
-    const courseData = courseSnap.data() as Course;
-    
-    let lessonUpdated = false;
-
-    const updatedSubjects = courseData.subjects.map(subject => {
-        if (subject.id === subjectId) {
-            return {
-                ...subject,
-                chapters: subject.chapters.map(chapter => {
-                    if (chapter.id === chapterId) {
-                        return {
-                            ...chapter,
-                            lessons: chapter.lessons.map(lesson => {
-                                if (lesson.id === lessonId) {
-                                    lessonUpdated = true;
-                                    return { ...lesson, status: 'recorded' };
-                                }
-                                return lesson;
-                            })
-                        }
-                    }
-                    return chapter;
-                })
-            };
-        }
-        return subject;
-    });
-
-    if (!lessonUpdated) {
-        throw new Error("Lesson not found within the specified course/subject/chapter.");
-    }
-
-    // This is a fire-and-forget operation. We don't wait for it to complete
-    // to avoid slowing down the admin's action. Errors are logged on the server.
-    const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
-    getDocs(chatColRef).then(snapshot => {
-      if (!snapshot.empty) {
-        const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        batch.commit().catch(err => console.error(`Failed to delete chat history for lesson ${lessonId}:`, err));
-      }
-    });
-
-    await updateDoc(courseRef, { subjects: updatedSubjects });
-    return { success: true, message: "Session ended successfully." };
-  } catch (error: any) {
-    console.error("Error ending session:", error);
-    return { success: false, message: error.message || "An unknown error occurred." };
-  }
 };
