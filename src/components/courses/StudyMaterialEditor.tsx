@@ -30,8 +30,16 @@ const MaterialFormDialog = ({
     initialData?: Partial<StudyMaterial>;
     type: 'topic' | 'link';
 }) => {
-    const [title, setTitle] = useState(initialData?.title || '');
-    const [url, setUrl] = useState(initialData?.url || '');
+    const [title, setTitle] = useState('');
+    const [url, setUrl] = useState('');
+    
+    React.useEffect(() => {
+        setTitle(initialData?.title || '');
+        if (type === 'link' && initialData?.url) {
+            setUrl(initialData.url);
+        }
+    }, [initialData, type, isOpen]);
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -81,7 +89,7 @@ const MaterialNode = ({
     onUpdate: () => void;
 }) => {
     const { toast } = useToast();
-    const [modalState, setModalState] = useState<{ open: boolean; type: 'topic' | 'link'; mode: 'add' | 'edit' }>({ open: false, type: 'topic', mode: 'add' });
+    const [modalState, setModalState] = useState<{ open: boolean; type: 'topic' | 'link'; mode: 'add' | 'edit', initialData?: Partial<StudyMaterial> }>({ open: false, type: 'topic', mode: 'add' });
     const [isLoading, setIsLoading] = useState(false);
     
     const handleAdd = async (title: string, url?: string) => {
@@ -137,7 +145,7 @@ const MaterialNode = ({
                 <a href={material.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline flex-grow truncate">{material.title}</a>
                 {isFaculty && (
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'edit' })}>
+                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'edit', initialData: material })}>
                             <Edit className="w-4 h-4" />
                          </Button>
                          <AlertDialog>
@@ -158,7 +166,7 @@ const MaterialNode = ({
                     </div>
                 )}
                 <MaterialFormDialog 
-                    isOpen={modalState.open && modalState.mode === 'edit'}
+                    isOpen={modalState.open && modalState.mode === 'edit' && material.type === 'link'}
                     onOpenChange={(open) => setModalState({ ...modalState, open, mode: 'edit' })}
                     onSubmit={handleEdit} 
                     initialData={material}
@@ -187,7 +195,7 @@ const MaterialNode = ({
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'add' })} title="Add Link">
                                 <LinkIcon className="w-4 h-4" />
                              </Button>
-                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'edit' })}>
+                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'edit', initialData: material })}>
                                 <Edit className="w-4 h-4" />
                              </Button>
                              <AlertDialog>
@@ -232,7 +240,7 @@ const MaterialNode = ({
                 type={modalState.type}
             />
             <MaterialFormDialog 
-                isOpen={modalState.open && modalState.mode === 'edit'}
+                isOpen={modalState.open && modalState.mode === 'edit' && material.type === 'topic'}
                 onOpenChange={(open) => setModalState({ ...modalState, open, mode: 'edit' })}
                 onSubmit={handleEdit}
                 initialData={material}
