@@ -92,6 +92,8 @@ export default function CheckoutPage() {
         )
     }
     
+    const coursePrice = typeof course.price === 'number' ? course.price : 0;
+    
     return (
         <div className="bg-card/50 min-h-screen py-20 md:py-28 animate-fade-in">
              <div className="container mx-auto px-6 max-w-2xl">
@@ -121,14 +123,14 @@ export default function CheckoutPage() {
                                 <span className="text-muted-foreground">Price</span>
                                 <span className="font-bold flex items-center gap-1">
                                     <IndianRupee className="w-5 h-5"/>
-                                    {course.price.toFixed(2)}
+                                    {coursePrice.toFixed(2)}
                                 </span>
                             </div>
                              <div className="flex justify-between items-center text-lg font-bold text-primary">
                                 <span>Total to Pay</span>
                                 <span className="flex items-center gap-1">
                                      <IndianRupee className="w-5 h-5"/>
-                                     {course.price.toFixed(2)}
+                                     {coursePrice.toFixed(2)}
                                 </span>
                             </div>
                         </div>
