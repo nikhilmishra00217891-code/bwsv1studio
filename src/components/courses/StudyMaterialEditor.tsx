@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import type { Chapter, StudyMaterial, StudyMaterialLink } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,24 +27,27 @@ const MaterialFormDialog = ({
 }: {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (titleOrUrl: string) => void;
+    onSubmit: (data: { title?: string, url?: string }) => void;
     initialData?: Partial<StudyMaterial>;
     type: 'topic' | 'link';
 }) => {
-    const [value, setValue] = useState('');
+    const [title, setTitle] = useState('');
+    const [url, setUrl] = useState('');
     
     React.useEffect(() => {
+        setTitle(initialData?.title || '');
         if (type === 'link') {
-            setValue((initialData as any)?.url || '');
-        } else {
-            setValue(initialData?.title || '');
+            setUrl((initialData as any)?.url || '');
         }
     }, [initialData, type, isOpen]);
 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(value);
+        onSubmit({ 
+            ...(type === 'topic' && { title }),
+            ...(type === 'link' && { title, url })
+        });
     };
     
     const isLink = type === 'link';
@@ -54,15 +57,18 @@ const MaterialFormDialog = ({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} {isLink ? 'Link' : 'Topic'}</DialogTitle>
-                     <DialogDescription>
-                        {isLink ? "Paste the URL of the resource. The title and details will be fetched automatically." : "Provide a title for the new topic folder."}
-                    </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <Label htmlFor="material-value">{isLink ? 'URL' : 'Title'}</Label>
-                        <Input id="material-value" value={value} onChange={(e) => setValue(e.target.value)} required placeholder={isLink ? 'https://docs.google.com/...' : ''}/>
+                        <Label htmlFor="material-title">Title</Label>
+                        <Input id="material-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
                     </div>
+                     {isLink && (
+                        <div>
+                            <Label htmlFor="material-url">URL</Label>
+                            <Input id="material-url" value={url} onChange={(e) => setUrl(e.target.value)} required placeholder="https://docs.google.com/..."/>
+                        </div>
+                    )}
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                         <Button type="submit">Save</Button>
@@ -92,12 +98,12 @@ const MaterialNode = ({
     const [modalState, setModalState] = useState<{ open: boolean; type: 'topic' | 'link'; mode: 'add' | 'edit', parentId: string | null, initialData?: Partial<StudyMaterial> }>({ open: false, type: 'topic', mode: 'add', parentId: null });
     const [isLoading, setIsLoading] = useState(false);
     
-    const handleAdd = async (value: string) => {
+    const handleAdd = async (data: {title?: string, url?: string}) => {
         setIsLoading(true);
         try {
             const itemData: Omit<StudyMaterial, 'id'> = modalState.type === 'link' 
-                ? { type: 'link', url: value, title: '' } // Title will be fetched by backend
-                : { type: 'topic', title: value, subtopics: [] };
+                ? { type: 'link', url: data.url!, title: data.title! }
+                : { type: 'topic', title: data.title!, subtopics: [] };
 
             await addStudyMaterial(courseId, subjectId, chapterId, modalState.parentId, itemData);
             toast({ title: 'Material Added!' });
@@ -110,11 +116,11 @@ const MaterialNode = ({
         }
     };
     
-    const handleEdit = async (title: string) => {
+    const handleEdit = async (data: { title?: string, url?: string }) => {
         setIsLoading(true);
         try {
-            await updateStudyMaterial(courseId, subjectId, chapterId, { id: material.id, title });
-            toast({ title: 'Topic Updated!' });
+            await updateStudyMaterial(courseId, subjectId, chapterId, { id: material.id, title: data.title, url: data.url });
+            toast({ title: 'Material Updated!' });
             onUpdate();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -141,21 +147,10 @@ const MaterialNode = ({
         const link = material as StudyMaterialLink;
         return (
             <div className="flex items-center group gap-2 pl-2">
-                <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline flex-grow truncate">
-                    <Card className="flex items-center gap-3 p-2 hover:bg-muted transition-colors">
-                         {link.image ? (
-                             <Image src={link.image} alt={link.title} width={48} height={48} className="w-12 h-12 rounded-md object-cover"/>
-                         ) : (
-                             <div className="w-12 h-12 rounded-md bg-secondary flex items-center justify-center">
-                                 <LinkIcon className="h-6 w-6 text-muted-foreground" />
-                             </div>
-                         )}
-                         <div className="flex-grow overflow-hidden">
-                            <p className="font-semibold truncate">{link.title}</p>
-                            <p className="text-xs text-muted-foreground truncate">{link.description || link.siteName}</p>
-                         </div>
-                         <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0"/>
-                    </Card>
+                <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline flex-grow truncate flex items-center gap-2 p-2 hover:bg-muted rounded-md transition-colors">
+                    <LinkIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span>{link.title}</span>
+                    <ExternalLink className="h-3 h-3 text-muted-foreground shrink-0"/>
                 </a>
                 {isFaculty && (
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -267,13 +262,13 @@ export default function StudyMaterialEditor({ courseId, subjectId, chapters, isF
         router.refresh();
     }
     
-    const handleAdd = async (title: string) => {
+    const handleAdd = async (data: { title?: string, url?: string }) => {
         if (!modalState.chapterId) return;
         setIsLoading(true);
         try {
             await addStudyMaterial(courseId, subjectId, modalState.chapterId, null, {
                 type: 'topic',
-                title: title,
+                title: data.title!,
                 subtopics: []
             });
             toast({ title: 'Topic Added!' });
