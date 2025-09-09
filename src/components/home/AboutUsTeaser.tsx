@@ -11,7 +11,7 @@ export default function AboutUsTeaser() {
                 <div className="grid md:grid-cols-2 gap-12 items-center">
                     <div className="relative w-full h-80 rounded-lg overflow-hidden shadow-lg">
                         <Image
-                            src="https://i.postimg.cc/6pLg9pWJ/students-learning.png"
+                            src="https://placehold.co/600x400.png"
                             alt="A group of students learning together with a mentor"
                             fill
                             className="object-cover"

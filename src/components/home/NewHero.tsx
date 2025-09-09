@@ -37,7 +37,7 @@ export default function NewHero() {
                 </div>
                 <div className="relative w-full h-80 md:h-96">
                     <Image 
-                        src="https://i.postimg.cc/kG8f4k5K/DALL-E-2024-05-15-13-11-13-A-vibrant-and-inspiring-illustration-for-an-educational-platform-named-B.png"
+                        src="https://placehold.co/800x600.png"
                         alt="An inspiring illustration of a student learning with a mentor"
                         fill
                         className="object-contain"
