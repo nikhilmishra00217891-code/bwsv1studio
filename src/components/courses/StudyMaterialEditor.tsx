@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from 'react';
 import { useState } from 'react';
 import type { Chapter, StudyMaterial } from '@/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
