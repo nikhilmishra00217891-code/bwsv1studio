@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from 'react';
@@ -10,54 +9,42 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlusCircle, FileText, Folder, Link as LinkIcon, Edit, Trash2, LoaderCircle } from 'lucide-react';
+import { PlusCircle, FileText, Folder, Link as LinkIcon, Edit, Trash2, LoaderCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addStudyMaterial, updateStudyMaterial, deleteStudyMaterial } from '@/lib/data/courses';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogDescription as AlertDialogDescriptionComponent } from '@/components/ui/alert-dialog';
 
-type MaterialItem = {
-    type: 'topic' | 'link';
-    title: string;
-    url?: string;
-};
 
 const MaterialFormDialog = ({
     isOpen,
     onOpenChange,
     onSubmit,
     initialData,
+    type,
 }: {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onSubmit: (data: MaterialItem) => void;
-    initialData?: MaterialItem & { id?: string };
+    onSubmit: (title: string, url?: string) => void;
+    initialData?: Partial<StudyMaterial>;
+    type: 'topic' | 'link';
 }) => {
-    const [type, setType] = useState<'topic' | 'link'>(initialData?.type || 'topic');
     const [title, setTitle] = useState(initialData?.title || '');
     const [url, setUrl] = useState(initialData?.url || '');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit({ type, title, url: type === 'link' ? url : undefined });
+        onSubmit(title, type === 'link' ? url : undefined);
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} Study Material</DialogTitle>
-                    <DialogDescription>Add a new topic or a link to a resource.</DialogDescription>
+                    <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} {type === 'topic' ? 'Topic' : 'Link'}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="flex gap-2">
-                        <Button type="button" variant={type === 'topic' ? 'default' : 'outline'} onClick={() => setType('topic')} className="w-full">
-                            <Folder className="mr-2 h-4 w-4" /> Topic
-                        </Button>
-                        <Button type="button" variant={type === 'link' ? 'default' : 'outline'} onClick={() => setType('link')} className="w-full">
-                            <LinkIcon className="mr-2 h-4 w-4" /> Link
-                        </Button>
-                    </div>
                     <div>
                         <Label htmlFor="title">Title</Label>
                         <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -94,35 +81,39 @@ const MaterialNode = ({
     onUpdate: () => void;
 }) => {
     const { toast } = useToast();
-    const [isAdding, setIsAdding] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
+    const [modalState, setModalState] = useState<{ open: boolean; type: 'topic' | 'link'; mode: 'add' | 'edit' }>({ open: false, type: 'topic', mode: 'add' });
     const [isLoading, setIsLoading] = useState(false);
     
-    const handleAdd = async (data: MaterialItem) => {
+    const handleAdd = async (title: string, url?: string) => {
         setIsLoading(true);
         try {
-            await addStudyMaterial(courseId, subjectId, chapterId, material.id, data);
+            await addStudyMaterial(courseId, subjectId, chapterId, material.id, {
+                type: modalState.type,
+                title,
+                url,
+                subtopics: modalState.type === 'topic' ? [] : undefined,
+            });
             toast({ title: 'Material Added!' });
             onUpdate();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         } finally {
             setIsLoading(false);
-            setIsAdding(false);
+            setModalState({ open: false, type: 'topic', mode: 'add' });
         }
     };
     
-    const handleEdit = async (data: MaterialItem) => {
+    const handleEdit = async (title: string, url?: string) => {
         setIsLoading(true);
-         try {
-            await updateStudyMaterial(courseId, subjectId, chapterId, { ...data, id: material.id });
+        try {
+            await updateStudyMaterial(courseId, subjectId, chapterId, { id: material.id, title, url });
             toast({ title: 'Material Updated!' });
             onUpdate();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         } finally {
             setIsLoading(false);
-            setIsEditing(false);
+            setModalState({ open: false, type: 'topic', mode: 'edit' });
         }
     }
     
@@ -141,55 +132,84 @@ const MaterialNode = ({
 
     if (material.type === 'link') {
         return (
-            <div className="flex items-center group gap-2">
-                <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                <a href={material.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline flex-grow">{material.title}</a>
+            <div className="flex items-center group gap-2 p-2 rounded-md hover:bg-muted">
+                <LinkIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <a href={material.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline flex-grow truncate">{material.title}</a>
                 {isFaculty && (
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsEditing(true)}>
-                            {isLoading ? <LoaderCircle className="animate-spin w-4 h-4"/> : <Edit className="w-4 h-4" />}
+                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'edit' })}>
+                            <Edit className="w-4 h-4" />
                          </Button>
-                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDelete}>
-                            {isLoading ? <LoaderCircle className="animate-spin w-4 h-4"/> : <Trash2 className="w-4 h-4 text-destructive" />}
-                         </Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLoading}>
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
+                                <AlertDialogDescriptionComponent>This cannot be undone.</AlertDialogDescriptionComponent>
+                                <AlertDialogFooterComponent>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                                </AlertDialogFooterComponent>
+                            </AlertDialogContent>
+                         </AlertDialog>
                     </div>
                 )}
-                 {isEditing && (
-                    <MaterialFormDialog 
-                        isOpen={isEditing} 
-                        onOpenChange={setIsEditing} 
-                        onSubmit={handleEdit} 
-                        initialData={material} 
-                    />
-                 )}
+                <MaterialFormDialog 
+                    isOpen={modalState.open && modalState.mode === 'edit'}
+                    onOpenChange={(open) => setModalState({ ...modalState, open, mode: 'edit' })}
+                    onSubmit={handleEdit} 
+                    initialData={material}
+                    type="link"
+                />
             </div>
         )
     }
 
+    // It's a topic
     return (
         <Accordion type="single" collapsible className="w-full">
             <AccordionItem value={material.id} className="border-none">
-                <div className="flex items-center group">
+                <div className="flex items-center group p-2 rounded-md hover:bg-muted">
                     <AccordionTrigger className="p-0 hover:no-underline flex-grow">
                         <div className="flex items-center gap-2">
-                            <Folder className="h-4 w-4 text-muted-foreground" />
+                            <Folder className="h-4 w-4 text-muted-foreground shrink-0" />
                             <span className="text-sm font-semibold">{material.title}</span>
                         </div>
                     </AccordionTrigger>
                     {isFaculty && (
                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsAdding(true)}><PlusCircle className="w-4 h-4"/></Button>
-                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsEditing(true)}>
-                                {isLoading ? <LoaderCircle className="animate-spin w-4 h-4"/> : <Edit className="w-4 h-4" />}
+                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'add' })} title="Add Sub-Topic">
+                                <Folder className="w-4 h-4"/><PlusCircle className="w-2.5 h-2.5 absolute bottom-0 right-0"/>
                              </Button>
-                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDelete}>
-                                 {isLoading ? <LoaderCircle className="animate-spin w-4 h-4"/> : <Trash2 className="w-4 h-4 text-destructive" />}
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'link', mode: 'add' })} title="Add Link">
+                                <LinkIcon className="w-4 h-4" />
                              </Button>
+                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setModalState({ open: true, type: 'topic', mode: 'edit' })}>
+                                <Edit className="w-4 h-4" />
+                             </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLoading}>
+                                        <Trash2 className="w-4 h-4 text-destructive" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle></AlertDialogHeader>
+                                    <AlertDialogDescriptionComponent>This will delete the topic and all its contents. This cannot be undone.</AlertDialogDescriptionComponent>
+                                    <AlertDialogFooterComponent>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                                    </AlertDialogFooterComponent>
+                                </AlertDialog>
+                            </AlertDialog>
                          </div>
                      )}
                 </div>
-                <AccordionContent className="pl-6 border-l-2 ml-2 mt-2 space-y-2">
-                    {material.subtopics.map(sub => (
+                <AccordionContent className="pl-6 border-l-2 ml-2 mt-2 space-y-1">
+                    {(material.subtopics || []).map(sub => (
                         <MaterialNode 
                             key={sub.id} 
                             material={sub} 
@@ -200,22 +220,24 @@ const MaterialNode = ({
                             onUpdate={onUpdate}
                         />
                     ))}
-                    {material.subtopics.length === 0 && (
-                        <p className="text-xs text-muted-foreground italic">No materials in this topic yet.</p>
+                    {(material.subtopics || []).length === 0 && (
+                        <p className="text-xs text-muted-foreground italic pl-2">No materials in this topic yet.</p>
                     )}
                 </AccordionContent>
             </AccordionItem>
-            {isAdding && (
-                <MaterialFormDialog isOpen={isAdding} onOpenChange={setIsAdding} onSubmit={handleAdd} />
-            )}
-             {isEditing && (
-                <MaterialFormDialog 
-                    isOpen={isEditing} 
-                    onOpenChange={setIsEditing} 
-                    onSubmit={handleEdit} 
-                    initialData={material} 
-                />
-            )}
+            <MaterialFormDialog 
+                isOpen={modalState.open && modalState.mode === 'add'} 
+                onOpenChange={(open) => setModalState({ ...modalState, open })} 
+                onSubmit={handleAdd}
+                type={modalState.type}
+            />
+            <MaterialFormDialog 
+                isOpen={modalState.open && modalState.mode === 'edit'}
+                onOpenChange={(open) => setModalState({ ...modalState, open, mode: 'edit' })}
+                onSubmit={handleEdit}
+                initialData={material}
+                type="topic"
+            />
         </Accordion>
     )
 };
@@ -231,11 +253,15 @@ export default function StudyMaterialEditor({ courseId, subjectId, chapters, isF
         router.refresh();
     }
     
-    const handleAdd = async (chapterId: string, data: MaterialItem) => {
+    const handleAdd = async (chapterId: string, title: string) => {
         setIsLoading(true);
         try {
-            await addStudyMaterial(courseId, subjectId, chapterId, null, data);
-            toast({ title: 'Material Added!' });
+            await addStudyMaterial(courseId, subjectId, chapterId, null, {
+                type: 'topic',
+                title: title,
+                subtopics: []
+            });
+            toast({ title: 'Topic Added!' });
             forceRerender();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -261,7 +287,7 @@ export default function StudyMaterialEditor({ courseId, subjectId, chapters, isF
                         <AccordionTrigger className="text-lg font-bold hover:no-underline">{chapter.title}</AccordionTrigger>
                         {isFaculty && (
                             <Button size="sm" variant="outline" onClick={() => setIsAdding(chapter.id)}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Material
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Topic
                             </Button>
                         )}
                     </div>
@@ -287,7 +313,8 @@ export default function StudyMaterialEditor({ courseId, subjectId, chapters, isF
                         <MaterialFormDialog 
                             isOpen={isAdding === chapter.id} 
                             onOpenChange={() => setIsAdding(null)} 
-                            onSubmit={(data) => handleAdd(chapter.id, data)}
+                            onSubmit={(title) => handleAdd(chapter.id, title)}
+                            type="topic"
                         />
                     )}
                 </AccordionItem>
@@ -295,4 +322,3 @@ export default function StudyMaterialEditor({ courseId, subjectId, chapters, isF
         </Accordion>
     );
 }
-
