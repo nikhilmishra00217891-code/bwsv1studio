@@ -6,7 +6,7 @@ import type { Course } from "@/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
-import { CircleUserRound, EyeOff, Star } from "lucide-react";
+import { CircleUserRound, EyeOff, Star, IndianRupee } from "lucide-react";
 import { cn } from '@/lib/utils';
 
 // Updated to link to the new dynamic course pages
@@ -32,6 +32,7 @@ const CourseCard = ({ course, isFaculty }: { course: Course, isFaculty: boolean 
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <Badge variant="secondary" className="w-fit">{course.category}</Badge>
+                                <Badge variant="outline" className="w-fit">{course.grade}</Badge>
                                 {!course.isActive && isFaculty && (
                                     <Badge variant="destructive" className="flex items-center gap-1">
                                         <EyeOff className="w-3 h-3"/> Inactive
@@ -40,11 +41,18 @@ const CourseCard = ({ course, isFaculty }: { course: Course, isFaculty: boolean 
                             </div>
                             <h3 className="text-xl font-bold font-headline mb-2 group-hover:text-primary transition-colors">{course.title}</h3>
                         </div>
-                         {course.isFree && (
-                            <Badge className="bg-accent text-accent-foreground ml-4 shrink-0">
-                                Free
-                            </Badge>
-                        )}
+                         <div className="ml-4 shrink-0">
+                            {course.price > 0 ? (
+                                <Badge className="text-base">
+                                    <IndianRupee className="w-4 h-4 mr-1"/>
+                                    {course.price}
+                                </Badge>
+                            ) : (
+                                <Badge className="text-base bg-accent text-accent-foreground">
+                                    Free
+                                </Badge>
+                            )}
+                         </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                         <CircleUserRound className="w-4 h-4" />

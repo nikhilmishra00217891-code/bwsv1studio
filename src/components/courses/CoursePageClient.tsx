@@ -38,6 +38,7 @@ import {
   PlusCircle,
   Workflow,
   X,
+  IndianRupee,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -216,9 +217,18 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
             <div className="md:col-span-2">
                  <EditableText onSave={(contentId, value) => handleSaveCourse({ category: value })} as="badge" contentId={`course_category_${course.id}`} defaultValue={course.category} />
-                <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">
+                 <EditableText onSave={(contentId, value) => handleSaveCourse({ grade: value })} as="badge" contentId={`course_grade_${course.id}`} defaultValue={course.grade} className="ml-2" />
+                <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in mt-2">
                    <EditableText onSave={(contentId, value) => handleSaveCourse({ title: value })} contentId={`course_title_${course.id}`} defaultValue={course.title} />
                 </h1>
+                 <div className="mt-4 text-2xl font-bold font-headline text-primary flex items-center gap-1">
+                    <IndianRupee className="w-6 h-6"/>
+                     <EditableText 
+                        onSave={(contentId, value) => handleSaveCourse({ price: Number(value) || 0 })} 
+                        contentId={`course_price_${course.id}`} 
+                        defaultValue={String(course.price)} 
+                     />
+                 </div>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_duration_${course.id}`} defaultValue={textContent[`course_duration_${course.id}`] || "8 hours total"} /></div>

@@ -5,7 +5,6 @@ import { db } from "./firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion, writeBatch, limit } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
-
 export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> => {
   const coursesCol = collection(db, "courses");
   
@@ -66,19 +65,29 @@ export const getCourseById = async (id: string): Promise<Course | null> => {
     }
 }
 
-export const createCourse = async (): Promise<string> => {
+interface CreateCourseData {
+    title: string;
+    category: string;
+    grade: string;
+    price: number;
+}
+
+export const createCourse = async ({ title, category, grade, price }: CreateCourseData): Promise<string> => {
   const coursesCol = collection(db, "courses");
-  const newCourseData: Partial<Course> = {
-    title: "New Course Title",
-    category: "New Category",
+  const newCourseData: Omit<Course, 'id'> = {
+    title: title || "New Course Title",
+    category: category || "New Category",
+    grade: grade || "Uncategorized",
+    price: price || 0,
     description: "A comprehensive introduction to the fundamental principles of this new course.",
     mentorName: "Prof. S. Verma",
     thumbnail: "https://placehold.co/600x400.png?text=New+Course",
-    isFree: true,
     isActive: false, // Inactive by default
     subjects: [],
+    lessons: [],
     youtubeLink: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     courseCompletionPercent: 0,
+    tags: ["New"],
   };
   const docRef = await addDoc(coursesCol, newCourseData);
   return docRef.id;

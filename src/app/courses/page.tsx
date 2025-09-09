@@ -10,17 +10,120 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, LoaderCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+const gradeOptions = ['6th', '7th', '8th', '9th', '10th', '11th', '12th', 'Competitive Exams'];
+
+const CreateCourseDialog = ({ onCourseCreated }: { onCourseCreated: (id: string) => void }) => {
+    const [title, setTitle] = useState('');
+    const [category, setCategory] = useState('');
+    const [grade, setGrade] = useState('');
+    const [price, setPrice] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const { toast } = useToast();
+
+    const handleCreateCourse = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!title.trim() || !category.trim() || !grade) {
+            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in all required fields.' });
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const newCourseId = await createCourse({ title, category, grade, price });
+            toast({
+                title: "Course Created!",
+                description: "Your new course placeholder is ready.",
+            });
+            onCourseCreated(newCourseId);
+            setIsOpen(false);
+        } catch (error) {
+            console.error("Failed to create course", error);
+            toast({
+                variant: "destructive",
+                title: "Creation Failed",
+                description: "Could not create the course.",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Create New Course
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <form onSubmit={handleCreateCourse}>
+                    <DialogHeader>
+                        <DialogTitle>Create a New Course</DialogTitle>
+                        <DialogDescription>
+                            Fill in the basic details for your new course. You can add more content later.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="title" className="text-right">Title</Label>
+                            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" required/>
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="category" className="text-right">Category</Label>
+                            <Input id="category" value={category} onChange={(e) => setCategory(e.target.value)} className="col-span-3" required placeholder="e.g., Physics, History"/>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="grade" className="text-right">Grade</Label>
+                            <Select value={grade} onValueChange={setGrade}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select a grade level" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {gradeOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                    <SelectItem value="Uncategorized">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="price" className="text-right">Price (₹)</Label>
+                            <Input id="price" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} className="col-span-3" placeholder="Enter 0 for a free course"/>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                        <Button type="submit" disabled={isLoading}>
+                            {isLoading ? <LoaderCircle className="animate-spin" /> : 'Create Course'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
   const [userIsFaculty, setUserIsFaculty] = useState(false);
 
   const { user, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
 
   useEffect(() => {
     // This effect handles data fetching and real-time updates.
@@ -42,24 +145,8 @@ export default function CoursesPage() {
     };
   }, [user, userProfile, authLoading]);
 
-  const handleCreateCourse = async () => {
-    setIsCreating(true);
-    try {
-      const newCourseId = await createCourse();
-      toast({
-        title: "Course Created!",
-        description: "Your new course placeholder is ready.",
-      });
+  const handleCourseCreated = (newCourseId: string) => {
       router.push(`/courses/${newCourseId}`);
-    } catch (error) {
-      console.error("Failed to create course", error);
-      toast({
-        variant: "destructive",
-        title: "Creation Failed",
-        description: "Could not create the course.",
-      });
-      setIsCreating(false);
-    }
   };
   
   if (loading || authLoading) {
@@ -80,19 +167,7 @@ export default function CoursesPage() {
           </p>
            {userIsFaculty && (
             <div className="mt-8">
-              <Button onClick={handleCreateCourse} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Create New Course
-                  </>
-                )}
-              </Button>
+              <CreateCourseDialog onCourseCreated={handleCourseCreated} />
             </div>
           )}
         </div>

@@ -38,7 +38,8 @@ export interface Course {
   id: string;
   title: string;
   category: string;
-  isFree: boolean;
+  grade: string;
+  price: number;
   thumbnail: string;
   mentorName: string;
   description: string;
