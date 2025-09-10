@@ -88,20 +88,26 @@ export default function AnnouncementSlider() {
         })
     }, [api])
 
-    const getAdSource = (contentIdPrefix: string) => {
-        let gradeToShow = 'general'; // Default for logged-out users
+    const getAdSource = (contentIdPrefix: string, defaultSrc: string) => {
+        const generalContentId = `${contentIdPrefix}_general`;
+        const generalAdUrl = textContent[generalContentId];
 
+        let gradeToShow = 'general';
         if (isEditMode) {
             gradeToShow = editingGrade.toLowerCase().replace(/\s+/g, '_');
         } else if (userProfile?.grade) {
             gradeToShow = userProfile.grade.toLowerCase().replace(/\s+/g, '_');
         }
-        
+
+        if (gradeToShow === 'general') {
+            return generalAdUrl || defaultSrc;
+        }
+
         const specificContentId = `${contentIdPrefix}_${gradeToShow}`;
-        const generalContentId = `${contentIdPrefix}_general`;
-        
-        // Return specific ad if it exists, otherwise fall back to general ad
-        return textContent[specificContentId] as string || textContent[generalContentId] as string;
+        const specificAdUrl = textContent[specificContentId];
+
+        // If a specific ad exists, show it. Otherwise, fall back to the general ad, then to the default.
+        return specificAdUrl || generalAdUrl || defaultSrc;
     }
     
     const contentIdForEditing = (contentIdPrefix: string) => {
@@ -128,7 +134,7 @@ export default function AnnouncementSlider() {
                         </Select>
                         <p className="text-xs text-muted-foreground mt-2">
                            {editingGrade === 'General' 
-                            ? "These ads are shown to logged-out users."
+                            ? "These ads are shown to logged-out users or users without a specific ad."
                             : `Editing ads for students in ${editingGrade}.`
                            }
                         </p>
@@ -154,7 +160,7 @@ export default function AnnouncementSlider() {
                                             <Link href={item.href} className="w-full h-full">
                                                 <EditableImage
                                                     contentId={contentIdForEditing(item.contentIdPrefix)}
-                                                    src={getAdSource(item.contentIdPrefix) || item.defaultSrc}
+                                                    src={getAdSource(item.contentIdPrefix, item.defaultSrc)}
                                                     alt={item.alt}
                                                     fill
                                                     className="object-cover transition-transform duration-300 group-hover:scale-105"
