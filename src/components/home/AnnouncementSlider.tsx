@@ -96,16 +96,19 @@ export default function AnnouncementSlider() {
             gradeToShow = userProfile.grade.toLowerCase().replace(/\s+/g, '_');
         }
 
+        // 1. Try to get the grade-specific ad
         const specificContentId = `${contentIdPrefix}_${gradeToShow}`;
         if (textContent[specificContentId]) {
-            return textContent[specificContentId];
+            return textContent[specificContentId] as string;
         }
 
+        // 2. Fallback to the general ad for THIS slide
         const generalContentId = `${contentIdPrefix}_general`;
         if (textContent[generalContentId]) {
-            return textContent[generalContentId];
+            return textContent[generalContentId] as string;
         }
 
+        // 3. Fallback to the default placeholder for THIS slide
         return defaultSrc;
     }
     
