@@ -18,7 +18,7 @@ export interface Lesson {
   content: string; // URL for video/pdf, or JSON for quiz
   notes?: string;
   status: 'live' | 'recorded' | 'scheduled';
-  scheduledTime?: Timestamp | null;
+  scheduledTime?: Timestamp | string | null;
 }
 
 export interface StudyMaterialLink {
