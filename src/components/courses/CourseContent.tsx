@@ -1,10 +1,9 @@
 
-
 "use client";
 
 import type { Course, Lesson, Subject, Chapter, LiveChatMessage } from "@/types";
 import { Button } from "../ui/button";
-import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye } from 'lucide-react';
+import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock } from 'lucide-react';
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardContent } from "../ui/card";
@@ -16,7 +15,7 @@ import { sendLiveChatMessage } from "@/lib/data/courses";
 import { useEffect, useRef, useState, FormEvent, useCallback } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { Input } from "../ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "../ui/badge";
@@ -302,8 +301,8 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
 }
 
 const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLessonClick: (lesson: Lesson) => void }) => {
-    const liveLessons = chapter.lessons.filter(l => l.status === 'live');
-    const recordedLessons = chapter.lessons.filter(l => l.status !== 'live');
+    const liveAndScheduledLessons = chapter.lessons.filter(l => l.status === 'live' || l.status === 'scheduled');
+    const recordedLessons = chapter.lessons.filter(l => l.status === 'recorded');
 
     return (
         <div className="p-4 md:p-8">
@@ -314,8 +313,8 @@ const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLesson
                 <TabsList>
                     <TabsTrigger value="recorded">Recorded ({recordedLessons.length})</TabsTrigger>
                      <TabsTrigger value="live" className="relative">
-                        Live ({liveLessons.length})
-                        {liveLessons.length > 0 && (
+                        Live & Upcoming ({liveAndScheduledLessons.length})
+                        {liveAndScheduledLessons.length > 0 && (
                             <div className="absolute -top-1 -right-1 flex h-4 w-4">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 justify-center items-center text-white text-[10px] font-bold">
@@ -344,15 +343,22 @@ const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLesson
                      )}
                  </TabsContent>
                  <TabsContent value="live" className="mt-6">
-                    {liveLessons.length > 0 ? (
+                    {liveAndScheduledLessons.length > 0 ? (
                         <div className="space-y-3">
-                            {liveLessons.map(lesson => (
+                            {liveAndScheduledLessons.map(lesson => (
                                 <button key={lesson.id} onClick={() => onLessonClick(lesson)} className="w-full text-left">
                                     <Card className="hover:bg-primary/5 hover:border-primary/40 transition-colors border-2 border-transparent ring-2 ring-red-500/50 shadow-lg shadow-red-500/10">
                                         <CardContent className="p-4 flex items-center gap-4">
                                             <Video className="w-6 h-6 text-primary"/>
-                                            <span className="font-semibold">{lesson.title}</span>
-                                            <Badge variant="destructive" className="ml-auto animate-pulse">LIVE</Badge>
+                                            <div>
+                                                <span className="font-semibold">{lesson.title}</span>
+                                                {lesson.status === 'scheduled' && lesson.scheduledTime && (
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3"/> {format(lesson.scheduledTime.toDate(), 'PPP p')}</p>
+                                                )}
+                                            </div>
+                                            <Badge variant="destructive" className="ml-auto animate-pulse">
+                                                {lesson.status === 'live' ? 'LIVE' : 'SCHEDULED'}
+                                            </Badge>
                                         </CardContent>
                                     </Card>
                                 </button>

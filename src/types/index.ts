@@ -1,5 +1,4 @@
 
-
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -18,7 +17,8 @@ export interface Lesson {
   duration: string; 
   content: string; // URL for video/pdf, or JSON for quiz
   notes?: string;
-  status: 'live' | 'recorded';
+  status: 'live' | 'recorded' | 'scheduled';
+  scheduledTime?: Timestamp | null;
 }
 
 export interface StudyMaterialLink {

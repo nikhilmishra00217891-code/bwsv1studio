@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { addSubject, deleteSubject, addChapter, deleteChapter, addLesson, deleteLesson } from "@/lib/data/courses";
-import { LoaderCircle, PlusCircle, Trash2, ArrowLeft, Video, BookText, Link as LinkIcon } from "lucide-react";
+import { LoaderCircle, PlusCircle, Trash2, ArrowLeft, Video, BookText, Link as LinkIcon, CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import {
     Accordion,
@@ -27,15 +27,118 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Timestamp } from "firebase/firestore";
+
+const ScheduleLessonDialog = ({
+    isOpen,
+    onOpenChange,
+    onSubmit,
+}: {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (title: string, url: string, scheduleTime: Date) => void;
+}) => {
+    const [title, setTitle] = useState('');
+    const [url, setUrl] = useState('');
+    const [date, setDate] = useState<Date | undefined>(new Date());
+    const [time, setTime] = useState('09:00'); // Default time
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!title || !url || !date) {
+            return;
+        }
+        const [hours, minutes] = time.split(':').map(Number);
+        const scheduleTime = new Date(date);
+        scheduleTime.setHours(hours, minutes);
+        onSubmit(title, url, scheduleTime);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Schedule a New Lesson</DialogTitle>
+                    <DialogDescription>
+                        Set the details for your upcoming live class. It will appear in the 'Live' tab for students.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <Label htmlFor="lesson-title">Lesson Title</Label>
+                        <Input id="lesson-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                    </div>
+                    <div>
+                        <Label htmlFor="lesson-url">YouTube Video/Live URL</Label>
+                        <Input id="lesson-url" value={url} onChange={(e) => setUrl(e.target.value)} required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label>Date</Label>
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                      "w-full justify-start text-left font-normal",
+                                      !date && "text-muted-foreground"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                  <Calendar
+                                    mode="single"
+                                    selected={date}
+                                    onSelect={setDate}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                        </div>
+                        <div>
+                            <Label>Time (IST)</Label>
+                            <Select value={time} onValueChange={setTime}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select time" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Array.from({ length: 48 }, (_, i) => {
+                                        const hour = String(Math.floor(i / 2)).padStart(2, '0');
+                                        const minute = i % 2 === 0 ? '00' : '30';
+                                        return `${hour}:${minute}`;
+                                    }).map(t => <SelectItem key={t} value={t}>{format(new Date(`1970-01-01T${t}:00`), 'p')}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button type="submit">Schedule Lesson</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 export default function CourseFlowEditorClient({ initialCourse }: { initialCourse: Course }) {
     const [course, setCourse] = useState(initialCourse);
     const [newSubjectTitle, setNewSubjectTitle] = useState("");
     const [newChapterTitles, setNewChapterTitles] = useState<Record<string, string>>({});
-    const [newLessonTitles, setNewLessonTitles] = useState<Record<string, string>>({});
-    const [newLessonUrls, setNewLessonUrls] = useState<Record<string, string>>({});
+    
+    const [isScheduling, setIsScheduling] = useState(false);
+    const [schedulingChapter, setSchedulingChapter] = useState<{ subjectId: string; chapterId: string } | null>(null);
+
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
 
@@ -93,21 +196,19 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
         });
     }
 
-     const handleAddLesson = (subjectId: string, chapterId: string) => {
-        const lessonTitle = (newLessonTitles[chapterId] || "").trim();
-        const lessonUrl = (newLessonUrls[chapterId] || "").trim();
-        if (!lessonTitle || !lessonUrl) {
-             toast({ variant: "destructive", title: "Missing Fields", description: "Please provide both a title and a URL for the lesson." });
-            return;
-        };
+     const handleScheduleLesson = (title: string, url: string, scheduleTime: Date) => {
+        if (!schedulingChapter) return;
+        
+        const { subjectId, chapterId } = schedulingChapter;
+        const scheduleTimestamp = Timestamp.fromDate(scheduleTime);
 
         startTransition(async () => {
             try {
-                const updatedCourse = await addLesson(course.id, subjectId, chapterId, lessonTitle, lessonUrl);
+                const updatedCourse = await addLesson(course.id, subjectId, chapterId, title, url, scheduleTimestamp);
                 setCourse(updatedCourse);
-                setNewLessonTitles(prev => ({ ...prev, [chapterId]: "" }));
-                setNewLessonUrls(prev => ({ ...prev, [chapterId]: "" }));
-                toast({ title: "Lesson Added!" });
+                setIsScheduling(false);
+                setSchedulingChapter(null);
+                toast({ title: "Lesson Scheduled!" });
             } catch (error: any) {
                 toast({ variant: 'destructive', title: 'Error', description: error.message });
             }
@@ -127,6 +228,7 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
     }
 
     return (
+        <>
         <div className="animate-fade-in p-4 md:p-8 space-y-6">
             <div className="flex items-center gap-4">
                  <Button asChild variant="outline" size="sm">
@@ -202,34 +304,9 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                                         </div>
                                                     ))}
                                                      <div className="p-4 border-dashed border rounded-md mt-4">
-                                                        <h5 className="font-semibold text-sm mb-2">Add New Lesson</h5>
-                                                        <div className="space-y-3">
-                                                            <div>
-                                                                <Label htmlFor={`lesson-title-${chapter.id}`} className="text-xs">Lesson Title</Label>
-                                                                <Input
-                                                                    id={`lesson-title-${chapter.id}`}
-                                                                    placeholder="e.g., Introduction to Kinematics"
-                                                                    value={newLessonTitles[chapter.id] || ""}
-                                                                    onChange={(e) => setNewLessonTitles(prev => ({ ...prev, [chapter.id]: e.target.value }))}
-                                                                    disabled={isPending}
-                                                                    className="h-8 text-sm"
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <Label htmlFor={`lesson-url-${chapter.id}`} className="text-xs">YouTube Video URL</Label>
-                                                                <Input
-                                                                    id={`lesson-url-${chapter.id}`}
-                                                                    placeholder="https://www.youtube.com/watch?v=..."
-                                                                    value={newLessonUrls[chapter.id] || ""}
-                                                                    onChange={(e) => setNewLessonUrls(prev => ({ ...prev, [chapter.id]: e.target.value }))}
-                                                                    disabled={isPending}
-                                                                    className="h-8 text-sm"
-                                                                />
-                                                            </div>
-                                                            <Button size="sm" className="w-full" onClick={() => handleAddLesson(subject.id, chapter.id)} disabled={isPending || !(newLessonTitles[chapter.id] || "").trim() || !(newLessonUrls[chapter.id] || "").trim()}>
-                                                                <PlusCircle className="w-4 h-4 mr-2" /> Add Lesson
-                                                            </Button>
-                                                        </div>
+                                                         <Button size="sm" className="w-full" onClick={() => { setIsScheduling(true); setSchedulingChapter({ subjectId: subject.id, chapterId: chapter.id })}} disabled={isPending}>
+                                                            <PlusCircle className="w-4 h-4 mr-2" /> Schedule New Lesson
+                                                        </Button>
                                                      </div>
                                                  </div>
                                             </AccordionContent>
@@ -273,5 +350,11 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                 </Card>
             </div>
         </div>
+        <ScheduleLessonDialog
+            isOpen={isScheduling}
+            onOpenChange={setIsScheduling}
+            onSubmit={handleScheduleLesson}
+        />
+        </>
     );
 }

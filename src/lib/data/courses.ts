@@ -1,5 +1,4 @@
 
-
 "use server";
 
 import { db } from "@/lib/firebase";
@@ -18,6 +17,7 @@ import {
   orderBy,
   onSnapshot,
   limit,
+  Timestamp,
 } from "firebase/firestore";
 import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial, StudyMaterialLink } from "@/types";
 import { getUrlMetadata } from "@/app/actions";
@@ -89,7 +89,7 @@ export const deleteChapter = async (courseId: string, subjectId: string, chapter
     return courseData;
 };
 
-export const addLesson = async (courseId: string, subjectId: string, chapterId: string, lessonTitle: string, lessonUrl: string): Promise<Course> => {
+export const addLesson = async (courseId: string, subjectId: string, chapterId: string, lessonTitle: string, lessonUrl: string, scheduleTime: Timestamp): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
     const courseSnap = await getDoc(courseRef);
     if (!courseSnap.exists()) throw new Error("Course not found");
@@ -107,7 +107,8 @@ export const addLesson = async (courseId: string, subjectId: string, chapterId: 
         type: 'video', 
         content: lessonUrl,
         duration: '0 min',
-        status: 'live',
+        status: 'scheduled',
+        scheduledTime: scheduleTime,
     };
 
     courseData.subjects[subjectIndex].chapters[chapterIndex].lessons.push(newLesson);
@@ -296,3 +297,40 @@ export const updateStudyMaterial = async (
     await updateDoc(courseRef, { subjects: courseData.subjects });
     return courseData;
 }
+
+// Moves a lesson from 'scheduled' or 'live' to 'recorded'
+export const endLiveSession = async (
+    courseId: string,
+    subjectId: string,
+    chapterId: string,
+    lessonId: string
+): Promise<{success: boolean, message: string}> => {
+    const courseRef = doc(db, 'courses', courseId);
+    
+    try {
+        const courseSnap = await getDoc(courseRef);
+        if (!courseSnap.exists()) {
+            throw new Error("Course not found.");
+        }
+
+        const courseData = courseSnap.data() as Course;
+        const subjectIndex = courseData.subjects.findIndex(s => s.id === subjectId);
+        if (subjectIndex === -1) throw new Error("Subject not found.");
+        
+        const chapterIndex = courseData.subjects[subjectIndex].chapters.findIndex(c => c.id === chapterId);
+        if (chapterIndex === -1) throw new Error("Chapter not found.");
+
+        const lessonIndex = courseData.subjects[subjectIndex].chapters[chapterIndex].lessons.findIndex(l => l.id === lessonId);
+        if (lessonIndex === -1) throw new Error("Lesson not found.");
+        
+        courseData.subjects[subjectIndex].chapters[chapterIndex].lessons[lessonIndex].status = 'recorded';
+        courseData.subjects[subjectIndex].chapters[chapterIndex].lessons[lessonIndex].scheduledTime = null; // Clear scheduled time
+        
+        await updateDoc(courseRef, { subjects: courseData.subjects });
+
+        return { success: true, message: "Session ended successfully." };
+    } catch (error: any) {
+        console.error("Error ending session: ", error);
+        return { success: false, message: error.message || "An unknown error occurred." };
+    }
+};
