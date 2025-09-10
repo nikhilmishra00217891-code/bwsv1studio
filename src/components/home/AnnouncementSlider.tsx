@@ -27,7 +27,7 @@ const initialAnnouncements = [
     {
         id: 1,
         contentIdPrefix: "announcement_1",
-        defaultSrc: 'https://i.postimg.cc/kX2yL1B4/Parivartan-Ad-Banner.png',
+        defaultSrc: 'https://placehold.co/1280x720.png',
         alt: 'Special Offer Announcement',
         href: '#',
         "data-ai-hint": "special offer"
@@ -96,35 +96,6 @@ export default function AnnouncementSlider() {
         })
     }, [api])
 
-    const getAdSource = (item: typeof initialAnnouncements[0]): string => {
-        let gradeToShow = 'general';
-        
-        if (isEditMode) {
-            gradeToShow = editingGrade.toLowerCase().replace(/\s+/g, '_');
-        } else if (userProfile?.grade) {
-            gradeToShow = userProfile.grade.toLowerCase().replace(/\s+/g, '_');
-        } else if (!userProfile) {
-            gradeToShow = 'general';
-        }
-        
-        const specificContentId = `${item.contentIdPrefix}_${gradeToShow}`;
-        if (textContent[specificContentId]) {
-            return textContent[specificContentId] as string;
-        }
-
-        const generalContentId = `${item.contentIdPrefix}_general`;
-        if (textContent[generalContentId]) {
-            return textContent[generalContentId] as string;
-        }
-
-        return item.defaultSrc;
-    }
-
-    const contentIdForEditing = (contentIdPrefix: string) => {
-        const gradeSlug = editingGrade.toLowerCase().replace(/\s+/g, '_');
-        return `${contentIdPrefix}_${gradeSlug}`;
-    }
-
     const handleBulkRemove = (scope: 'currentGrade' | 'all') => {
         startTransition(async () => {
             const gradeSlug = scope === 'currentGrade' ? editingGrade.toLowerCase().replace(/\s+/g, '_') : 'all';
@@ -141,12 +112,30 @@ export default function AnnouncementSlider() {
     }
 
     const ImageContent = ({ item }: { item: typeof initialAnnouncements[0] }) => {
-       const finalSrc = getAdSource(item);
-       const finalContentId = contentIdForEditing(item.contentIdPrefix);
+        const getAdSource = (): string => {
+            const gradeToCheck = isEditMode
+                ? editingGrade
+                : userProfile?.grade || 'General';
+
+            const gradeSlug = gradeToCheck.toLowerCase().replace(/\s+/g, '_');
+            const generalSlug = 'general';
+
+            const specificContentId = `${item.contentIdPrefix}_${gradeSlug}`;
+            const generalContentId = `${item.contentIdPrefix}_${generalSlug}`;
+
+            return (
+                (textContent[specificContentId] as string) ||
+                (textContent[generalContentId] as string) ||
+                item.defaultSrc
+            );
+        };
+        
+        const finalSrc = getAdSource();
+        const contentIdForEditing = `${item.contentIdPrefix}_${editingGrade.toLowerCase().replace(/\s+/g, '_')}`;
 
        return (
             <EditableImage
-                contentId={finalContentId}
+                contentId={contentIdForEditing}
                 src={finalSrc}
                 alt={item.alt}
                 fill
