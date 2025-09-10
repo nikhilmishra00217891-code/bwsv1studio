@@ -2,7 +2,7 @@
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion, limit } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> => {
