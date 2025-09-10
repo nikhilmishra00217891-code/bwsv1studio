@@ -6,13 +6,13 @@ import Image from 'next/image';
 import { useEditMode } from './EditModeProvider';
 import { Button } from '../ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription as DialogDescriptionComponent } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { saveTextContent } from '@/lib/data/content';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 
 
 interface EditableImageProps extends React.ComponentProps<typeof Image> {
@@ -90,9 +90,9 @@ export function EditableImage(props: EditableImageProps) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Update Image URL</DialogTitle>
-              <DialogDescription>
+              <DialogDescriptionComponent>
                 Paste a new URL from an image hosting service like postimg.cc.
-              </DialogDescription>
+              </DialogDescriptionComponent>
             </DialogHeader>
             <div className="space-y-2">
               <Label htmlFor="imageUrl">Image URL</Label>
