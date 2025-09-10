@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useTransition, useCallback } from 'react';
-import { getCourses } from '@/lib/data/courses';
+import { getCourses } from '@/lib/data';
 import { updateLesson, deleteLesson, endLiveSession } from '@/lib/data/courses';
 import type { Course, Lesson } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,8 +82,8 @@ export default function LiveSessionsPage() {
 
         // Sort scheduled sessions by time
         upcomingSessions.sort((a,b) => {
-            const timeA = a.scheduledTime ? (a.scheduledTime.seconds * 1000) : 0;
-            const timeB = b.scheduledTime ? (b.scheduledTime.seconds * 1000) : 0;
+            const timeA = a.scheduledTime?.seconds ? (a.scheduledTime.seconds * 1000) : 0;
+            const timeB = b.scheduledTime?.seconds ? (b.scheduledTime.seconds * 1000) : 0;
             return timeA - timeB;
         });
 
@@ -133,6 +133,16 @@ export default function LiveSessionsPage() {
             }
         });
     }
+    
+    const getSessionDate = (session: Session) => {
+        if (!session.scheduledTime) return 'N/A';
+        // Check if it's a Firestore Timestamp-like object
+        if (session.scheduledTime.seconds) {
+            return new Date(session.scheduledTime.seconds * 1000);
+        }
+        // Check if it's an ISO string or Date object
+        return new Date(session.scheduledTime as any);
+    }
 
     const renderTable = (sessions: Session[], isLiveTable: boolean) => (
          <Table>
@@ -158,7 +168,7 @@ export default function LiveSessionsPage() {
                         <TableCell>{item.subjectTitle}</TableCell>
                         {isLiveTable ? null : (
                             <TableCell>
-                                {item.scheduledTime ? format(new Date(item.scheduledTime.seconds * 1000), 'PPP p') : 'N/A'}
+                                {item.scheduledTime ? format(getSessionDate(item), 'PPP p') : 'N/A'}
                             </TableCell>
                         )}
                         <TableCell className="text-right space-x-2">
