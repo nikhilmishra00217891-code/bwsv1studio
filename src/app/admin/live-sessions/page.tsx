@@ -2,8 +2,8 @@
 "use client";
 
 import { useEffect, useState, useTransition, useCallback } from 'react';
-import { getCourses, updateLesson, deleteLesson } from '@/lib/data';
-import { endLiveSession } from '@/lib/data';
+import { getCourses } from '@/lib/data';
+import { updateLesson, deleteLesson, endLiveSession } from '@/lib/data/courses';
 import type { Course, Lesson } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
