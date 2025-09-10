@@ -5,13 +5,15 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useEditMode } from './EditModeProvider';
 import { Button } from '../ui/button';
-import { Pencil } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { saveTextContent } from '@/lib/data/content';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+
 
 interface EditableImageProps extends React.ComponentProps<typeof Image> {
   contentId: string;
@@ -40,16 +42,17 @@ export function EditableImage(props: EditableImageProps) {
     setCurrentSrc(src);
   }, [src]);
 
-  const handleSave = async () => {
-    if (!newUrl) return;
+  const handleSave = async (urlToSave: string) => {
     try {
-      // More robust URL validation for saving
-      new URL(newUrl);
-      await saveTextContent(contentId, newUrl);
-      setCurrentSrc(newUrl);
+      // Allow saving an empty string to remove the URL
+      if(urlToSave) {
+        new URL(urlToSave);
+      }
+      await saveTextContent(contentId, urlToSave);
+      setCurrentSrc(urlToSave || props.src); // Fallback to original src if removed
       toast({
-        title: 'Image Updated!',
-        description: 'Your new image is now live.',
+        title: urlToSave ? 'Image Updated!' : 'Image Removed!',
+        description: urlToSave ? 'Your new image is now live.' : 'The custom image has been removed.',
       });
       setIsDialogOpen(false);
     } catch (error) {
@@ -62,11 +65,15 @@ export function EditableImage(props: EditableImageProps) {
     }
   };
 
+  const handleRemove = () => {
+    handleSave('');
+  }
+
   if (isEditMode) {
     return (
       <>
         <div className={cn('relative group', className)}>
-          <Image src={currentSrc} alt={alt} className="transition-opacity group-hover:opacity-50" {...rest} />
+          <Image src={currentSrc as string} alt={alt} className="transition-opacity group-hover:opacity-50" {...rest} />
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               variant="secondary"
@@ -106,9 +113,28 @@ export function EditableImage(props: EditableImageProps) {
                     </div>
                 )}
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSave}>Save</Button>
+            <DialogFooter className="sm:justify-between">
+              <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4"/> Remove URL</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                              This will remove the custom URL for this ad slot and revert it to the default placeholder.
+                          </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooterComponent>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleRemove}>Yes, Remove</AlertDialogAction>
+                      </AlertDialogFooterComponent>
+                  </AlertDialogContent>
+              </AlertDialog>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                <Button onClick={() => handleSave(newUrl)}>Save</Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -116,5 +142,5 @@ export function EditableImage(props: EditableImageProps) {
     );
   }
 
-  return <Image src={currentSrc} alt={alt} className={className} {...rest} />;
+  return <Image src={currentSrc as string} alt={alt} className={className} {...rest} />;
 }

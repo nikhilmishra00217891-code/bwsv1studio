@@ -10,13 +10,18 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import Autoplay from "embla-carousel-autoplay";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { EditableImage } from "../common/EditableImage";
 import { useAuth } from "../auth/AuthProvider";
 import { useEditMode } from "../common/EditModeProvider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Label } from "../ui/label";
+import { Button } from "../ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { removeAdUrls } from "@/lib/data/content";
+import { LoaderCircle } from "lucide-react";
 
 const initialAnnouncements = [
     {
@@ -69,6 +74,9 @@ export default function AnnouncementSlider() {
     const [count, setCount] = useState(0)
     const { userProfile, textContent } = useAuth();
     const { isEditMode } = useEditMode();
+    const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
+
     const [editingGrade, setEditingGrade] = useState('General');
 
     const plugin = useRef(
@@ -95,21 +103,20 @@ export default function AnnouncementSlider() {
             gradeToShow = editingGrade.toLowerCase().replace(/\s+/g, '_');
         } else if (userProfile?.grade) {
             gradeToShow = userProfile.grade.toLowerCase().replace(/\s+/g, '_');
+        } else if (!userProfile) {
+            gradeToShow = 'general';
         }
         
-        // 1. Try to get the grade-specific ad
         const specificContentId = `${item.contentIdPrefix}_${gradeToShow}`;
         if (textContent[specificContentId]) {
             return textContent[specificContentId] as string;
         }
 
-        // 2. Fallback to the general ad for THIS slide
         const generalContentId = `${item.contentIdPrefix}_general`;
         if (textContent[generalContentId]) {
             return textContent[generalContentId] as string;
         }
 
-        // 3. Fallback to the default placeholder for THIS slide
         return item.defaultSrc;
     }
 
@@ -118,40 +125,97 @@ export default function AnnouncementSlider() {
         return `${contentIdPrefix}_${gradeSlug}`;
     }
 
-    const ImageContent = ({ item }: { item: typeof initialAnnouncements[0] }) => (
-        <EditableImage
-            contentId={contentIdForEditing(item.contentIdPrefix)}
-            src={getAdSource(item)}
-            alt={item.alt}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint={item['data-ai-hint']}
-        />
-    );
+    const handleBulkRemove = (scope: 'currentGrade' | 'all') => {
+        startTransition(async () => {
+            const gradeSlug = scope === 'currentGrade' ? editingGrade.toLowerCase().replace(/\s+/g, '_') : 'all';
+            const { success, message } = await removeAdUrls(gradeSlug);
+
+            if (success) {
+                toast({ title: 'URLs Removed!', description: 'The advertisement URLs have been cleared.'});
+                // A page refresh might be needed here to re-fetch content, or a more complex state update.
+                window.location.reload();
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: message });
+            }
+        });
+    }
+
+    const ImageContent = ({ item }: { item: typeof initialAnnouncements[0] }) => {
+       const finalSrc = getAdSource(item);
+       const finalContentId = contentIdForEditing(item.contentIdPrefix);
+
+       return (
+            <EditableImage
+                contentId={finalContentId}
+                src={finalSrc}
+                alt={item.alt}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                data-ai-hint={item['data-ai-hint']}
+            />
+       )
+    };
 
 
     return (
         <section className="container mx-auto px-6 -mt-16 md:-mt-24 mb-8">
             <div>
                  {isEditMode && (
-                     <Card className="p-4 mb-4 max-w-sm mx-auto">
-                        <Label htmlFor="grade-filter">Editing Ads For</Label>
-                        <Select value={editingGrade} onValueChange={setEditingGrade}>
-                            <SelectTrigger id="grade-filter">
-                                <SelectValue placeholder="Select Grade" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {gradeOptions.map(grade => (
-                                    <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground mt-2">
-                           {editingGrade === 'General' 
-                            ? "These ads are shown to logged-out users or users without a specific ad."
-                            : `Editing ads for students in ${editingGrade}.`
-                           }
-                        </p>
+                     <Card className="p-4 mb-4 max-w-lg mx-auto">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="grade-filter">Editing Ads For</Label>
+                                <Select value={editingGrade} onValueChange={setEditingGrade}>
+                                    <SelectTrigger id="grade-filter">
+                                        <SelectValue placeholder="Select Grade" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {gradeOptions.map(grade => (
+                                            <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                {editingGrade === 'General' 
+                                    ? "These ads are shown to logged-out users or users without a specific ad."
+                                    : `Editing ads for students in ${editingGrade}.`
+                                }
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Danger Zone</Label>
+                                 <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" className="w-full" disabled={isPending}>
+                                            {isPending ? <LoaderCircle className="animate-spin" /> : `Remove All for ${editingGrade}`}
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader>
+                                        <AlertDialogDescription>This will remove all ad URLs for the "{editingGrade}" grade across all slides.</AlertDialogDescription>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleBulkRemove('currentGrade')}>Confirm Remove</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" className="w-full" disabled={isPending}>
+                                            {isPending ? <LoaderCircle className="animate-spin" /> : "Remove Every URL"}
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>DANGER: Are you absolutely sure?</AlertDialogTitle></AlertDialogHeader>
+                                        <AlertDialogDescription>This will remove ALL custom ad URLs for EVERY grade and reset the entire slider to default placeholders. This cannot be undone.</AlertDialogDescription>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleBulkRemove('all')}>Yes, Remove Everything</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </div>
                     </Card>
                  )}
                  <Carousel
