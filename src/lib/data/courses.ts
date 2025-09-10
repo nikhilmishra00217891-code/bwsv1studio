@@ -89,7 +89,7 @@ export const deleteChapter = async (courseId: string, subjectId: string, chapter
     return courseData;
 };
 
-export const addLesson = async (courseId: string, subjectId: string, chapterId: string, lessonTitle: string, lessonUrl: string, scheduleTime: Timestamp): Promise<Course> => {
+export const addLesson = async (courseId: string, subjectId: string, chapterId: string, lessonTitle: string, lessonUrl: string, scheduleTimeString: string): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
     const courseSnap = await getDoc(courseRef);
     if (!courseSnap.exists()) throw new Error("Course not found");
@@ -108,7 +108,7 @@ export const addLesson = async (courseId: string, subjectId: string, chapterId: 
         content: lessonUrl,
         duration: '0 min',
         status: 'scheduled',
-        scheduledTime: scheduleTime,
+        scheduledTime: Timestamp.fromDate(new Date(scheduleTimeString)),
     };
 
     courseData.subjects[subjectIndex].chapters[chapterIndex].lessons.push(newLesson);
@@ -354,4 +354,3 @@ export const endLiveSession = async (
         return { success: false, message: error.message || "An unknown error occurred." };
     }
 };
-

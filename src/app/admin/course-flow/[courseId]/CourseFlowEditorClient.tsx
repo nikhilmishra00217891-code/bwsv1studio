@@ -34,7 +34,6 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Timestamp } from "firebase/firestore";
 
 const ScheduleLessonDialog = ({
     isOpen,
@@ -200,11 +199,10 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
         if (!schedulingChapter) return;
         
         const { subjectId, chapterId } = schedulingChapter;
-        const scheduleTimestamp = Timestamp.fromDate(scheduleTime);
-
+        
         startTransition(async () => {
             try {
-                const updatedCourse = await addLesson(course.id, subjectId, chapterId, title, url, scheduleTimestamp);
+                const updatedCourse = await addLesson(course.id, subjectId, chapterId, title, url, scheduleTime.toISOString());
                 setCourse(updatedCourse);
                 setIsScheduling(false);
                 setSchedulingChapter(null);
