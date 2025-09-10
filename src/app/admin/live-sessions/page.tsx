@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useCallback } from 'react';
 import { getCourses, updateLesson, deleteLesson } from '@/lib/data';
 import { endLiveSession } from '@/lib/data';
 import type { Course, Lesson } from '@/types';
@@ -262,6 +262,5 @@ export default function LiveSessionsPage() {
             )}
 
         </div>
-    ];
+    );
 }
-
