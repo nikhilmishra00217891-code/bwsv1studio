@@ -1,4 +1,5 @@
 
+
 import { getCourseById, isUserEnrolled, getEnrolledCourseData } from "@/lib/data";
 import { getSession, isFaculty } from "@/lib/firebase/server";
 import { notFound, redirect } from "next/navigation";
@@ -6,27 +7,34 @@ import CourseLearnClient from "./CourseLearnClient";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { LoaderCircle } from "lucide-react";
+import type { Course } from "@/types";
+import { Timestamp } from "firebase/firestore";
 
 const CourseLearnPageContent = async ({ params }: { params: { courseId: string } }) => {
     const sessionCookie = cookies().get("session")?.value;
     const { user } = sessionCookie ? await getSession() : { user: null };
     
-    if (!user) {
-        const course = await getCourseById(params.courseId);
-        if (!course) {
-            notFound();
+    const courseData = await getCourseById(params.courseId);
+    if (!courseData) {
+        notFound();
+    }
+
+    // Convert Firestore Timestamps to serializable strings before passing to client component
+    const course: Course = JSON.parse(JSON.stringify(courseData, (key, value) => {
+        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+            const ts = new Timestamp(value.seconds, value.nanoseconds);
+            return ts.toDate().toISOString();
         }
+        return value;
+    }));
+
+    if (!user) {
         return (
              <CourseLearnClient 
                 course={course}
                 userProgress={0}
             />
         )
-    }
-
-    const course = await getCourseById(params.courseId);
-    if (!course) {
-        notFound();
     }
 
     const isEnrolled = await isUserEnrolled(user.uid, params.courseId);
