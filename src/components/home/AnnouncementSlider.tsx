@@ -89,9 +89,6 @@ export default function AnnouncementSlider() {
     }, [api])
 
     const getAdSource = (contentIdPrefix: string, defaultSrc: string) => {
-        const generalContentId = `${contentIdPrefix}_general`;
-        const generalAdUrl = textContent[generalContentId];
-
         let gradeToShow = 'general';
         if (isEditMode) {
             gradeToShow = editingGrade.toLowerCase().replace(/\s+/g, '_');
@@ -99,21 +96,34 @@ export default function AnnouncementSlider() {
             gradeToShow = userProfile.grade.toLowerCase().replace(/\s+/g, '_');
         }
 
-        if (gradeToShow === 'general') {
-            return generalAdUrl || defaultSrc;
+        const specificContentId = `${contentIdPrefix}_${gradeToShow}`;
+        if (textContent[specificContentId]) {
+            return textContent[specificContentId];
         }
 
-        const specificContentId = `${contentIdPrefix}_${gradeToShow}`;
-        const specificAdUrl = textContent[specificContentId];
+        const generalContentId = `${contentIdPrefix}_general`;
+        if (textContent[generalContentId]) {
+            return textContent[generalContentId];
+        }
 
-        // If a specific ad exists, show it. Otherwise, fall back to the general ad, then to the default.
-        return specificAdUrl || generalAdUrl || defaultSrc;
+        return defaultSrc;
     }
     
     const contentIdForEditing = (contentIdPrefix: string) => {
         const gradeSlug = editingGrade.toLowerCase().replace(/\s+/g, '_');
         return `${contentIdPrefix}_${gradeSlug}`;
     }
+
+    const ImageContent = ({ item }: { item: typeof initialAnnouncements[0] }) => (
+        <EditableImage
+            contentId={contentIdForEditing(item.contentIdPrefix)}
+            src={getAdSource(item.contentIdPrefix, item.defaultSrc)}
+            alt={item.alt}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            data-ai-hint={item['data-ai-hint']}
+        />
+    );
 
 
     return (
@@ -157,16 +167,13 @@ export default function AnnouncementSlider() {
                                 <div className="p-1">
                                    <Card className="overflow-hidden group rounded-xl shadow-lg">
                                         <CardContent className="p-0 flex items-center justify-center aspect-[16/9] relative">
-                                            <Link href={item.href} className="w-full h-full">
-                                                <EditableImage
-                                                    contentId={contentIdForEditing(item.contentIdPrefix)}
-                                                    src={getAdSource(item.contentIdPrefix, item.defaultSrc)}
-                                                    alt={item.alt}
-                                                    fill
-                                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                                    data-ai-hint={item['data-ai-hint']}
-                                                />
-                                            </Link>
+                                            {isEditMode ? (
+                                                <ImageContent item={item} />
+                                            ) : (
+                                                <Link href={item.href} className="w-full h-full">
+                                                   <ImageContent item={item} />
+                                                </Link>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 </div>
