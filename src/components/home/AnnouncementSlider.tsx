@@ -88,30 +88,31 @@ export default function AnnouncementSlider() {
         })
     }, [api])
 
-    const getAdSource = (contentIdPrefix: string, defaultSrc: string) => {
+    const getAdSource = (item: typeof initialAnnouncements[0]): string => {
         let gradeToShow = 'general';
+        
         if (isEditMode) {
             gradeToShow = editingGrade.toLowerCase().replace(/\s+/g, '_');
         } else if (userProfile?.grade) {
             gradeToShow = userProfile.grade.toLowerCase().replace(/\s+/g, '_');
         }
-
+        
         // 1. Try to get the grade-specific ad
-        const specificContentId = `${contentIdPrefix}_${gradeToShow}`;
+        const specificContentId = `${item.contentIdPrefix}_${gradeToShow}`;
         if (textContent[specificContentId]) {
             return textContent[specificContentId] as string;
         }
 
         // 2. Fallback to the general ad for THIS slide
-        const generalContentId = `${contentIdPrefix}_general`;
+        const generalContentId = `${item.contentIdPrefix}_general`;
         if (textContent[generalContentId]) {
             return textContent[generalContentId] as string;
         }
 
         // 3. Fallback to the default placeholder for THIS slide
-        return defaultSrc;
+        return item.defaultSrc;
     }
-    
+
     const contentIdForEditing = (contentIdPrefix: string) => {
         const gradeSlug = editingGrade.toLowerCase().replace(/\s+/g, '_');
         return `${contentIdPrefix}_${gradeSlug}`;
@@ -120,7 +121,7 @@ export default function AnnouncementSlider() {
     const ImageContent = ({ item }: { item: typeof initialAnnouncements[0] }) => (
         <EditableImage
             contentId={contentIdForEditing(item.contentIdPrefix)}
-            src={getAdSource(item.contentIdPrefix, item.defaultSrc)}
+            src={getAdSource(item)}
             alt={item.alt}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
