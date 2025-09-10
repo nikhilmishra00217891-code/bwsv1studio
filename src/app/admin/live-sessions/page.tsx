@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useTransition, useCallback } from 'react';
-import { getCourses } from '@/lib/data';
+import { getCourses } from '@/lib/data/courses';
 import { updateLesson, deleteLesson, endLiveSession } from '@/lib/data/courses';
 import type { Course, Lesson } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,7 +81,12 @@ export default function LiveSessionsPage() {
         });
 
         // Sort scheduled sessions by time
-        upcomingSessions.sort((a,b) => (a.scheduledTime?.toMillis() || 0) - (b.scheduledTime?.toMillis() || 0));
+        upcomingSessions.sort((a,b) => {
+            const timeA = a.scheduledTime ? (a.scheduledTime.seconds * 1000) : 0;
+            const timeB = b.scheduledTime ? (b.scheduledTime.seconds * 1000) : 0;
+            return timeA - timeB;
+        });
+
 
         setLiveSessions(activeSessions);
         setScheduledSessions(upcomingSessions);
@@ -153,7 +158,7 @@ export default function LiveSessionsPage() {
                         <TableCell>{item.subjectTitle}</TableCell>
                         {isLiveTable ? null : (
                             <TableCell>
-                                {item.scheduledTime ? format(item.scheduledTime.toDate(), 'PPP p') : 'N/A'}
+                                {item.scheduledTime ? format(new Date(item.scheduledTime.seconds * 1000), 'PPP p') : 'N/A'}
                             </TableCell>
                         )}
                         <TableCell className="text-right space-x-2">
