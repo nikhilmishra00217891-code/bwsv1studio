@@ -117,6 +117,27 @@ export const addLesson = async (courseId: string, subjectId: string, chapterId: 
     return courseData;
 };
 
+export const updateLesson = async (courseId: string, subjectId: string, chapterId: string, updatedLesson: Lesson): Promise<Course> => {
+    const courseRef = doc(db, 'courses', courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (!courseSnap.exists()) throw new Error("Course not found");
+    
+    const courseData = courseSnap.data() as Course;
+    const subjectIndex = courseData.subjects.findIndex(s => s.id === subjectId);
+    if (subjectIndex === -1) throw new Error("Subject not found");
+
+    const chapterIndex = courseData.subjects[subjectIndex].chapters.findIndex(c => c.id === chapterId);
+    if (chapterIndex === -1) throw new Error("Chapter not found");
+    
+    const lessonIndex = courseData.subjects[subjectIndex].chapters[chapterIndex].lessons.findIndex(l => l.id === updatedLesson.id);
+    if (lessonIndex === -1) throw new Error("Lesson not found");
+
+    courseData.subjects[subjectIndex].chapters[chapterIndex].lessons[lessonIndex] = updatedLesson;
+
+    await updateDoc(courseRef, { subjects: courseData.subjects });
+    return courseData;
+}
+
 export const deleteLesson = async (courseId: string, subjectId: string, chapterId: string, lessonId: string): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
     const courseSnap = await getDoc(courseRef);
@@ -203,10 +224,10 @@ const findAndDeleteMaterial = (materials: StudyMaterial[], idToDelete: string): 
     return false;
 };
 
-const findAndUpdateMaterial = (materials: StudyMaterial[], updatedMaterial: Partial<StudyMaterial>): boolean => {
+const findAndUpdateMaterial = (materials: StudyMaterial[], updatedMaterial: Partial<StudyMaterial> & { id: string }): boolean => {
     for (let i = 0; i < materials.length; i++) {
         if (materials[i].id === updatedMaterial.id) {
-            materials[i] = { ...materials[i], ...updatedMaterial } as StudyMaterial;
+            materials[i] = { ...materials[i], ...updatedMaterial };
             return true;
         }
         if (materials[i].type === 'topic') {
@@ -242,7 +263,6 @@ export const addStudyMaterial = async (
       id: `${item.type}_${Date.now()}`,
       ...item,
     } as StudyMaterial;
-
 
     findAndModifyMaterial(chapter.studyMaterials, parentId, (items) => {
         items.push(newItem);
@@ -334,3 +354,4 @@ export const endLiveSession = async (
         return { success: false, message: error.message || "An unknown error occurred." };
     }
 };
+

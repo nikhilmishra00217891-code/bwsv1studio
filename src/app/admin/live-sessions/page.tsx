@@ -2,12 +2,12 @@
 "use client";
 
 import { useEffect, useState, useTransition } from 'react';
-import { getCourses } from '@/lib/data';
+import { getCourses, updateLesson, deleteLesson } from '@/lib/data';
 import { endLiveSession } from '@/lib/data';
 import type { Course, Lesson } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { LoaderCircle, Radio } from 'lucide-react';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { LoaderCircle, Radio, CalendarClock, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Table,
@@ -17,10 +17,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-interface LiveLesson {
-    lesson: Lesson;
+interface Session extends Lesson {
     courseId: string;
     courseTitle: string;
     subjectId: string;
@@ -29,63 +42,71 @@ interface LiveLesson {
     chapterTitle: string;
 }
 
+
 export default function LiveSessionsPage() {
-    const [liveLessons, setLiveLessons] = useState<LiveLesson[]>([]);
+    const [liveSessions, setLiveSessions] = useState<Session[]>([]);
+    const [scheduledSessions, setScheduledSessions] = useState<Session[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isEnding, setIsEnding] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
 
-    const fetchLiveLessons = async () => {
+    const fetchSessions = useCallback(async () => {
         setIsLoading(true);
         const allCourses = await getCourses(true);
-        const activeLessons: LiveLesson[] = [];
+        const activeSessions: Session[] = [];
+        const upcomingSessions: Session[] = [];
 
         allCourses.forEach(course => {
             course.subjects?.forEach(subject => {
                 subject.chapters?.forEach(chapter => {
                     chapter.lessons?.forEach(lesson => {
+                        const sessionData = {
+                            ...lesson,
+                            courseId: course.id,
+                            courseTitle: course.title,
+                            subjectId: subject.id,
+                            subjectTitle: subject.title,
+                            chapterId: chapter.id,
+                            chapterTitle: chapter.title,
+                        };
                         if (lesson.status === 'live') {
-                            activeLessons.push({
-                                lesson,
-                                courseId: course.id,
-                                courseTitle: course.title,
-                                subjectId: subject.id,
-                                subjectTitle: subject.title,
-                                chapterId: chapter.id,
-                                chapterTitle: chapter.title,
-                            });
+                            activeSessions.push(sessionData);
+                        } else if (lesson.status === 'scheduled') {
+                            upcomingSessions.push(sessionData);
                         }
                     });
                 });
             });
         });
-        setLiveLessons(activeLessons);
+
+        // Sort scheduled sessions by time
+        upcomingSessions.sort((a,b) => (a.scheduledTime?.toMillis() || 0) - (b.scheduledTime?.toMillis() || 0));
+
+        setLiveSessions(activeSessions);
+        setScheduledSessions(upcomingSessions);
         setIsLoading(false);
-    };
-    
-    useEffect(() => {
-        fetchLiveLessons();
     }, []);
     
-    const handleEndSession = async (liveLesson: LiveLesson) => {
-        setIsEnding(liveLesson.lesson.id);
+    useEffect(() => {
+        fetchSessions();
+    }, [fetchSessions]);
+    
+    const handleEndSession = async (session: Session) => {
+        setIsEnding(session.id);
         const { success, message } = await endLiveSession(
-            liveLesson.courseId,
-            liveLesson.subjectId,
-            liveLesson.chapterId,
-            liveLesson.lesson.id
+            session.courseId,
+            session.subjectId,
+            session.chapterId,
+            session.id
         );
         
         if (success) {
             toast({
                 title: "Session Ended",
-                description: `"${liveLesson.lesson.title}" has been moved to recorded.`,
+                description: `"${session.title}" has been moved to recorded.`,
             });
-            // Refresh the list optimistically or by re-fetching
-            startTransition(() => {
-                setLiveLessons(prev => prev.filter(l => l.lesson.id !== liveLesson.lesson.id));
-            });
+            fetchSessions(); // Re-fetch to update lists
         } else {
             toast({
                 variant: 'destructive',
@@ -95,72 +116,152 @@ export default function LiveSessionsPage() {
         }
         setIsEnding(null);
     }
+    
+    const handleCancelSession = async (session: Session) => {
+         startTransition(async () => {
+            try {
+                await deleteLesson(session.courseId, session.subjectId, session.chapterId, session.id);
+                toast({ title: "Session Canceled", description: `"${session.title}" has been removed.` });
+                fetchSessions();
+            } catch (error: any) {
+                 toast({ variant: 'destructive', title: 'Error', description: error.message });
+            }
+        });
+    }
+
+    const renderTable = (sessions: Session[], isLiveTable: boolean) => (
+         <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Lesson</TableHead>
+                    <TableHead>Course</TableHead>
+                    <TableHead>Subject</TableHead>
+                    {isLiveTable ? null : <TableHead>Scheduled For</TableHead>}
+                    <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {sessions.map(item => (
+                    <TableRow key={item.id}>
+                        <TableCell className="font-medium">
+                            <p>{item.title}</p>
+                            <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline truncate">
+                                {item.content}
+                            </a>
+                        </TableCell>
+                        <TableCell>{item.courseTitle}</TableCell>
+                        <TableCell>{item.subjectTitle}</TableCell>
+                        {isLiveTable ? null : (
+                            <TableCell>
+                                {item.scheduledTime ? format(item.scheduledTime.toDate(), 'PPP p') : 'N/A'}
+                            </TableCell>
+                        )}
+                        <TableCell className="text-right space-x-2">
+                             {isLiveTable ? (
+                                <Button 
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleEndSession(item)}
+                                    disabled={isEnding === item.id || isPending}
+                                >
+                                    {isEnding === item.id ? <LoaderCircle className="w-4 h-4 mr-2 animate-spin"/> : <Radio className="w-4 h-4 mr-2"/>}
+                                    End Session
+                                </Button>
+                             ) : (
+                                <>
+                                    <Button asChild variant="outline" size="sm" disabled={isPending}>
+                                        <Link href={`/admin/course-flow/${item.courseId}`}>
+                                            <Pencil className="w-4 h-4" />
+                                        </Link>
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="sm" disabled={isPending}><Trash2 className="w-4 h-4"/></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Cancel Session?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Are you sure you want to cancel the scheduled session "{item.title}"? This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Keep</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleCancelSession(item)} className={cn(buttonVariants({variant: "destructive"}))}>
+                                                    Cancel Session
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </>
+                             )}
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    )
 
     return (
         <div className="animate-fade-in p-4 md:p-8 space-y-6">
              <div>
-                <h1 className="text-3xl md:text-4xl font-bold font-headline">Live Session Management</h1>
-                <p className="text-muted-foreground">End live sessions to move them to the recorded section for students.</p>
+                <h1 className="text-3xl md:text-4xl font-bold font-headline">Session Control Center</h1>
+                <p className="text-muted-foreground">Manage all live and scheduled sessions across your courses.</p>
             </div>
+            
+            {isLoading ? (
+                <div className="flex items-center justify-center h-64">
+                    <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+                </div>
+            ) : (
+                <Tabs defaultValue="live" className="w-full">
+                    <TabsList>
+                        <TabsTrigger value="live">
+                            <Radio className="mr-2 h-4 w-4"/>
+                            Currently Live ({liveSessions.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="scheduled">
+                             <CalendarClock className="mr-2 h-4 w-4"/>
+                            Scheduled ({scheduledSessions.length})
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="live" className="mt-4">
+                        <Card>
+                             <CardHeader>
+                                <CardTitle>Active Live Sessions</CardTitle>
+                                <CardDescription>These sessions are currently live. End a session to move it to the 'Recorded' section for students.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                               {liveSessions.length > 0 ? renderTable(liveSessions, true) : (
+                                    <div className="text-center py-12 text-muted-foreground">
+                                        <p>No active live sessions right now.</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="scheduled" className="mt-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Upcoming Scheduled Sessions</CardTitle>
+                                <CardDescription>These sessions are scheduled to go live at a future time. You can edit or cancel them from here.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {scheduledSessions.length > 0 ? renderTable(scheduledSessions, false) : (
+                                    <div className="text-center py-12 text-muted-foreground">
+                                        <p>No sessions are scheduled.</p>
+                                         <Button asChild variant="link">
+                                            <Link href="/admin/course-flow">Go to a course to schedule one</Link>
+                                        </Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
+            )}
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Currently Live</CardTitle>
-                    <CardDescription>This is a list of all lessons currently marked as 'live' across all courses.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isLoading ? (
-                         <div className="flex items-center justify-center h-48">
-                            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-                        </div>
-                    ) : liveLessons.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Lesson</TableHead>
-                                    <TableHead>Course</TableHead>
-                                    <TableHead>Subject</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {liveLessons.map(item => (
-                                    <TableRow key={item.lesson.id}>
-                                        <TableCell className="font-medium">
-                                            <p>{item.lesson.title}</p>
-                                            <a href={item.lesson.content} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline truncate">
-                                                {item.lesson.content}
-                                            </a>
-                                        </TableCell>
-                                        <TableCell>{item.courseTitle}</TableCell>
-                                        <TableCell>{item.subjectTitle}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button 
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={() => handleEndSession(item)}
-                                                disabled={isEnding === item.lesson.id}
-                                            >
-                                                {isEnding === item.lesson.id ? (
-                                                    <LoaderCircle className="w-4 h-4 mr-2 animate-spin"/>
-                                                ) : (
-                                                    <Radio className="w-4 h-4 mr-2"/>
-                                                )}
-                                                End Session
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <div className="text-center py-12 text-muted-foreground">
-                            <p>No active live sessions right now.</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
         </div>
-    );
+    ];
 }
 
