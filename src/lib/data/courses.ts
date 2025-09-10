@@ -89,7 +89,7 @@ export const deleteChapter = async (courseId: string, subjectId: string, chapter
     return courseData;
 };
 
-export const addLesson = async (courseId: string, subjectId: string, chapterId: string, lessonTitle: string, lessonUrl: string, scheduleTimeString: string): Promise<Course> => {
+export const addLesson = async (courseId: string, subjectId: string, chapterId: string, lessonTitle: string, lessonUrl: string, scheduleTimeString: string | null): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
     const courseSnap = await getDoc(courseRef);
     if (!courseSnap.exists()) throw new Error("Course not found");
@@ -107,8 +107,8 @@ export const addLesson = async (courseId: string, subjectId: string, chapterId: 
         type: 'video', 
         content: lessonUrl,
         duration: '0 min',
-        status: 'scheduled',
-        scheduledTime: Timestamp.fromDate(new Date(scheduleTimeString)),
+        status: scheduleTimeString ? 'scheduled' : 'live',
+        scheduledTime: scheduleTimeString ? Timestamp.fromDate(new Date(scheduleTimeString)) : null,
     };
 
     courseData.subjects[subjectIndex].chapters[chapterIndex].lessons.push(newLesson);
@@ -316,6 +316,46 @@ export const updateStudyMaterial = async (
     
     await updateDoc(courseRef, { subjects: courseData.subjects });
     return courseData;
+}
+
+export const updateLessonStatus = async (
+    courseId: string,
+    subjectId: string,
+    chapterId: string,
+    lessonId: string,
+    status: 'live' | 'scheduled' | 'recorded',
+    newScheduleTime?: string | null
+): Promise<{ success: boolean; message: string }> => {
+     const courseRef = doc(db, 'courses', courseId);
+    try {
+        const courseSnap = await getDoc(courseRef);
+        if (!courseSnap.exists()) throw new Error("Course not found.");
+
+        const courseData = courseSnap.data() as Course;
+        const subjectIndex = courseData.subjects.findIndex(s => s.id === subjectId);
+        if (subjectIndex === -1) throw new Error("Subject not found.");
+        
+        const chapterIndex = courseData.subjects[subjectIndex].chapters.findIndex(c => c.id === chapterId);
+        if (chapterIndex === -1) throw new Error("Chapter not found.");
+
+        const lessonIndex = courseData.subjects[subjectIndex].chapters[chapterIndex].lessons.findIndex(l => l.id === lessonId);
+        if (lessonIndex === -1) throw new Error("Lesson not found.");
+        
+        courseData.subjects[subjectIndex].chapters[chapterIndex].lessons[lessonIndex].status = status;
+        
+        if (status === 'scheduled' && newScheduleTime) {
+             courseData.subjects[subjectIndex].chapters[chapterIndex].lessons[lessonIndex].scheduledTime = Timestamp.fromDate(new Date(newScheduleTime));
+        } else {
+            courseData.subjects[subjectIndex].chapters[chapterIndex].lessons[lessonIndex].scheduledTime = null;
+        }
+        
+        await updateDoc(courseRef, { subjects: courseData.subjects });
+        return { success: true, message: "Lesson status updated successfully." };
+
+    } catch (error: any) {
+        console.error("Error updating lesson status: ", error);
+        return { success: false, message: error.message || "An unknown error occurred." };
+    }
 }
 
 // Moves a lesson from 'scheduled' or 'live' to 'recorded'

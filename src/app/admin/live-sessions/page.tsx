@@ -3,11 +3,11 @@
 
 import { useEffect, useState, useTransition, useCallback } from 'react';
 import { getCourses } from '@/lib/data';
-import { updateLesson, deleteLesson, endLiveSession } from '@/lib/data/courses';
+import { updateLessonStatus, deleteLesson, endLiveSession } from '@/lib/data/courses';
 import type { Course, Lesson } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { LoaderCircle, Radio, CalendarClock, Pencil, Trash2 } from 'lucide-react';
+import { LoaderCircle, Radio, CalendarClock, Pencil, Trash2, CalendarIcon, Play } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Table,
@@ -30,6 +30,11 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -42,14 +47,86 @@ interface Session extends Lesson {
     chapterTitle: string;
 }
 
+const RescheduleDialog = ({ session, isOpen, onOpenChange, onReschedule }: { session: Session | null, isOpen: boolean, onOpenChange: (open: boolean) => void, onReschedule: (newDate: Date) => void }) => {
+    const [date, setDate] = useState<Date | undefined>(new Date());
+    const [time, setTime] = useState('09:00');
+
+    useEffect(() => {
+        if (session?.scheduledTime) {
+            const sessionDate = new Date((session.scheduledTime as any).seconds * 1000);
+            setDate(sessionDate);
+            setTime(format(sessionDate, 'HH:mm'));
+        }
+    }, [session]);
+    
+    if (!session) return null;
+
+    const handleSubmit = () => {
+        if (!date) return;
+        const [hours, minutes] = time.split(':').map(Number);
+        const newScheduleTime = new Date(date);
+        newScheduleTime.setHours(hours, minutes);
+        onReschedule(newScheduleTime);
+    }
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Reschedule: {session.title}</DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-4 py-4">
+                    <div>
+                        <Label>Date</Label>
+                            <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {date ? format(date, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
+                            </PopoverContent>
+                            </Popover>
+                    </div>
+                    <div>
+                        <Label>Time (IST)</Label>
+                        <Select value={time} onValueChange={setTime}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select time" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Array.from({ length: 48 }, (_, i) => {
+                                    const hour = String(Math.floor(i / 2)).padStart(2, '0');
+                                    const minute = i % 2 === 0 ? '00' : '30';
+                                    return `${hour}:${minute}`;
+                                }).map(t => <SelectItem key={t} value={t}>{format(new Date(`1970-01-01T${t}:00`), 'p')}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSubmit}>Save Changes</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export default function LiveSessionsPage() {
     const [liveSessions, setLiveSessions] = useState<Session[]>([]);
     const [scheduledSessions, setScheduledSessions] = useState<Session[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isEnding, setIsEnding] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
+    
+    const [sessionToReschedule, setSessionToReschedule] = useState<Session | null>(null);
 
     const fetchSessions = useCallback(async () => {
         setIsLoading(true);
@@ -97,29 +174,34 @@ export default function LiveSessionsPage() {
         fetchSessions();
     }, [fetchSessions]);
     
+    const handleUpdateStatus = async (session: Session, newStatus: 'live' | 'scheduled' | 'recorded', newTime?: Date) => {
+        startTransition(async () => {
+             const { success, message } = await updateLessonStatus(
+                session.courseId, session.subjectId, session.chapterId, session.id,
+                newStatus,
+                newTime ? newTime.toISOString() : null
+            );
+            if (success) {
+                toast({ title: "Session Updated!", description: `"${session.title}" status changed to ${newStatus}.` });
+                fetchSessions();
+            } else {
+                 toast({ variant: 'destructive', title: "Update Failed", description: message });
+            }
+        });
+    }
+
     const handleEndSession = async (session: Session) => {
-        setIsEnding(session.id);
-        const { success, message } = await endLiveSession(
-            session.courseId,
-            session.subjectId,
-            session.chapterId,
-            session.id
-        );
-        
-        if (success) {
-            toast({
-                title: "Session Ended",
-                description: `"${session.title}" has been moved to recorded.`,
-            });
-            fetchSessions(); // Re-fetch to update lists
-        } else {
-            toast({
-                variant: 'destructive',
-                title: "Failed to End Session",
-                description: message,
-            })
-        }
-        setIsEnding(null);
+        startTransition(async () => {
+             const { success, message } = await endLiveSession(
+                session.courseId, session.subjectId, session.chapterId, session.id
+            );
+            if (success) {
+                toast({ title: "Session Ended", description: `"${session.title}" has been moved to recorded.` });
+                fetchSessions();
+            } else {
+                toast({ variant: 'destructive', title: "Failed to End Session", description: message });
+            }
+        });
     }
     
     const handleCancelSession = async (session: Session) => {
@@ -137,8 +219,8 @@ export default function LiveSessionsPage() {
     const getSessionDate = (session: Session) => {
         if (!session.scheduledTime) return 'N/A';
         // Check if it's a Firestore Timestamp-like object
-        if (session.scheduledTime.seconds) {
-            return new Date(session.scheduledTime.seconds * 1000);
+        if ((session.scheduledTime as any).seconds) {
+            return new Date((session.scheduledTime as any).seconds * 1000);
         }
         // Check if it's an ISO string or Date object
         return new Date(session.scheduledTime as any);
@@ -173,25 +255,31 @@ export default function LiveSessionsPage() {
                         )}
                         <TableCell className="text-right space-x-2">
                              {isLiveTable ? (
-                                <Button 
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => handleEndSession(item)}
-                                    disabled={isEnding === item.id || isPending}
-                                >
-                                    {isEnding === item.id ? <LoaderCircle className="w-4 h-4 mr-2 animate-spin"/> : <Radio className="w-4 h-4 mr-2"/>}
-                                    End Session
-                                </Button>
+                                <>
+                                    <Button variant="outline" size="sm" onClick={() => setSessionToReschedule(item)} disabled={isPending}>
+                                        <CalendarIcon className="w-4 h-4 mr-2"/> Reschedule
+                                    </Button>
+                                    <Button 
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => handleEndSession(item)}
+                                        disabled={isPending}
+                                    >
+                                        <Radio className="w-4 h-4 mr-2"/>
+                                        End Session
+                                    </Button>
+                                </>
                              ) : (
                                 <>
-                                    <Button asChild variant="outline" size="sm" disabled={isPending}>
-                                        <Link href={`/admin/course-flow/${item.courseId}`}>
-                                            <Pencil className="w-4 h-4" />
-                                        </Link>
+                                    <Button variant="outline" size="sm" onClick={() => setSessionToReschedule(item)} disabled={isPending}>
+                                        <Pencil className="w-4 h-4 mr-2"/> Edit Time
+                                    </Button>
+                                     <Button size="sm" onClick={() => handleUpdateStatus(item, 'live')} disabled={isPending}>
+                                        <Play className="w-4 h-4 mr-2"/> Go Live Now
                                     </Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="sm" disabled={isPending}><Trash2 className="w-4 h-4"/></Button>
+                                            <Button variant="destructive" size="icon" className="h-9 w-9" disabled={isPending}><Trash2 className="w-4 h-4"/></Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
@@ -275,7 +363,17 @@ export default function LiveSessionsPage() {
                     </TabsContent>
                 </Tabs>
             )}
-
+            <RescheduleDialog 
+                session={sessionToReschedule}
+                isOpen={!!sessionToReschedule}
+                onOpenChange={() => setSessionToReschedule(null)}
+                onReschedule={(newDate) => {
+                    if (sessionToReschedule) {
+                        handleUpdateStatus(sessionToReschedule, 'scheduled', newDate);
+                    }
+                    setSessionToReschedule(null);
+                }}
+            />
         </div>
     );
 }

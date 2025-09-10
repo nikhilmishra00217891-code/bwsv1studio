@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { addSubject, deleteSubject, addChapter, deleteChapter, addLesson, deleteLesson } from "@/lib/data/courses";
-import { LoaderCircle, PlusCircle, Trash2, ArrowLeft, Video, BookText, Link as LinkIcon, CalendarIcon } from "lucide-react";
+import { LoaderCircle, PlusCircle, Trash2, ArrowLeft, Video, BookText, Link as LinkIcon, CalendarIcon, Radio } from "lucide-react";
 import Link from "next/link";
 import {
     Accordion,
@@ -34,6 +34,7 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 const ScheduleLessonDialog = ({
     isOpen,
@@ -42,21 +43,27 @@ const ScheduleLessonDialog = ({
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (title: string, url: string, scheduleTime: Date) => void;
+    onSubmit: (title: string, url: string, scheduleTime: Date | null) => void;
 }) => {
     const [title, setTitle] = useState('');
     const [url, setUrl] = useState('');
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [time, setTime] = useState('09:00'); // Default time
+    const [isScheduled, setIsScheduled] = useState(true);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title || !url || !date) {
+        if (!title || !url) {
             return;
         }
-        const [hours, minutes] = time.split(':').map(Number);
-        const scheduleTime = new Date(date);
-        scheduleTime.setHours(hours, minutes);
+        
+        let scheduleTime: Date | null = null;
+        if (isScheduled && date) {
+            const [hours, minutes] = time.split(':').map(Number);
+            scheduleTime = new Date(date);
+            scheduleTime.setHours(hours, minutes);
+        }
+        
         onSubmit(title, url, scheduleTime);
     };
 
@@ -64,9 +71,9 @@ const ScheduleLessonDialog = ({
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Schedule a New Lesson</DialogTitle>
+                    <DialogTitle>Add a New Lesson</DialogTitle>
                     <DialogDescription>
-                        Set the details for your upcoming live class. It will appear in the 'Live' tab for students.
+                        Go live instantly or schedule the class for a future time.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -78,51 +85,60 @@ const ScheduleLessonDialog = ({
                         <Label htmlFor="lesson-url">YouTube Video/Live URL</Label>
                         <Input id="lesson-url" value={url} onChange={(e) => setUrl(e.target.value)} required />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Date</Label>
-                             <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                      "w-full justify-start text-left font-normal",
-                                      !date && "text-muted-foreground"
-                                    )}
-                                  >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                  <Calendar
-                                    mode="single"
-                                    selected={date}
-                                    onSelect={setDate}
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                        </div>
-                        <div>
-                            <Label>Time (IST)</Label>
-                            <Select value={time} onValueChange={setTime}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select time" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Array.from({ length: 48 }, (_, i) => {
-                                        const hour = String(Math.floor(i / 2)).padStart(2, '0');
-                                        const minute = i % 2 === 0 ? '00' : '30';
-                                        return `${hour}:${minute}`;
-                                    }).map(t => <SelectItem key={t} value={t}>{format(new Date(`1970-01-01T${t}:00`), 'p')}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    
+                    <div className="flex items-center space-x-2 pt-2">
+                        <Radio className="h-5 w-5"/>
+                        <Label htmlFor="schedule-toggle">Schedule for later</Label>
+                        <Switch id="schedule-toggle" checked={isScheduled} onCheckedChange={setIsScheduled} />
                     </div>
+
+                    {isScheduled && (
+                        <div className="grid grid-cols-2 gap-4 animate-fade-in">
+                            <div>
+                                <Label>Date</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                        "w-full justify-start text-left font-normal",
+                                        !date && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {date ? format(date, "PPP") : <span>Pick a date</span>}
+                                    </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={date}
+                                        onSelect={setDate}
+                                        initialFocus
+                                    />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <div>
+                                <Label>Time (IST)</Label>
+                                <Select value={time} onValueChange={setTime}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select time" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Array.from({ length: 48 }, (_, i) => {
+                                            const hour = String(Math.floor(i / 2)).padStart(2, '0');
+                                            const minute = i % 2 === 0 ? '00' : '30';
+                                            return `${hour}:${minute}`;
+                                        }).map(t => <SelectItem key={t} value={t}>{format(new Date(`1970-01-01T${t}:00`), 'p')}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button type="submit">Schedule Lesson</Button>
+                        <Button type="submit">{isScheduled ? "Schedule Lesson" : "Go Live Now"}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -195,18 +211,18 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
         });
     }
 
-     const handleScheduleLesson = (title: string, url: string, scheduleTime: Date) => {
+     const handleAddOrScheduleLesson = (title: string, url: string, scheduleTime: Date | null) => {
         if (!schedulingChapter) return;
         
         const { subjectId, chapterId } = schedulingChapter;
         
         startTransition(async () => {
             try {
-                const updatedCourse = await addLesson(course.id, subjectId, chapterId, title, url, scheduleTime.toISOString());
+                const updatedCourse = await addLesson(course.id, subjectId, chapterId, title, url, scheduleTime ? scheduleTime.toISOString() : null);
                 setCourse(updatedCourse);
                 setIsScheduling(false);
                 setSchedulingChapter(null);
-                toast({ title: "Lesson Scheduled!" });
+                toast({ title: scheduleTime ? "Lesson Scheduled!" : "Lesson is now Live!" });
             } catch (error: any) {
                 toast({ variant: 'destructive', title: 'Error', description: error.message });
             }
@@ -303,7 +319,7 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
                                                     ))}
                                                      <div className="p-4 border-dashed border rounded-md mt-4">
                                                          <Button size="sm" className="w-full" onClick={() => { setIsScheduling(true); setSchedulingChapter({ subjectId: subject.id, chapterId: chapter.id })}} disabled={isPending}>
-                                                            <PlusCircle className="w-4 h-4 mr-2" /> Schedule New Lesson
+                                                            <PlusCircle className="w-4 h-4 mr-2" /> Add New Lesson
                                                         </Button>
                                                      </div>
                                                  </div>
@@ -351,7 +367,7 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
         <ScheduleLessonDialog
             isOpen={isScheduling}
             onOpenChange={setIsScheduling}
-            onSubmit={handleScheduleLesson}
+            onSubmit={handleAddOrScheduleLesson}
         />
         </>
     );
