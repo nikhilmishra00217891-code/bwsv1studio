@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Course, Lesson, Subject, Chapter, LiveChatMessage } from "@/types";
@@ -120,7 +121,7 @@ const LiveChat = ({ course, subject, chapter, lesson }: { course: Course; subjec
                                 <div>
                                     <div className="flex items-baseline gap-2">
                                         <p className="font-bold text-primary/90">{msg.senderName}</p>
-                                        <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(msg.timestamp as any), { addSuffix: true })}</p>
+                                        <p className="text-xs text-muted-foreground">{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}</p>
                                     </div>
                                     <p>{msg.text}</p>
                                 </div>
@@ -353,7 +354,7 @@ const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLesson
                                             <div>
                                                 <span className="font-semibold">{lesson.title}</span>
                                                 {lesson.status === 'scheduled' && lesson.scheduledTime && (
-                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3"/> {format(new Date(lesson.scheduledTime as string), 'PPP p')}</p>
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3"/> {format(new Date(lesson.scheduledTime), 'PPP p')}</p>
                                                 )}
                                             </div>
                                             <Badge variant="destructive" className="ml-auto animate-pulse">
