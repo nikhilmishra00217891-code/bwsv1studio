@@ -40,7 +40,7 @@ const PatraCard = ({ patra, onOpen }: { patra: Patra, onOpen: () => void }) => {
                             )}
                         </div>
                         <p className="text-sm text-muted-foreground line-clamp-2">{patra.content}</p>
-                         <p className="text-xs text-muted-foreground mt-2">From: {patra.senderName} • {formatDistanceToNow(patra.createdAt.toDate(), { addSuffix: true })}</p>
+                         <p className="text-xs text-muted-foreground mt-2">From: {patra.senderName} • {patra.createdAt ? formatDistanceToNow(patra.createdAt.toDate(), { addSuffix: true }) : 'Just now'}</p>
                     </div>
                 </div>
             </Card>
@@ -136,7 +136,7 @@ export default function PatraPage() {
                                      <DialogTitle className="text-2xl font-headline">{selectedPatra.title}</DialogTitle>
                                 </div>
                                 <DialogDescription>
-                                    From: {selectedPatra.senderName} • Sent {formatDistanceToNow(selectedPatra.createdAt.toDate(), { addSuffix: true })}
+                                    From: {selectedPatra.senderName} • Sent {selectedPatra.createdAt ? formatDistanceToNow(selectedPatra.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="prose prose-sm dark:prose-invert max-w-none max-h-[50vh] overflow-y-auto py-4">
