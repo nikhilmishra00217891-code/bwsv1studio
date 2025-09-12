@@ -2,7 +2,8 @@
 import { getUserProfile } from "@/lib/firebase/server";
 import { notFound } from "next/navigation";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
-import { getEnrolledCoursesForUser, getMissionsForUser } from "@/lib/data/missions";
+import { getEnrolledCoursesForUser } from "@/lib/data";
+import { getMissionsForUser } from "@/lib/data/missions";
 
 // This is the server component that fetches the student's data
 export default async function ViewStudentDashboardPage({ params }: { params: { userId: string } }) {
