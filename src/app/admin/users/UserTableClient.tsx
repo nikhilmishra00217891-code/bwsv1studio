@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useTransition } from 'react';
-import type { UserProfile, PatraType } from "@/types";
+import type { UserProfile, PatraType, Course } from "@/types";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -340,8 +340,110 @@ const SuspensionDialog = ({
     )
 }
 
+const BasicInfoDialog = ({
+    user,
+    isOpen,
+    onOpenChange,
+    allCourses,
+}: {
+    user: UserProfile | null;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    allCourses: Course[];
+}) => {
 
-export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] }) {
+    const enrolledCourseDetails = useMemo(() => {
+        if (!user || !user.enrolledCourses) return [];
+        return user.enrolledCourses.map(courseId => {
+            return allCourses.find(c => c.id === courseId);
+        }).filter((c): c is Course => !!c);
+    }, [user, allCourses]);
+
+    if (!user) return null;
+
+    const DetailItem = ({ label, value, isList = false }: { label: string, value: string | string[] | number | undefined | null, isList?: boolean}) => {
+        if (!value || (Array.isArray(value) && value.length === 0)) return null;
+
+        const displayValue = Array.isArray(value) 
+            ? value.map(item => <Badge key={item} variant="secondary" className="mr-1 mb-1">{item}</Badge>)
+            : <p className="text-muted-foreground">{value}</p>;
+        
+        return (
+            <div>
+                <p className="font-semibold text-sm">{label}</p>
+                {isList ? <div className="flex flex-wrap mt-1">{displayValue}</div> : displayValue}
+            </div>
+        )
+    }
+
+    return (
+         <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>User Info: {user.displayName}</DialogTitle>
+                    <DialogDescription>Role: <Badge variant={user.role === 'faculty' ? 'default' : 'secondary'}>{user.role}</Badge></DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[70vh] -mx-6 px-6">
+                    <div className="py-4 space-y-6">
+                         {/* Personal Info */}
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-lg border-b pb-2">Personal Details</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <DetailItem label="Email" value={user.email} />
+                                <DetailItem label="Mobile" value={user.mobile ? `${user.mobile.countryCode} ${user.mobile.number}` : null} />
+                                <DetailItem label="Age" value={user.age} />
+                                <DetailItem label="Gender" value={user.gender} />
+                            </div>
+                        </div>
+
+                         {/* Academic Info */}
+                         <div className="space-y-4">
+                            <h3 className="font-bold text-lg border-b pb-2">Academic Profile</h3>
+                             <div className="grid grid-cols-2 gap-4">
+                                <DetailItem label="Grade" value={user.grade} />
+                                <DetailItem label="Board" value={user.board} />
+                            </div>
+                            <DetailItem label="Subjects" value={user.subjects} isList />
+                        </div>
+                        
+                         {/* Preferences */}
+                         <div className="space-y-4">
+                            <h3 className="font-bold text-lg border-b pb-2">Learning Preferences</h3>
+                            <DetailItem label="Goals" value={user.goals} isList />
+                            <DetailItem label="Learning Styles" value={user.learningStyle as string[]} isList />
+                            <DetailItem label="Motivation Styles" value={user.motivationStyles} isList />
+                            <div className="grid grid-cols-2 gap-4">
+                                <DetailItem label="Productive Time" value={user.preferredStudyTime} />
+                                <DetailItem label="Study Duration (hrs/day)" value={user.preferredStudyDuration} />
+                            </div>
+                             <DetailItem label="Interests" value={user.interests} isList />
+                        </div>
+
+                        {/* Enrolled Courses */}
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-lg border-b pb-2">Enrolled Courses ({enrolledCourseDetails.length})</h3>
+                             {enrolledCourseDetails.length > 0 ? (
+                                <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                                    {enrolledCourseDetails.map(course => (
+                                        <li key={course.id}>{course.title}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-muted-foreground italic">This user is not enrolled in any courses.</p>
+                            )}
+                        </div>
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
+export function UserTableClient({ initialUsers, allCourses }: { initialUsers: UserProfile[], allCourses: Course[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'suspended'>('all');
@@ -349,6 +451,7 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
   const [showPatraDialog, setShowPatraDialog] = useState(false);
   const [showBulkPatraDialog, setShowBulkPatraDialog] = useState(false);
+  const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -385,12 +488,14 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
     });
   };
 
-  const openActionDialog = (user: UserProfile, action: 'suspend' | 'patra') => {
+  const openActionDialog = (user: UserProfile, action: 'suspend' | 'patra' | 'info') => {
     setSelectedUser(user);
     if (action === 'suspend') {
         setShowSuspensionDialog(true);
     } else if (action === 'patra') {
         setShowPatraDialog(true);
+    } else if (action === 'info') {
+        setShowInfoDialog(true);
     }
   }
 
@@ -483,6 +588,10 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
+                                <DropdownMenuItem onSelect={() => openActionDialog(user, 'info')}>
+                                    <UserIcon className="mr-2 h-4 w-4" />
+                                    See Basic Info
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => openActionDialog(user, 'patra')}>
                                     <MessageSquarePlus className="mr-2 h-4 w-4" />
                                     Send Patra
@@ -532,6 +641,12 @@ export function UserTableClient({ initialUsers }: { initialUsers: UserProfile[] 
         users={filteredUsers}
         isOpen={showBulkPatraDialog}
         onOpenChange={setShowBulkPatraDialog}
+    />
+    <BasicInfoDialog
+        user={selectedUser}
+        isOpen={showInfoDialog}
+        onOpenChange={setShowInfoDialog}
+        allCourses={allCourses}
     />
     </>
   );

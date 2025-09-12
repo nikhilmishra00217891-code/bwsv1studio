@@ -65,6 +65,17 @@ export const getCourseById = async (id: string): Promise<Course | null> => {
     }
 }
 
+export const getCoursesByIds = async (ids: string[]): Promise<Course[]> => {
+    if (ids.length === 0) return [];
+    
+    const coursesCol = collection(db, "courses");
+    // Firestore 'in' query is limited to 30 items. If you expect more, you'll need to batch requests.
+    const q = query(coursesCol, where('__name__', 'in', ids));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+}
+
 interface CreateCourseData {
     title: string;
     category: string;
