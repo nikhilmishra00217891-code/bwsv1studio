@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function TodaysMissionDashboard({ missions }: { missions: UserMission[] }) {
+export default function TodaysMissionDashboard({ missions, isReadOnly }: { missions: UserMission[], isReadOnly?: boolean }) {
     const [checkedMissions, setCheckedMissions] = useState<Set<string>>(new Set());
 
     useEffect(() => {
@@ -20,6 +20,7 @@ export default function TodaysMissionDashboard({ missions }: { missions: UserMis
     }, [missions]);
 
     const handleMissionToggle = (missionKey: string) => {
+        if (isReadOnly) return;
         setCheckedMissions(prev => {
             const newSet = new Set(prev);
             if (newSet.has(missionKey)) {
@@ -106,12 +107,14 @@ export default function TodaysMissionDashboard({ missions }: { missions: UserMis
                                                     checked={isChecked}
                                                     onCheckedChange={() => handleMissionToggle(missionKey)}
                                                     className="mt-1"
+                                                    disabled={isReadOnly}
                                                 />
                                                 <Label 
                                                     htmlFor={missionKey} 
                                                     className={cn(
                                                         "flex-grow transition-colors",
-                                                        isChecked && "text-muted-foreground line-through"
+                                                        isChecked && "text-muted-foreground line-through",
+                                                        !isReadOnly && "cursor-pointer"
                                                     )}
                                                 >
                                                     <span className="font-semibold">{mission.subjectTitle}:</span>

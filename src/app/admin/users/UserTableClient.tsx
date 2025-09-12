@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import { useAuth } from '@/components/auth/AuthProvider';
+import Link from 'next/link';
 
 const suspensionReasons = [
     "Violation of Terms of Service",
@@ -594,6 +595,12 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
                                 <DropdownMenuItem onSelect={() => openActionDialog(user, 'info')}>
                                     <UserIcon className="mr-2 h-4 w-4" />
                                     See Basic Info
+                                </DropdownMenuItem>
+                                 <DropdownMenuItem asChild>
+                                    <Link href={`/admin/users/${user.uid}`}>
+                                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                                        View Dashboard
+                                    </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => openActionDialog(user, 'patra')}>
                                     <MessageSquarePlus className="mr-2 h-4 w-4" />

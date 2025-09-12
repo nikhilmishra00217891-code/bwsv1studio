@@ -1,12 +1,11 @@
 
-
 "use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -118,7 +117,9 @@ export default function Header() {
   const [hasUnreadPatra, setHasUnreadPatra] = useState(false);
   
   const isLearnZone = pathname.startsWith('/courses/') && pathname.includes('/learnzone');
-  const showBackButton = isClient && !isLearnZone && !mainNavPaths.includes(pathname);
+  const isViewingStudentDashboard = pathname.startsWith('/admin/users/');
+  
+  const showBackButton = isClient && !isLearnZone && !mainNavPaths.includes(pathname) && !isViewingStudentDashboard;
 
 
   useEffect(() => {
@@ -175,6 +176,12 @@ export default function Header() {
                     <ArrowLeft />
                     <span className="sr-only">Back</span>
                  </Button>
+             ) : isViewingStudentDashboard ? (
+                <Button variant="ghost" className="mr-2" asChild>
+                    <Link href="/admin/users">
+                        <UserCog className="mr-2 h-4 w-4" /> Back to Admin
+                    </Link>
+                </Button>
              ) : (
                 <Link href="/" className="flex items-center gap-2 mr-4">
                     <BookOpenCheck className="h-7 w-7 text-primary" />

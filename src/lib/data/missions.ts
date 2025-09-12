@@ -13,7 +13,7 @@ import {
     addDoc,
     orderBy,
 } from "firebase/firestore";
-import type { DailyMission, Course, UserMission } from "@/types";
+import type { DailyMission, Course, UserMission, UserProfile } from "@/types";
 
 interface SetMissionData {
     courseId: string;
@@ -97,7 +97,8 @@ export const getMissionsForUser = async (userId: string): Promise<UserMission[]>
         return [];
     }
 
-    const enrolledCourses: string[] = userSnap.data().enrolledCourses;
+    const userData = userSnap.data() as UserProfile;
+    const enrolledCourses: string[] = userData.enrolledCourses || [];
     const today = new Date().toISOString().split('T')[0];
     const allMissions: UserMission[] = [];
 
