@@ -48,11 +48,13 @@ export default function StudentDashboard({
     userProfile,
     enrolledCourses,
     todaysMissions,
+    initialCompletedMissions,
     isReadOnly,
 }: {
     userProfile: UserProfile,
     enrolledCourses: EnrolledCourse[],
     todaysMissions: UserMission[],
+    initialCompletedMissions: Set<string>,
     isReadOnly: boolean,
 }) {
   
@@ -90,7 +92,11 @@ export default function StudentDashboard({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-8">
-            <TodaysMissionDashboard missions={todaysMissions} isReadOnly={isReadOnly}/>
+            <TodaysMissionDashboard 
+                missions={todaysMissions} 
+                initialCompletedMissions={initialCompletedMissions} 
+                isReadOnly={isReadOnly}
+            />
 
             <div>
                 <h2 className="text-2xl font-bold font-headline mb-6">Enrolled Courses</h2>

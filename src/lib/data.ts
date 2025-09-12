@@ -2,7 +2,7 @@
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
 import { db } from "./firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion, limit } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion, limit, arrayRemove } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 const serializeTimestamps = (data: any): any => {
@@ -351,4 +351,44 @@ export const listenForLiveChatMessages = (
     });
 
     return unsubscribe;
+};
+
+// --- Mission Completion ---
+const getMissionCompletionDocRef = (userId: string, date: string) => {
+    return doc(db, `users/${userId}/missionCompletion`, date);
+};
+
+export const toggleMissionComplete = async (userId: string, missionKey: string, isComplete: boolean) => {
+    const today = new Date().toISOString().split('T')[0];
+    const docRef = getMissionCompletionDocRef(userId, today);
+    try {
+        if (isComplete) {
+            await updateDoc(docRef, {
+                completedMissions: arrayUnion(missionKey)
+            });
+        } else {
+            await updateDoc(docRef, {
+                completedMissions: arrayRemove(missionKey)
+            });
+        }
+    } catch (error: any) {
+        if (error.code === 'not-found' && isComplete) {
+            // Document doesn't exist, so create it
+            await setDoc(docRef, { completedMissions: [missionKey] });
+        } else {
+            console.error("Error toggling mission completion:", error);
+        }
+    }
+};
+
+export const getCompletedMissionsForUser = async (userId: string): Promise<Set<string>> => {
+    const today = new Date().toISOString().split('T')[0];
+    const docRef = getMissionCompletionDocRef(userId, today);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        return new Set(data.completedMissions || []);
+    }
+    return new Set();
 };

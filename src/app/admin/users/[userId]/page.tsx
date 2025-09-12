@@ -2,7 +2,7 @@
 import { getUserProfile } from "@/lib/firebase/server";
 import { notFound } from "next/navigation";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
-import { getEnrolledCoursesForUser } from "@/lib/data";
+import { getEnrolledCoursesForUser, getCompletedMissionsForUser } from "@/lib/data";
 import { getMissionsForUser } from "@/lib/data/missions";
 import type { UserProfile } from "@/types";
 
@@ -19,6 +19,7 @@ export default async function ViewStudentDashboardPage({ params }: { params: { u
 
     const enrolledCourses = await getEnrolledCoursesForUser(params.userId);
     const todaysMissions = await getMissionsForUser(params.userId);
+    const completedMissions = await getCompletedMissionsForUser(params.userId);
 
     return (
         <div className="animate-fade-in">
@@ -26,6 +27,7 @@ export default async function ViewStudentDashboardPage({ params }: { params: { u
                 userProfile={userProfile}
                 enrolledCourses={enrolledCourses}
                 todaysMissions={todaysMissions}
+                initialCompletedMissions={completedMissions}
                 isReadOnly={true}
            />
         </div>

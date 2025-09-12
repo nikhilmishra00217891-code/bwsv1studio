@@ -214,6 +214,7 @@ export interface UserProfile {
         completedLessons: string[];
     } };
     focusStats?: FocusStats;
+    missionCompletion?: { [date: string]: string[] }; // date: YYYY-MM-DD, value: array of mission keys
 }
 
 export interface RoomMember {

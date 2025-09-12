@@ -10,26 +10,42 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toggleMissionComplete } from '@/lib/data';
+import { useAuth } from '../auth/AuthProvider';
 
-export default function TodaysMissionDashboard({ missions, isReadOnly }: { missions: UserMission[], isReadOnly?: boolean }) {
+export default function TodaysMissionDashboard({ 
+    missions, 
+    initialCompletedMissions,
+    isReadOnly 
+}: { 
+    missions: UserMission[], 
+    initialCompletedMissions: Set<string>,
+    isReadOnly?: boolean 
+}) {
+    const { user } = useAuth();
     const [checkedMissions, setCheckedMissions] = useState<Set<string>>(new Set());
 
     useEffect(() => {
-        // This resets the state if the missions prop changes (e.g., new day).
-        setCheckedMissions(new Set());
-    }, [missions]);
+        // Initialize state from props, useful for read-only view or re-renders
+        setCheckedMissions(initialCompletedMissions || new Set());
+    }, [initialCompletedMissions]);
 
-    const handleMissionToggle = (missionKey: string) => {
-        if (isReadOnly) return;
-        setCheckedMissions(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(missionKey)) {
-                newSet.delete(missionKey);
-            } else {
-                newSet.add(missionKey);
-            }
-            return newSet;
-        });
+    const handleMissionToggle = async (missionKey: string) => {
+        if (isReadOnly || !user) return;
+        
+        const newSet = new Set(checkedMissions);
+        let isComplete;
+        if (newSet.has(missionKey)) {
+            newSet.delete(missionKey);
+            isComplete = false;
+        } else {
+            newSet.add(missionKey);
+            isComplete = true;
+        }
+        setCheckedMissions(newSet);
+        
+        // Persist change to the database
+        await toggleMissionComplete(user.uid, missionKey, isComplete);
     };
     
     const allMissionsCompleted = missions.length > 0 && checkedMissions.size === missions.length;
@@ -98,7 +114,7 @@ export default function TodaysMissionDashboard({ missions, isReadOnly }: { missi
                             <AccordionContent className="pt-2 pl-4 border-l ml-2">
                                 <div className="space-y-4">
                                     {courseMissions.map(mission => {
-                                        const missionKey = `${courseTitle}-${mission.subjectTitle}`;
+                                        const missionKey = `${mission.courseTitle}-${mission.subjectTitle}`;
                                         const isChecked = checkedMissions.has(missionKey);
                                         return (
                                             <div key={missionKey} className="flex items-start gap-3">

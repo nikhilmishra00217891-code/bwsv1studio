@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getEnrolledCoursesForUser } from "@/lib/data";
+import { getEnrolledCoursesForUser, getCompletedMissionsForUser } from "@/lib/data";
 import type { EnrolledCourse, UserMission } from "@/types";
 import { LoaderCircle } from "lucide-react";
 import { getMissionsForUser } from "@/lib/data/missions";
@@ -13,16 +13,21 @@ export default function DashboardPage() {
   const { user, userProfile, loading } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [todaysMissions, setTodaysMissions] = useState<UserMission[]>([]);
+  const [completedMissions, setCompletedMissions] = useState<Set<string>>(new Set());
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       const fetchDashboardData = async () => {
         setDataLoading(true);
-        const courses = await getEnrolledCoursesForUser(user.uid);
-        const missions = await getMissionsForUser(user.uid);
+        const [courses, missions, completed] = await Promise.all([
+            getEnrolledCoursesForUser(user.uid),
+            getMissionsForUser(user.uid),
+            getCompletedMissionsForUser(user.uid)
+        ]);
         setEnrolledCourses(courses);
         setTodaysMissions(missions);
+        setCompletedMissions(completed);
         setDataLoading(false);
       };
       fetchDashboardData();
@@ -42,6 +47,7 @@ export default function DashboardPage() {
         userProfile={userProfile}
         enrolledCourses={enrolledCourses}
         todaysMissions={todaysMissions}
+        initialCompletedMissions={completedMissions}
         isReadOnly={false}
      />
   );
