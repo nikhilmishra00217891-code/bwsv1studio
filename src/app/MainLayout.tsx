@@ -13,6 +13,7 @@ import FeedbackWidget from "@/components/common/FeedbackWidget";
 import { useAuth } from "@/components/auth/AuthProvider";
 import SuspendedAccountFirewall from "@/components/auth/SuspendedAccountFirewall";
 import { useState, useEffect } from "react";
+import PwaInstall from "@/components/common/PwaInstall";
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -70,7 +71,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="flex min-h-screen flex-col">
                 {!isOnboarding && <Header />}
                 <main className="flex-1">{children}</main>
-                {!isGamePage && !isAdminPage && !isCoursePage && <Footer />}
+                {!isGamePage && !isAdminPage && !isCoursePage && (
+                    <>
+                        <PwaInstall />
+                        <Footer />
+                    </>
+                )}
             </div>
              {isHomepage && user && <FloatingCTA />}
             {showFloatingButtons && (
