@@ -30,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
-      <body className={`${poppins.variable} font-body antialiased`}>
+      <body className={`${poppins.variable} font-body antialiased select-none`}>
         <AuthProvider>
           <ThemeProvider
             attribute="class"
