@@ -4,15 +4,19 @@ import { notFound } from "next/navigation";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
 import { getEnrolledCoursesForUser } from "@/lib/data";
 import { getMissionsForUser } from "@/lib/data/missions";
+import type { UserProfile } from "@/types";
 
 // This is the server component that fetches the student's data
 export default async function ViewStudentDashboardPage({ params }: { params: { userId: string } }) {
-    const userProfile = await getUserProfile(params.userId);
+    const rawUserProfile = await getUserProfile(params.userId);
 
-    if (!userProfile) {
+    if (!rawUserProfile) {
         notFound();
     }
     
+    // Serialize the user profile to convert Timestamps to strings
+    const userProfile: UserProfile = JSON.parse(JSON.stringify(rawUserProfile));
+
     const enrolledCourses = await getEnrolledCoursesForUser(params.userId);
     const todaysMissions = await getMissionsForUser(params.userId);
 
