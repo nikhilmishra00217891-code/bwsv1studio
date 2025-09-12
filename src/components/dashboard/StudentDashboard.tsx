@@ -11,6 +11,7 @@ import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import TodaysMissionDashboard from "@/components/dashboard/TodaysMissionDashboard";
+import PersonalTodoList from "./PersonalTodoList";
 
 const FocusStatsCard = ({ userProfile, isReadOnly }: { userProfile: UserProfile, isReadOnly: boolean }) => {
     const focusStats = userProfile?.focusStats || { totalMinutes: 0, totalSessions: 0 };
@@ -97,6 +98,8 @@ export default function StudentDashboard({
                 initialCompletedMissions={initialCompletedMissions} 
                 isReadOnly={isReadOnly}
             />
+
+            {!isReadOnly && <PersonalTodoList />}
 
             <div>
                 <h2 className="text-2xl font-bold font-headline mb-6">Enrolled Courses</h2>
