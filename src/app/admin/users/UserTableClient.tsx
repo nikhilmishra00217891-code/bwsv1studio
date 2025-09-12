@@ -381,7 +381,10 @@ const BasicInfoDialog = ({
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>User Info: {user.displayName}</DialogTitle>
-                    <DialogDescription>Role: <Badge variant={user.role === 'faculty' ? 'default' : 'secondary'}>{user.role}</Badge></DialogDescription>
+                    <div className="flex items-center gap-2">
+                        <DialogDescription>Role:</DialogDescription>
+                        <Badge variant={user.role === 'faculty' ? 'default' : 'secondary'}>{user.role}</Badge>
+                    </div>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] -mx-6 px-6">
                     <div className="py-4 space-y-6">
