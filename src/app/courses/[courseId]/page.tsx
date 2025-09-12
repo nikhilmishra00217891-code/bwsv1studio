@@ -13,15 +13,9 @@ export default async function SingleCoursePage({ params }: { params: { courseId:
         notFound();
     }
 
-    // Convert Firestore Timestamps to serializable strings before passing to client component
-    const course: Course = JSON.parse(JSON.stringify(courseData, (key, value) => {
-        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
-            const ts = new Timestamp(value.seconds, value.nanoseconds);
-            return ts.toDate().toISOString();
-        }
-        return value;
-    }));
-
+    // Data from getCourseById is already serialized.
+    // The JSON.stringify/parse is a robust way to ensure deep serialization.
+    const course: Course = JSON.parse(JSON.stringify(courseData));
 
     return (
         <div className="animate-fade-in">

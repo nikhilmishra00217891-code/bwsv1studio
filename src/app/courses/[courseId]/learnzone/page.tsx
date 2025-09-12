@@ -19,14 +19,8 @@ const CourseLearnPageContent = async ({ params }: { params: { courseId: string }
         notFound();
     }
 
-    // Convert Firestore Timestamps to serializable strings before passing to client component
-    const course: Course = JSON.parse(JSON.stringify(courseData, (key, value) => {
-        if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
-            const ts = new Timestamp(value.seconds, value.nanoseconds);
-            return ts.toDate().toISOString();
-        }
-        return value;
-    }));
+    // This is already serialized by getCourseById, but as a safeguard we can ensure it again.
+    const course: Course = JSON.parse(JSON.stringify(courseData));
 
     if (!user) {
         return (

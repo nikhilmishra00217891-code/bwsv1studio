@@ -5,6 +5,26 @@ import { db } from "./firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion, limit } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
+const serializeTimestamps = (data: any): any => {
+    if (data === null || typeof data !== 'object') {
+        return data;
+    }
+
+    if (data instanceof Timestamp) {
+        return data.toDate().toISOString();
+    }
+    
+    if (Array.isArray(data)) {
+        return data.map(serializeTimestamps);
+    }
+
+    const newObj: { [key: string]: any } = {};
+    for (const key in data) {
+        newObj[key] = serializeTimestamps(data[key]);
+    }
+    return newObj;
+}
+
 export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> => {
   const coursesCol = collection(db, "courses");
   
@@ -22,7 +42,7 @@ export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> 
     return [];
   }
   return snapshot.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() } as Course)
+    (doc) => serializeTimestamps({ id: doc.id, ...doc.data() }) as Course
   );
 };
 
@@ -43,7 +63,7 @@ export const listenForCourses = (isFaculty: boolean, callback: (courses: Course[
             callback([]);
             return;
         }
-        const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+        const courses = snapshot.docs.map(doc => serializeTimestamps({ id: doc.id, ...doc.data() }) as Course);
         callback(courses);
     }, (error) => {
         console.error("Error listening for courses:", error);
@@ -59,7 +79,7 @@ export const getCourseById = async (id: string): Promise<Course | null> => {
     const docSnap = await getDoc(courseDocRef);
 
     if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Course;
+        return serializeTimestamps({ id: docSnap.id, ...docSnap.data() }) as Course;
     } else {
         return null;
     }
@@ -73,7 +93,7 @@ export const getCoursesByIds = async (ids: string[]): Promise<Course[]> => {
     const q = query(coursesCol, where('__name__', 'in', ids));
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+    return snapshot.docs.map(doc => serializeTimestamps({ id: doc.id, ...doc.data() }) as Course);
 }
 
 interface CreateCourseData {
@@ -124,7 +144,7 @@ export const getFeaturedCourses = async (): Promise<Course[]> => {
 
   if (snapshot.empty) return [];
   
-  const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+  const courses = snapshot.docs.map(doc => serializeTimestamps({ id: doc.id, ...doc.data() }) as Course);
   return courses.slice(0, 3); // In a real app, you might have a 'isFeatured' flag
 };
 
@@ -270,19 +290,7 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
     }
     return snapshot.docs.map((doc) => {
         const data = doc.data();
-        
-        const serializedData: any = { ...data };
-
-        // Manually convert Firestore Timestamp to a serializable format (ISO string)
-        if (data.createdAt instanceof Timestamp) {
-            serializedData.createdAt = data.createdAt.toDate().toISOString();
-        }
-
-        if (data.suspension?.suspendedAt instanceof Timestamp) {
-            serializedData.suspension.suspendedAt = data.suspension.suspendedAt.toDate().toISOString();
-        }
-
-        return serializedData as UserProfile;
+        return serializeTimestamps(data) as UserProfile;
     });
 };
 
