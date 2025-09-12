@@ -1,32 +1,51 @@
-
 {
-    "name": "BiharWaleSirji",
-    "short_name": "BWS",
-    "description": "India's first platform that teaches like an elder brother, not a stranger.",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#FFF9F5",
-    "theme_color": "#F97316",
-    "icons": [
-        {
-            "src": "/icons/icon-192x192.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "/icons/icon-256x256.png",
-            "sizes": "256x256",
-            "type": "image/png"
-        },
-        {
-            "src": "/icons/icon-384x384.png",
-            "sizes": "384x384",
-            "type": "image/png"
-        },
-        {
-            "src": "/icons/icon-512x512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        }
-    ]
+  "name": "BiharWaleSirji",
+  "short_name": "BWS",
+  "description": "India's first platform that teaches like an elder brother, not a stranger.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#F99006",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/N0VyMxh7/IMG-20250912-WA0006.jpg",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/N0VyMxh7/IMG-20250912-WA0006.jpg",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/N0VyMxh7/IMG-20250912-WA0006.jpg",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/N0VyMxh7/IMG-20250912-WA0006.jpg",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/N0VyMxh7/IMG-20250912-WA0006.jpg",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/N0VyMxh7/IMG-20250912-WA0006.jpg",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/N0VyMxh7/IMG-20250912-WA0006.jpg",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.postimg.cc/N0VyMxh7/IMG-20250912-WA0006.jpg",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
