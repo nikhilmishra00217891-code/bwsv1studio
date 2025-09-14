@@ -79,13 +79,6 @@ export default function LiveSessionsDashboard({ enrolledCourses }: { enrolledCou
         </div>
     );
     
-    const hasAnySessions = liveSessions.length > 0 || upcomingSessions.length > 0;
-
-    if (!hasAnySessions) {
-        // Don't render the card at all if there are no sessions.
-        return null;
-    }
-
     return (
         <Card>
             <CardHeader>
