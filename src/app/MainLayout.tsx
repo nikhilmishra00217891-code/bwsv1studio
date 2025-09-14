@@ -14,6 +14,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import SuspendedAccountFirewall from "@/components/auth/SuspendedAccountFirewall";
 import { useState, useEffect } from "react";
 import PwaInstall from "@/components/common/PwaInstall";
+import CourseDrawer from "@/components/common/CourseDrawer";
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const isOnboarding = pathname === '/onboarding';
     const isHomepage = pathname === '/';
     const isAboutPage = pathname === '/about';
+    const isDashboard = pathname === '/dashboard';
     const isGamePage = pathname.startsWith('/games/');
     const isAdminPage = pathname.startsWith('/admin/');
     const isCoursePage = pathname.startsWith('/courses/') && pathname.length > '/courses/'.length;
@@ -65,6 +67,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
     
     const showFloatingButtons = isHomepage || isAboutPage;
+    const showCourseDrawer = user && (isHomepage || isAboutPage || isDashboard);
 
     return (
         <>
@@ -79,6 +82,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 )}
             </div>
              {isHomepage && user && <FloatingCTA />}
+             
+             {showCourseDrawer && (
+                <div className="fixed bottom-6 left-6 z-50">
+                    <CourseDrawer />
+                </div>
+             )}
+
             {showFloatingButtons && (
                  <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
                     <FeedbackWidget />
