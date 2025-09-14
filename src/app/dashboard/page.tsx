@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getEnrolledCoursesForUser, getCompletedMissionsForUser } from "@/lib/data";
-import type { EnrolledCourse, UserMission } from "@/types";
+import { getEnrolledCoursesForUser, getCompletedMissionsForUser, getCoursesByIds } from "@/lib/data";
+import type { EnrolledCourse, UserMission, Course } from "@/types";
 import { LoaderCircle } from "lucide-react";
 import { getMissionsForUser } from "@/lib/data/missions";
 import StudentDashboard from "@/components/dashboard/StudentDashboard";
@@ -20,12 +20,26 @@ export default function DashboardPage() {
     if (user) {
       const fetchDashboardData = async () => {
         setDataLoading(true);
-        const [courses, missions, completed] = await Promise.all([
-            getEnrolledCoursesForUser(user.uid),
+        
+        // This part becomes more complex as we need full course data for sessions.
+        const enrolledCourseData = await getEnrolledCoursesForUser(user.uid);
+        
+        // Let's assume `getEnrolledCoursesForUser` is modified or we make another call
+        // to get the full course objects for now.
+        const courseIds = enrolledCourseData.map(c => c.courseId);
+        const fullCourses = await getCoursesByIds(courseIds);
+
+        const [missions, completed] = await Promise.all([
             getMissionsForUser(user.uid),
             getCompletedMissionsForUser(user.uid)
         ]);
-        setEnrolledCourses(courses);
+
+        // We pass the full course objects to the dashboard now
+        setEnrolledCourses(fullCourses.map(c => ({
+            ...enrolledCourseData.find(ec => ec.courseId === c.id)!,
+            ...c
+        })));
+        
         setTodaysMissions(missions);
         setCompletedMissions(completed);
         setDataLoading(false);

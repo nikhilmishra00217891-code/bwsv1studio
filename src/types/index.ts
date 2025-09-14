@@ -129,12 +129,10 @@ export interface Testimonial {
   text: string;
 }
 
-export interface EnrolledCourse {
+// EnrolledCourse now extends Course to include all its properties
+export interface EnrolledCourse extends Course {
   courseId: string;
   progress: number;
-  title: string;
-  thumbnail: string;
-  category: string;
 }
 
 export interface MobileNumber {

@@ -5,6 +5,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import StudentDashboard from "@/components/dashboard/StudentDashboard";
+import type { EnrolledCourse, UserMission } from "@/types";
 
 export default function DashboardLayout({
   children,
@@ -13,12 +16,18 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
     }
   }, [user, loading, router]);
+  
+  if (pathname === '/dashboard' && !loading && user) {
+    return <>{children}</>;
+  }
+
 
   if (loading || !user) {
     return (

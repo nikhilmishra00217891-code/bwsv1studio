@@ -199,6 +199,8 @@ export const getEnrolledCoursesForUser = async (userId: string): Promise<Enrolle
             category: courseData.category,
             thumbnail: courseData.thumbnail,
             progress: progress,
+            // We need to pass the full course data for the session feature
+            ...courseData
           };
         }
         return null;

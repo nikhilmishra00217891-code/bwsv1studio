@@ -12,6 +12,7 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import TodaysMissionDashboard from "@/components/dashboard/TodaysMissionDashboard";
 import PersonalTodoList from "./PersonalTodoList";
+import LiveSessionsDashboard from "./LiveSessionsDashboard";
 
 const FocusStatsCard = ({ userProfile, isReadOnly }: { userProfile: UserProfile, isReadOnly: boolean }) => {
     const focusStats = userProfile?.focusStats || { totalMinutes: 0, totalSessions: 0 };
@@ -93,6 +94,7 @@ export default function StudentDashboard({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-8">
+            <LiveSessionsDashboard enrolledCourses={enrolledCourses} />
             <TodaysMissionDashboard 
                 missions={todaysMissions} 
                 initialCompletedMissions={initialCompletedMissions} 
