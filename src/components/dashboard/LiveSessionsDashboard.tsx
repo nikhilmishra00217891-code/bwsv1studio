@@ -97,10 +97,10 @@ export default function LiveSessionsDashboard({ enrolledCourses }: { enrolledCou
                         </div>
                         <CardDescription>Your live classes and scheduled sessions for today.</CardDescription>
                     </div>
-                    {enrolledCourses.length > 1 && (
+                    {enrolledCourses.length > 0 && (
                         <div className="flex items-center gap-2">
                              <Filter className="w-4 h-4 text-muted-foreground"/>
-                             <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                             <Select value={selectedCourse} onValueChange={setSelectedCourse} disabled={enrolledCourses.length <= 1}>
                                 <SelectTrigger className="w-[180px]">
                                     <SelectValue placeholder="Filter by course..." />
                                 </SelectTrigger>
