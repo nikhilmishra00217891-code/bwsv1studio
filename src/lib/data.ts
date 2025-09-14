@@ -206,7 +206,7 @@ export const getEnrolledCoursesForUser = async (userId: string): Promise<Enrolle
         return null;
       });
       
-      const enrolledCourses = (await Promise.all(enrolledCoursesPromises)).filter(c => c !== null) as EnrolledCourse[];
+      const enrolledCourses = (await Promise.all(enrolledCoursesPromises)).filter((c): c is EnrolledCourse => c !== null);
       return enrolledCourses;
 
     } else {

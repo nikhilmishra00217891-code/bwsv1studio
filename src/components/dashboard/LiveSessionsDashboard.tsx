@@ -22,10 +22,25 @@ export default function LiveSessionsDashboard({ enrolledCourses }: { enrolledCou
         const live: Session[] = [];
         const upcoming: Session[] = [];
 
-        // This is a placeholder. In a real app, `enrolledCourses` would need full course data
-        // with subjects and lessons, or we'd have a more direct way to fetch sessions.
-        // For now, we'll assume `enrolledCourses` contains this data, which it currently doesn't.
-        // This will need to be connected to the real data structure.
+        enrolledCourses.forEach(course => {
+            course.subjects?.forEach(subject => {
+                subject.chapters?.forEach(chapter => {
+                    chapter.lessons?.forEach(lesson => {
+                        const sessionData: Session = {
+                            ...lesson,
+                            courseId: course.id,
+                            courseTitle: course.title,
+                            subjectTitle: subject.title,
+                        };
+                        if (lesson.status === 'live') {
+                            live.push(sessionData);
+                        } else if (lesson.status === 'scheduled') {
+                            upcoming.push(sessionData);
+                        }
+                    });
+                });
+            });
+        });
 
         // Sorting upcoming sessions by date
         upcoming.sort((a, b) => {
