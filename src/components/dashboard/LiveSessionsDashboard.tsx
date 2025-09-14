@@ -1,14 +1,15 @@
 
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { EnrolledCourse, Lesson } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Radio, CalendarClock, ChevronsRight, Eye } from 'lucide-react';
+import { Radio, CalendarClock, ChevronsRight, Eye, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface Session extends Lesson {
     courseId: string;
@@ -18,11 +19,17 @@ interface Session extends Lesson {
 
 export default function LiveSessionsDashboard({ enrolledCourses }: { enrolledCourses: EnrolledCourse[] }) {
     
+    const [selectedCourse, setSelectedCourse] = useState('all');
+
     const { liveSessions, upcomingSessions } = useMemo(() => {
         const live: Session[] = [];
         const upcoming: Session[] = [];
+        
+        const coursesToProcess = selectedCourse === 'all' 
+            ? enrolledCourses 
+            : enrolledCourses.filter(c => c.id === selectedCourse);
 
-        enrolledCourses.forEach(course => {
+        coursesToProcess.forEach(course => {
             course.subjects?.forEach(subject => {
                 subject.chapters?.forEach(chapter => {
                     chapter.lessons?.forEach(lesson => {
@@ -50,7 +57,7 @@ export default function LiveSessionsDashboard({ enrolledCourses }: { enrolledCou
         });
 
         return { liveSessions: live, upcomingSessions: upcoming };
-    }, [enrolledCourses]);
+    }, [enrolledCourses, selectedCourse]);
 
     const renderSessionList = (sessions: Session[]) => (
         <div className="space-y-3">
@@ -82,11 +89,31 @@ export default function LiveSessionsDashboard({ enrolledCourses }: { enrolledCou
     return (
         <Card>
             <CardHeader>
-                <div className="flex items-center gap-3">
-                    <Radio className="w-6 h-6 text-primary animate-pulse" />
-                    <CardTitle className="text-xl font-headline">Live & Upcoming Sessions</CardTitle>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <Radio className="w-6 h-6 text-primary animate-pulse" />
+                            <CardTitle className="text-xl font-headline">Live & Upcoming Sessions</CardTitle>
+                        </div>
+                        <CardDescription>Your live classes and scheduled sessions for today.</CardDescription>
+                    </div>
+                    {enrolledCourses.length > 1 && (
+                        <div className="flex items-center gap-2">
+                             <Filter className="w-4 h-4 text-muted-foreground"/>
+                             <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Filter by course..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Courses</SelectItem>
+                                    {enrolledCourses.map(course => (
+                                        <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                 </div>
-                <CardDescription>Your live classes and scheduled sessions for today.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="live">
