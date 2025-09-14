@@ -100,7 +100,7 @@ export default function LiveSessionsDashboard({ enrolledCourses }: { enrolledCou
                     {enrolledCourses.length > 0 && (
                         <div className="flex items-center gap-2">
                              <Filter className="w-4 h-4 text-muted-foreground"/>
-                             <Select value={selectedCourse} onValueChange={setSelectedCourse} disabled={enrolledCourses.length <= 1}>
+                             <Select value={selectedCourse} onValueChange={setSelectedCourse}>
                                 <SelectTrigger className="w-[180px]">
                                     <SelectValue placeholder="Filter by course..." />
                                 </SelectTrigger>
