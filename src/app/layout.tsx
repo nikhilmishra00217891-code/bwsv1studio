@@ -20,7 +20,6 @@ export const metadata: Metadata = {
   title: "BiharWaleSirji - Parivaar. Pratishtha. Parivartan.",
   description:
     "India's first platform that teaches like an elder brother, not a stranger.",
-  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
