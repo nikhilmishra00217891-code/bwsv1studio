@@ -25,7 +25,7 @@ export default function PwaInstall() {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Stash the event so it can be triggered later.
-      setInstallPromptEvent(e as BeforeInstallPromptEvent);
+      setInstallPromptEvent(e as BeforeInstallGevent);
       // Show the install promotion
       setShowBanner(true);
     };
@@ -78,10 +78,10 @@ export default function PwaInstall() {
                     Install App
                 </Button>
             </div>
-             <div className="relative w-full h-64 md:h-full min-h-[200px]">
+             <div className="relative w-full h-64 md:h-full min-h-[200px] aspect-square mx-auto md:mx-0">
                 <Image
-                    src="https://i.postimg.cc/N0VyMxh7/IMG-20250912-WA0006.jpg"
-                    alt="BiharWaleSirji app on a device"
+                    src="https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg"
+                    alt="BiharWaleSirji app icon"
                     fill
                     className="object-cover"
                 />
