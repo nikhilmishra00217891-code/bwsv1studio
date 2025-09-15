@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   title: "BiharWaleSirji - Parivaar. Pratishtha. Parivartan.",
   description:
     "India's first platform that teaches like an elder brother, not a stranger.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg",
+    apple: "https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg",
+  }
 };
 
 export default function RootLayout({
@@ -29,9 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg" sizes="any" />
-      </head>
+       <head/>
       <body className={`${poppins.variable} font-body antialiased select-none`}>
         <AuthProvider>
           <ThemeProvider
