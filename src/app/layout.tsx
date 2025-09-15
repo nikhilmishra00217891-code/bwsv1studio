@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
        <head>
-        <link rel="icon" href="https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg" />
+        
       </head>
       <body className={`${poppins.variable} font-body antialiased select-none`}>
         <AuthProvider>
