@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   description:
     "India's first platform that teaches like an elder brother, not a stranger.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg",
+  },
 };
 
 export default function RootLayout({
