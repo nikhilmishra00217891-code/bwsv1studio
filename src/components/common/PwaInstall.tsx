@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -25,7 +24,7 @@ export default function PwaInstall() {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Stash the event so it can be triggered later.
-      setInstallPromptEvent(e as BeforeInstallGevent);
+      setInstallPromptEvent(e as BeforeInstallPromptEvent);
       // Show the install promotion
       setShowBanner(true);
     };
