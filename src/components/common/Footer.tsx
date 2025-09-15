@@ -1,6 +1,7 @@
 
 import Link from 'next/link';
 import { BookOpenCheck, Youtube, Instagram, Send, Phone } from 'lucide-react';
+import Image from "next/image";
 
 const navLinks = [
   { href: '/courses', label: 'Courses' },
@@ -22,7 +23,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div className="md:col-span-1">
              <Link href="/" className="flex items-center gap-2">
-                <BookOpenCheck className="h-8 w-8 text-primary" />
+                <Image src="https://i.postimg.cc/W41f85RN/IMG-20250915-WA0008.jpg" alt="BiharWaleSirji Logo" width={48} height={48} className="rounded-lg"/>
                 <span className="font-bold text-2xl font-headline tracking-wide">
                     BiharWaleSirji
                 </span>

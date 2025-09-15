@@ -19,6 +19,7 @@ import { useEditMode } from "./EditModeProvider";
 import { ScrollArea } from "../ui/scroll-area";
 import SmartSearch from "../home/SmartSearch";
 import { listenForUserPatra } from "@/lib/data/patra";
+import Image from "next/image";
 
 const NavLink = ({ href, label, icon: Icon, onSelect, isProtected, isDesktop = false }: { href: string; label: string, icon?: React.ElementType, onSelect?: () => void, isProtected?: boolean, isDesktop?: boolean }) => {
   const pathname = usePathname();
@@ -184,7 +185,7 @@ export default function Header() {
                 </Button>
              ) : (
                 <Link href="/" className="flex items-center gap-2 mr-4">
-                    <BookOpenCheck className="h-7 w-7 text-primary" />
+                    <Image src="https://i.postimg.cc/W41f85RN/IMG-20250915-WA0008.jpg" alt="BiharWaleSirji Logo" width={40} height={40} className="rounded-md"/>
                     <span className="hidden sm:block font-bold text-xl font-headline tracking-wide">
                         BiharWaleSirji
                     </span>
@@ -241,7 +242,7 @@ export default function Header() {
                
                 <div className="flex items-center justify-between p-6 border-b">
                     <Link href="/" className="flex items-center gap-2" onClick={() => handleLinkClick()}>
-                        <BookOpenCheck className="h-6 w-6 text-primary" />
+                        <Image src="https://i.postimg.cc/W41f85RN/IMG-20250915-WA0008.jpg" alt="BiharWaleSirji Logo" width={32} height={32} className="rounded-md"/>
                         <span className="font-bold text-lg">BiharWaleSirji</span>
                     </Link>
                 </div>
