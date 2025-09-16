@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getApps } from 'firebase-admin/app';
@@ -22,6 +23,9 @@ interface SendNotificationData {
 export const sendBulkNotification = async (
   data: SendNotificationData
 ): Promise<{ success: boolean; message: string }> => {
+  // Ensure Firebase Admin is initialized on each serverless function invocation
+  customInitApp();
+  
   if (data.recipientIds.length === 0) {
     return { success: false, message: 'No recipients selected.' };
   }
