@@ -185,7 +185,7 @@ export default function Header() {
                 </Button>
              ) : (
                 <Link href="/" className="flex items-center gap-2 mr-4">
-                    <Image src="https://i.postimg.cc/W41f85RN/IMG-20250915-WA0008.jpg" alt="BiharWaleSirji Logo" width={40} height={40} className="rounded-md"/>
+                    <Image src="https://i.postimg.cc/PxMF8kGK/full-transparent-bed-logi.png" alt="BiharWaleSirji Logo" width={40} height={40} />
                     <span className="hidden sm:block font-bold text-xl font-headline tracking-wide">
                         BiharWaleSirji
                     </span>
@@ -242,7 +242,7 @@ export default function Header() {
                
                 <div className="flex items-center justify-between p-6 border-b">
                     <Link href="/" className="flex items-center gap-2" onClick={() => handleLinkClick()}>
-                        <Image src="https://i.postimg.cc/W41f85RN/IMG-20250915-WA0008.jpg" alt="BiharWaleSirji Logo" width={32} height={32} className="rounded-md"/>
+                        <Image src="https://i.postimg.cc/PxMF8kGK/full-transparent-bed-logi.png" alt="BiharWaleSirji Logo" width={32} height={32} />
                         <span className="font-bold text-lg">BiharWaleSirji</span>
                     </Link>
                 </div>

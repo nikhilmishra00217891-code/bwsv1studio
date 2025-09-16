@@ -23,7 +23,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div className="md:col-span-1">
              <Link href="/" className="flex items-center gap-2">
-                <Image src="https://i.postimg.cc/W41f85RN/IMG-20250915-WA0008.jpg" alt="BiharWaleSirji Logo" width={48} height={48} className="rounded-lg"/>
+                <Image src="https://i.postimg.cc/PxMF8kGK/full-transparent-bed-logi.png" alt="BiharWaleSirji Logo" width={48} height={48} />
                 <span className="font-bold text-2xl font-headline tracking-wide">
                     BiharWaleSirji
                 </span>
