@@ -261,9 +261,9 @@ const NotificationDialog = ({
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Send Notification to {users.length} Users</DialogTitle>
+                    <DialogTitle>Send Notification to {users.length} {users.length === 1 ? 'User' : 'Users'}</DialogTitle>
                     <DialogDescription>
-                        This will send a push notification to all currently filtered users who have enabled them.
+                        This will send a push notification to all selected users who have enabled them.
                     </DialogDescription>
                 </DialogHeader>
                  <div className="py-4 space-y-4">
@@ -536,6 +536,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
   const [showPatraDialog, setShowPatraDialog] = useState(false);
   const [showBulkPatraDialog, setShowBulkPatraDialog] = useState(false);
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
+  const [showSingleNotificationDialog, setShowSingleNotificationDialog] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -576,7 +577,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     });
   };
 
-  const openActionDialog = (user: UserProfile, action: 'suspend' | 'patra' | 'info') => {
+  const openActionDialog = (user: UserProfile, action: 'suspend' | 'patra' | 'info' | 'notification') => {
     setSelectedUser(user);
     if (action === 'suspend') {
         setShowSuspensionDialog(true);
@@ -584,6 +585,8 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
         setShowPatraDialog(true);
     } else if (action === 'info') {
         setShowInfoDialog(true);
+    } else if (action === 'notification') {
+        setShowSingleNotificationDialog(true);
     }
   }
 
@@ -694,6 +697,10 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
                                     <MessageSquarePlus className="mr-2 h-4 w-4" />
                                     Send Patra
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => openActionDialog(user, 'notification')}>
+                                    <Bell className="mr-2 h-4 w-4" />
+                                    Send Notification
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 {user.suspension?.isSuspended ? (
                                     <DropdownMenuItem onSelect={() => openActionDialog(user, 'suspend')} className="text-green-600 focus:text-green-600 focus:bg-green-50">
@@ -745,6 +752,13 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
         isOpen={showNotificationDialog}
         onOpenChange={setShowNotificationDialog}
     />
+    {selectedUser && (
+        <NotificationDialog
+            users={[selectedUser]}
+            isOpen={showSingleNotificationDialog}
+            onOpenChange={setShowSingleNotificationDialog}
+        />
+    )}
     <BasicInfoDialog
         user={selectedUser}
         isOpen={showInfoDialog}
