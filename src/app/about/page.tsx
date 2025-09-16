@@ -3,6 +3,7 @@ import { EditableText } from "@/components/common/EditableText";
 import { EditableImage } from "@/components/common/EditableImage";
 import { getTextContent } from "@/lib/data/content";
 import type { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
     title: "About Us - Reviving Bihar's Educational Excellence",
@@ -13,27 +14,29 @@ export default async function AboutPage() {
   const textContent = await getTextContent();
 
   return (
-    <div className="relative bg-background overflow-hidden">
-        <EditableImage
-            contentId="aboutPageBgImage_nalanda"
-            src={textContent.aboutPageBgImage_nalanda || "https://i.postimg.cc/Gp3FkZmc/1d8aefb2637853f72d736309ce7b1503.jpg"}
-            alt="Nalanda Ruins"
-            layout="fill"
-            objectFit="cover"
-            className="opacity-10"
-            data-ai-hint="nalanda ruins"
+    <div className="bg-[#111111]">
+      <div className="relative py-20 md:py-28 text-center overflow-hidden">
+        <Image
+          src="https://i.postimg.cc/Gp3FkZmc/1d8aefb2637853f72d736309ce7b1503.jpg"
+          alt="Nalanda Ruins"
+          layout="fill"
+          objectFit="cover"
+          className="z-0"
+          data-ai-hint="nalanda ruins"
         />
-      <div className="relative container mx-auto px-6 py-20 md:py-28 animate-fade-in space-y-16">
-        
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary tracking-tight">
+        <div className="absolute inset-0 bg-black/60 z-10"></div>
+        <div className="relative z-20 container mx-auto px-6 animate-fade-in">
+          <h1 className="text-4xl md:text-5xl font-bold font-headline text-white tracking-tight">
             <EditableText
               contentId="about_title"
               defaultValue={textContent.about_title || "About BiharwaleSir Ji: Reviving Bihar's Educational Excellence"}
             />
           </h1>
         </div>
+      </div>
 
+      <div className="container mx-auto px-6 py-16 space-y-16">
+        
         <div className="max-w-3xl mx-auto bg-card/80 backdrop-blur-sm p-8 md:p-10 rounded-2xl shadow-lg">
           <h2 className="text-2xl font-bold font-headline mb-4">Our Mission</h2>
           <EditableText
@@ -121,5 +124,3 @@ export default async function AboutPage() {
     </div>
   );
 }
-
-    
