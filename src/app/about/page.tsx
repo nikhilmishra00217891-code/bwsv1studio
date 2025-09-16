@@ -88,6 +88,16 @@ export default async function AboutPage() {
         </div>
 
         <div className="max-w-3xl mx-auto bg-card/80 backdrop-blur-sm p-8 md:p-10 rounded-2xl shadow-lg">
+          <h2 className="text-2xl font-bold font-headline mb-4">Our Commitment: Inclusive Excellence</h2>
+          <EditableText
+            contentId="about_commitment"
+            defaultValue={textContent.about_commitment || "At BiharwaleSir Ji, we believe that every child deserves access to premium education regardless of their background or location. Our responsibility extends beyond traditional teaching—we are committed to:\n\n- Democratizing Quality Education\n- Cultural Integration\n- Holistic Development\n- Equal Opportunities\n- Community Building"}
+            multiline
+            className="w-full text-foreground/80 leading-relaxed block whitespace-pre-wrap text-left"
+          />
+        </div>
+
+        <div className="max-w-3xl mx-auto bg-card/80 backdrop-blur-sm p-8 md:p-10 rounded-2xl shadow-lg">
           <h2 className="text-2xl font-bold font-headline mb-4">Our Legacy: Ancient Wisdom, Modern Innovation</h2>
           <EditableText
             contentId="about_legacy"
@@ -111,3 +121,5 @@ export default async function AboutPage() {
     </div>
   );
 }
+
+    
