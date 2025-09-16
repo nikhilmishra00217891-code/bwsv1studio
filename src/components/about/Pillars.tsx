@@ -1,12 +1,9 @@
 
 "use client";
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Award, Sunrise, Users } from 'lucide-react';
-import { EditableText } from '@/components/common/EditableText';
-import { useAuth } from '../auth/AuthProvider';
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
 
 const pillarData = [
   {
@@ -14,24 +11,24 @@ const pillarData = [
     title: "पारिवार (Parivar)",
     subtitle: "Family",
     icon: Users,
-    contentId: "about_pillar_parivar",
-    defaultContent: "Bihar is an integral and valuable part of Bharat's grand family, deserving respect and recognition rather than ridicule. Every student who joins us becomes part of our Gyan Parivar (Knowledge Family), where learning transcends boundaries and creates bonds that last a lifetime. We believe that education flourishes in an environment of mutual respect, care, and collective growth—values that have been the cornerstone of Bihar's educational heritage.",
+    content: "Bihar is an integral and valuable part of Bharat's grand family... We believe that education flourishes in an environment of mutual respect, care, and collective growth.",
+    color: "bg-green-500",
   },
   {
     id: "pratishtha",
     title: "प्रतिष्ठा (Pratishtha)",
     subtitle: "Dignity & Honor",
     icon: Award,
-    contentId: "about_pillar_pratishtha",
-    defaultContent: "We are dedicated to elevating Bihar's dignity and transforming it into the nation's premier state for education and development. More importantly, we are committed to enhancing the pratishtha (dignity) of every student—from their academic journey through examinations to their professional and personal lives. We believe that quality education is the most powerful tool for restoring and building individual and collective honor.",
+    content: "We are dedicated to elevating Bihar's dignity... We believe that quality education is the most powerful tool for restoring and building individual and collective honor.",
+    color: "bg-blue-500",
   },
   {
     id: "parivartan",
     title: "परिवर्तन (Parivartan)",
     subtitle: "Transformation",
     icon: Sunrise,
-    contentId: "about_pillar_parivartan",
-    defaultContent: "Our mission is to catalyze positive change in Bihar and contribute to Bharat's journey toward becoming a global leader. We aim to transform the life of every child by providing them with opportunities and educational experiences that rival those available to students in metropolitan cities like Mumbai. Through our comprehensive approach to learning, we ensure that geographical location never becomes a barrier to accessing world-class education.",
+    content: "Our mission is to catalyze positive change in Bihar... We ensure that geographical location never becomes a barrier to accessing world-class education.",
+    color: "bg-amber-500",
   },
 ];
 
@@ -49,12 +46,10 @@ const cardVariants = {
 };
 
 const PillarCard = ({ pillar, index }: { pillar: typeof pillarData[0], index: number }) => {
-    const { textContent } = useAuth();
-    const [isFlipped, setIsFlipped] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
 
-    const handleInteraction = () => {
-        setIsFlipped(prevState => !prevState);
-    };
+    const handleInteractionStart = () => setIsHovered(true);
+    const handleInteractionEnd = () => setIsHovered(false);
 
     return (
         <motion.div
@@ -63,37 +58,59 @@ const PillarCard = ({ pillar, index }: { pillar: typeof pillarData[0], index: nu
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
-            className="[perspective:1000px] h-64 cursor-pointer"
-            onMouseEnter={() => setIsFlipped(true)}
-            onMouseLeave={() => setIsFlipped(false)}
-            onClick={handleInteraction}
+            className="relative h-64 w-full rounded-2xl shadow-lg overflow-hidden cursor-pointer bg-card"
+            onMouseEnter={handleInteractionStart}
+            onMouseLeave={handleInteractionEnd}
+            onClick={() => setIsHovered(!isHovered)}
         >
-            <motion.div
-                className="relative w-full h-full [transform-style:preserve-3d]"
-                animate={{ rotateY: isFlipped ? 180 : 0 }}
-                transition={{ duration: 0.6, ease: "easeInOut" }}
-            >
-                {/* Front of the card */}
-                <div className="absolute w-full h-full [backface-visibility:hidden] bg-card/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center">
-                     <pillar.icon className="w-12 h-12 text-primary mx-auto mb-4" />
-                    <h3 className="text-xl font-bold font-headline mb-1">{pillar.title}</h3>
-                    <p className="text-muted-foreground">{pillar.subtitle}</p>
-                </div>
-                
-                {/* Back of the card */}
-                <div className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] bg-card/95 backdrop-blur-md p-6 rounded-2xl shadow-lg flex items-center justify-center">
-                     <EditableText
-                        contentId={pillar.contentId}
-                        defaultValue={textContent[pillar.contentId] || pillar.defaultContent}
-                        multiline
-                        className="w-full text-sm text-foreground/80 leading-relaxed block whitespace-pre-wrap text-left"
+            {/* Expanding Ink Background */}
+            <AnimatePresence>
+                {isHovered && (
+                    <motion.div
+                        className={`absolute inset-0 ${pillar.color}`}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 2.5 }}
+                        exit={{ scale: 0 }}
+                        transition={{ duration: 0.4, ease: 'easeIn' }}
                     />
-                </div>
-            </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Content Container */}
+            <div className="relative z-10 w-full h-full p-6 flex items-center justify-center text-center">
+                {/* Title and Icon */}
+                <AnimatePresence>
+                    {!isHovered && (
+                        <motion.div
+                            initial={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2, delay: 0.1 }}
+                            className="flex flex-col items-center"
+                        >
+                            <pillar.icon className="w-12 h-12 text-primary mx-auto mb-4" />
+                            <h3 className="text-xl font-bold font-headline mb-1">{pillar.title}</h3>
+                            <p className="text-muted-foreground">{pillar.subtitle}</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Description Text */}
+                <AnimatePresence>
+                    {isHovered && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1, transition: { delay: 0.2 } }}
+                            exit={{ opacity: 0 }}
+                            className="text-primary-foreground"
+                        >
+                            <p className="text-sm leading-relaxed">{pillar.content}</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </motion.div>
     );
 };
-
 
 export default function Pillars() {
   return (
