@@ -4,7 +4,7 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LoaderCircle, Mail, User, Rocket, Brain, Trophy, VenetianMask, StarIcon, Award, Bird, FerrisWheel, Phone, Pencil, Save, Undo, Check, Dices, Palette, BrainCircuit as BrainCircuitIcon, Shield } from "lucide-react";
+import { LoaderCircle, Mail, User, Rocket, Brain, Trophy, VenetianMask, StarIcon, Award, Bird, FerrisWheel, Phone, Pencil, Save, Undo, Check, Dices, Palette, BrainCircuit as BrainCircuitIcon, Shield, Bell, HelpCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { UserProfile } from "@/types";
@@ -29,6 +29,13 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useTheme } from "next-themes";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { messaging } from "@/lib/firebase";
+import { getToken } from "firebase/messaging";
+import { savePushToken, removePushToken } from "@/lib/data";
+
+const VAPID_KEY = 'BCm2_B1eWYhSdPlv2OaUrP5JyMGA6ZZ4gXhlyV0wc10SJiKbwr6gQBVWIqQ1wsKZfsyH7jB4IchtxdB9yWAfAXE';
 
 const avatarIcons: { [key: string]: React.ElementType } = {
   rocket: Rocket,
@@ -99,6 +106,89 @@ const CustomThemePreview = ({ theme }: { theme: UserProfile['customTheme'] }) =>
 
     return <style>{styles}</style>;
 };
+
+const PermissionsCard = () => {
+    const { user, userProfile } = useAuth();
+    const { toast } = useToast();
+    const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default');
+
+    useEffect(() => {
+        if ('Notification' in window) {
+            setPermissionStatus(Notification.permission);
+        }
+    }, []);
+
+    const handleNotificationToggle = async (checked: boolean) => {
+        if (!user) return;
+
+        if (permissionStatus === 'default' && checked) {
+            try {
+                const permission = await Notification.requestPermission();
+                setPermissionStatus(permission);
+
+                if (permission === 'granted') {
+                    const fcm = messaging();
+                    if (fcm) {
+                        const token = await getToken(fcm, { vapidKey: VAPID_KEY });
+                        if (token) {
+                            await savePushToken(user.uid, token);
+                            toast({ title: "Notifications Enabled!", description: "You'll now receive updates from us." });
+                        }
+                    }
+                } else {
+                    toast({ variant: 'destructive', title: "Notifications Blocked", description: "You have blocked notifications. You can enable them from your browser settings." });
+                }
+            } catch (error) {
+                console.error("Error requesting notification permission:", error);
+                toast({ variant: 'destructive', title: "Error", description: "Could not request notification permission." });
+            }
+        }
+    };
+    
+    const isChecked = permissionStatus === 'granted';
+    const isDisabled = permissionStatus === 'denied';
+
+    return (
+         <Card className="shadow-lg">
+              <CardHeader>
+                  <CardTitle>Permissions</CardTitle>
+                  <CardDescription>Manage how the app interacts with your device.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="notifications-switch" className="text-base flex items-center gap-2">
+                               <Bell className="w-5 h-5"/> Device Notifications
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                                Receive alerts for live classes and important announcements.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             {isDisabled && (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>You have blocked notifications. Please enable them in your browser/system settings.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                             )}
+                            <Switch
+                                id="notifications-switch"
+                                checked={isChecked}
+                                onCheckedChange={handleNotificationToggle}
+                                disabled={isDisabled || isChecked}
+                            />
+                        </div>
+                  </div>
+              </CardContent>
+          </Card>
+    )
+}
 
 
 export default function ProfilePage() {
@@ -478,9 +568,13 @@ export default function ProfilePage() {
 
               </CardContent>
           </Card>
+          
+          <PermissionsCard />
 
         </div>
       </div>
     </>
   );
 }
+
+    
