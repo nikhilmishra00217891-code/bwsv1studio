@@ -4,17 +4,10 @@
 import { EditableText } from "@/components/common/EditableText";
 import { EditableImage } from "@/components/common/EditableImage";
 import { getTextContent } from "@/lib/data/content";
-import type { Metadata } from "next";
 import Image from "next/image";
 import Pillars from "@/components/about/Pillars";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-
-// Note: Metadata is still supported in client components
-export const metadata: Metadata = {
-    title: "About Us - Reviving Bihar's Educational Excellence",
-    description: "BiharwaleSir Ji is a movement to restore Bihar's rightful place as the educational epicenter of the world.",
-}
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 50 },
