@@ -557,10 +557,13 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     
     if (!searchTerm) return searchableUsers;
 
-    return searchableUsers.filter(user =>
-      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+    return searchableUsers.filter(user => {
+        const nameMatch = user.displayName && user.displayName.toLowerCase().includes(lowerCaseSearchTerm);
+        const emailMatch = user.email && user.email.toLowerCase().includes(lowerCaseSearchTerm);
+        return nameMatch || emailMatch;
+    });
   }, [users, searchTerm, filter]);
 
   const handleRefresh = () => {
