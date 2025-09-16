@@ -2,15 +2,11 @@
 
 'use server';
 
-import { getApps } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { customInitApp } from '@/lib/firebase/admin';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
-
-// Initialize Firebase Admin SDK
-// This is now handled inside the function to ensure it runs every time on the serverless environment.
 
 interface SendNotificationData {
   title: string;
@@ -21,14 +17,14 @@ interface SendNotificationData {
 export const sendBulkNotification = async (
   data: SendNotificationData
 ): Promise<{ success: boolean; message: string }> => {
-  // Ensure Firebase Admin is initialized on each serverless function invocation
-  customInitApp();
-  
-  if (data.recipientIds.length === 0) {
-    return { success: false, message: 'No recipients selected.' };
-  }
-
   try {
+    // Ensure Firebase Admin is initialized on each serverless function invocation
+    customInitApp();
+    
+    if (data.recipientIds.length === 0) {
+      return { success: false, message: 'No recipients selected.' };
+    }
+
     // 1. Fetch all user profiles to get push tokens
     const userDocs = await Promise.all(
       data.recipientIds.map(id => getDoc(doc(db, 'users', id)))
@@ -91,7 +87,7 @@ export const sendBulkNotification = async (
 
     return { success: true, message: `${successCount} notifications sent successfully!` };
   } catch (error: any) {
-    console.error('Error sending push notification:', error);
+    console.error('Error sending push notification:', error.message);
     return { success: false, message: error.message || 'An unknown error occurred.' };
   }
 };
