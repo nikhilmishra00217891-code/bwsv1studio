@@ -10,9 +10,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 
 // Initialize Firebase Admin SDK
-if (getApps().length === 0) {
-  customInitApp();
-}
+// This is now handled inside the function to ensure it runs every time on the serverless environment.
 
 interface SendNotificationData {
   title: string;
