@@ -58,19 +58,24 @@ const PillarCard = ({ pillar, index }: { pillar: typeof pillarData[0], index: nu
             viewport={{ once: true, amount: 0.5 }}
             className="relative bg-card/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg overflow-hidden h-64 group"
         >
+            {/* Front of the card */}
             <motion.div 
-                className="text-center transition-opacity duration-300 group-hover:opacity-0"
+                className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center"
                 animate={{ opacity: 1 }}
                 whileHover={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
             >
                 <pillar.icon className="w-12 h-12 text-primary mx-auto mb-4" />
                 <h3 className="text-xl font-bold font-headline mb-1">{pillar.title}</h3>
                 <p className="text-muted-foreground">{pillar.subtitle}</p>
             </motion.div>
+            
+            {/* Back of the card (revealed on hover) */}
             <motion.div
-                className="absolute inset-0 p-6 flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                className="absolute inset-0 p-6 flex flex-col justify-center opacity-0"
                 initial={{ opacity: 0 }}
                 whileHover={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
             >
                 <EditableText
                     contentId={pillar.contentId}
