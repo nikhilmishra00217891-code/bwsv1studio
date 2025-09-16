@@ -1,4 +1,5 @@
 
+
 import { initializeApp, getApps, cert, getApp, App } from "firebase-admin/app";
 import "dotenv/config";
 
@@ -9,11 +10,12 @@ export const customInitApp = (): App => {
     }
     
     try {
-        const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-        if (!serviceAccountString) {
+        const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        if (!serviceAccountBase64) {
             throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
         }
-        
+
+        const serviceAccountString = Buffer.from(serviceAccountBase64, 'base64').toString('utf-8');
         const serviceAccount = JSON.parse(serviceAccountString);
 
         return initializeApp({
