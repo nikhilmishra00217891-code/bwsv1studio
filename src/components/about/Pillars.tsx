@@ -1,10 +1,12 @@
 
 "use client";
 
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Award, Sunrise, Users } from 'lucide-react';
 import { EditableText } from '@/components/common/EditableText';
 import { useAuth } from '../auth/AuthProvider';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 const pillarData = [
   {
@@ -48,20 +50,12 @@ const cardVariants = {
 
 const PillarCard = ({ pillar, index }: { pillar: typeof pillarData[0], index: number }) => {
     const { textContent } = useAuth();
-    const controls = useAnimation();
+    const [isFlipped, setIsFlipped] = useState(false);
 
-    const handleMouseEnter = () => {
-        controls.start({ opacity: 1 });
+    const handleInteraction = () => {
+        setIsFlipped(prevState => !prevState);
     };
 
-    const handleMouseLeave = () => {
-        controls.start({ opacity: 0 });
-    };
-
-    const handleTap = () => {
-        controls.start(current => ({ opacity: current.opacity === 0 ? 1 : 0 }));
-    }
-    
     return (
         <motion.div
             custom={index}
@@ -69,39 +63,37 @@ const PillarCard = ({ pillar, index }: { pillar: typeof pillarData[0], index: nu
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
-            className="relative bg-card/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg overflow-hidden h-64 cursor-pointer"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onClick={handleTap}
+            className="[perspective:1000px] h-64 cursor-pointer"
+            onMouseEnter={() => setIsFlipped(true)}
+            onMouseLeave={() => setIsFlipped(false)}
+            onClick={handleInteraction}
         >
-            {/* Front of the card */}
-            <motion.div 
-                className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center"
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-            >
-                <pillar.icon className="w-12 h-12 text-primary mx-auto mb-4" />
-                <h3 className="text-xl font-bold font-headline mb-1">{pillar.title}</h3>
-                <p className="text-muted-foreground">{pillar.subtitle}</p>
-            </motion.div>
-            
-            {/* Back of the card (revealed on hover/tap) */}
             <motion.div
-                className="absolute inset-0 p-6 flex flex-col justify-center bg-card/95"
-                initial={{ opacity: 0 }}
-                animate={controls}
-                transition={{ duration: 0.3 }}
+                className="relative w-full h-full [transform-style:preserve-3d]"
+                animate={{ rotateY: isFlipped ? 180 : 0 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
             >
-                <EditableText
-                    contentId={pillar.contentId}
-                    defaultValue={textContent[pillar.contentId] || pillar.defaultContent}
-                    multiline
-                    className="w-full text-sm text-foreground/80 leading-relaxed block whitespace-pre-wrap text-left"
-                />
+                {/* Front of the card */}
+                <div className="absolute w-full h-full [backface-visibility:hidden] bg-card/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center">
+                     <pillar.icon className="w-12 h-12 text-primary mx-auto mb-4" />
+                    <h3 className="text-xl font-bold font-headline mb-1">{pillar.title}</h3>
+                    <p className="text-muted-foreground">{pillar.subtitle}</p>
+                </div>
+                
+                {/* Back of the card */}
+                <div className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] bg-card/95 backdrop-blur-md p-6 rounded-2xl shadow-lg flex items-center justify-center">
+                     <EditableText
+                        contentId={pillar.contentId}
+                        defaultValue={textContent[pillar.contentId] || pillar.defaultContent}
+                        multiline
+                        className="w-full text-sm text-foreground/80 leading-relaxed block whitespace-pre-wrap text-left"
+                    />
+                </div>
             </motion.div>
         </motion.div>
     );
 };
+
 
 export default function Pillars() {
   return (
