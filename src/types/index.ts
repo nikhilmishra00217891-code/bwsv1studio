@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -205,6 +206,7 @@ export interface UserProfile {
         reason: string;
         suspendedAt: string | null;
     };
+    pushTokens?: string[];
     enrolledCourses?: string[];
     chambers?: string[]; // IDs of chambers the user is in
     progress?: { [courseId: string]: {

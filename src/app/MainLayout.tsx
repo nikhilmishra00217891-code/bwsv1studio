@@ -15,6 +15,7 @@ import SuspendedAccountFirewall from "@/components/auth/SuspendedAccountFirewall
 import { useState, useEffect } from "react";
 import PwaInstall from "@/components/common/PwaInstall";
 import CourseDrawer from "@/components/common/CourseDrawer";
+import PushNotificationManager from "@/components/auth/PushNotificationManager";
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -71,6 +72,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     return (
         <>
+            <PushNotificationManager />
             <div className="flex min-h-screen flex-col">
                 {!isOnboarding && <Header />}
                 <main className="flex-1">{children}</main>

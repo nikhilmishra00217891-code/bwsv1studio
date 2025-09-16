@@ -275,6 +275,20 @@ export const updateUserProfile = async (userId: string, data: Partial<UserProfil
     await updateDoc(userRef, data);
 };
 
+export const savePushToken = async (userId: string, token: string) => {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+        pushTokens: arrayUnion(token)
+    });
+};
+
+export const removePushToken = async (userId: string, token: string) => {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+        pushTokens: arrayRemove(token)
+    });
+};
+
 export const incrementFocusStats = async (userId: string, minutes: number) => {
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, {
