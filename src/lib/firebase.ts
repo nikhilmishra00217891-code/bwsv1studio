@@ -6,13 +6,12 @@ import { getMessaging } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+  apiKey: "AIzaSyCdXe1KoEr_JleNIUy80XJO_buL6JO_4lE",
+  authDomain: "biharwalesirji-w4n4b.firebaseapp.com",
+  projectId: "biharwalesirji-w4n4b",
+  storageBucket: "biharwalesirji-w4n4b.appspot.com",
+  messagingSenderId: "207265599257",
+  appId: "1:207265599257:web:67f9753a0650f500c43f88"
 };
 
 

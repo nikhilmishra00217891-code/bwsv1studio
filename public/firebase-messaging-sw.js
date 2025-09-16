@@ -1,33 +1,33 @@
-// This file must be in the public directory
 
-importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging-compat.js');
+// Scripts for firebase and firebase messaging
+importScripts("https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js");
 
-// Initialize the Firebase app in the service worker
-// "Default" Firebase app (important for initialization)
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+  apiKey: "AIzaSyCdXe1KoEr_JleNIUy80XJO_buL6JO_4lE",
+  authDomain: "biharwalesirji-w4n4b.firebaseapp.com",
+  projectId: "biharwalesirji-w4n4b",
+  storageBucket: "biharwalesirji-w4n4b.appspot.com",
+  messagingSenderId: "207265599257",
+  appId: "1:207265599257:web:67f9753a0650f500c43f88"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Retrieve an instance of Firebase Messaging so that it can handle background
-// messages.
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  // Customize notification here
+  console.log(
+    "[firebase-messaging-sw.js] Received background message ",
+    payload
+  );
+
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: payload.notification.image || '/icon-192x192.png'
+    icon: payload.notification.image || "https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg",
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
