@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Award, Sunrise, Users } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
-import placeholderImages from '@/lib/placeholder-images.json';
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 const pillarData = [
   {
