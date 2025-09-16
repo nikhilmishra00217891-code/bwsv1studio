@@ -79,12 +79,13 @@ export const sendBulkNotification = async (
        response.responses.forEach((resp, idx) => {
         if (!resp.success) {
           failedTokens.push(uniqueTokens[idx]);
+          console.error(`Failed to send to token ${uniqueTokens[idx]}:`, resp.error);
         }
       });
-      console.error('List of failed tokens:', failedTokens);
+      
        return {
             success: successCount > 0,
-            message: `${successCount} notifications sent. ${failureCount} failed. Some users may not have granted permission.`
+            message: `${successCount} notifications sent. ${failureCount} failed. Check server logs for details.`
        }
     }
 
