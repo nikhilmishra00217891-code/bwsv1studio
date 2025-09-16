@@ -1,0 +1,17 @@
+{
+    "about_parivar": {
+        "src": "https://picsum.photos/seed/family/600/800",
+        "alt": "A visual representation of family and community.",
+        "data-ai-hint": "community togetherness"
+    },
+    "about_pratishtha": {
+        "src": "https://picsum.photos/seed/honor/600/800",
+        "alt": "An image symbolizing dignity and honor.",
+        "data-ai-hint": "strength honor"
+    },
+    "about_parivartan": {
+        "src": "https://picsum.photos/seed/change/600/800",
+        "alt": "An image representing transformation and growth.",
+        "data-ai-hint": "growth transformation"
+    }
+}
