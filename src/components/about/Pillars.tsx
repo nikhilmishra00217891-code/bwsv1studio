@@ -1,3 +1,4 @@
+
 "use client";
 
 import { motion } from 'framer-motion';
@@ -60,19 +61,29 @@ const PillarCard = ({ pillar }: { pillar: typeof pillarData[0] }) => {
                 </div>
 
                 {/* Back of the card */}
-                <div className="absolute inset-0 w-full h-full rounded-2xl bg-black [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-hidden">
+                <div className="absolute inset-0 w-full h-full rounded-2xl [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-hidden">
                     <Image
                         src={pillar.image.src}
                         alt={pillar.image.alt}
                         fill
-                        className="object-cover opacity-30"
+                        className="object-cover"
                         data-ai-hint={pillar.image['data-ai-hint']}
                     />
-                     <div className="absolute inset-0 flex items-center justify-center p-6">
-                        <p className="text-sm leading-relaxed text-white text-center">
+                    <motion.div
+                        className="absolute inset-0 w-full h-full bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: isFlipped ? 1 : 0 }}
+                        transition={{ duration: 0.3, delay: 0.15 }}
+                    >
+                        <motion.p
+                            className="text-sm leading-relaxed text-white text-center"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: isFlipped ? 1 : 0, y: isFlipped ? 0 : 20 }}
+                            transition={{ duration: 0.4, delay: 0.25 }}
+                        >
                             {pillar.content}
-                        </p>
-                    </div>
+                        </motion.p>
+                    </motion.div>
                 </div>
             </motion.div>
         </div>
