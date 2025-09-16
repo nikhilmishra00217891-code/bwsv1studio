@@ -1,7 +1,7 @@
 
 "use client";
 
-import { motion } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 import { Award, Sunrise, Users } from 'lucide-react';
 import { EditableText } from '@/components/common/EditableText';
 import { useAuth } from '../auth/AuthProvider';
@@ -48,6 +48,19 @@ const cardVariants = {
 
 const PillarCard = ({ pillar, index }: { pillar: typeof pillarData[0], index: number }) => {
     const { textContent } = useAuth();
+    const controls = useAnimation();
+
+    const handleMouseEnter = () => {
+        controls.start({ opacity: 1 });
+    };
+
+    const handleMouseLeave = () => {
+        controls.start({ opacity: 0 });
+    };
+
+    const handleTap = () => {
+        controls.start(current => ({ opacity: current.opacity === 0 ? 1 : 0 }));
+    }
     
     return (
         <motion.div
@@ -56,13 +69,15 @@ const PillarCard = ({ pillar, index }: { pillar: typeof pillarData[0], index: nu
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
-            className="relative bg-card/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg overflow-hidden h-64 group"
+            className="relative bg-card/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg overflow-hidden h-64 cursor-pointer"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleTap}
         >
             {/* Front of the card */}
             <motion.div 
                 className="absolute inset-0 p-6 flex flex-col items-center justify-center text-center"
                 animate={{ opacity: 1 }}
-                whileHover={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
             >
                 <pillar.icon className="w-12 h-12 text-primary mx-auto mb-4" />
@@ -70,11 +85,11 @@ const PillarCard = ({ pillar, index }: { pillar: typeof pillarData[0], index: nu
                 <p className="text-muted-foreground">{pillar.subtitle}</p>
             </motion.div>
             
-            {/* Back of the card (revealed on hover) */}
+            {/* Back of the card (revealed on hover/tap) */}
             <motion.div
-                className="absolute inset-0 p-6 flex flex-col justify-center opacity-0"
+                className="absolute inset-0 p-6 flex flex-col justify-center bg-card/95"
                 initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
+                animate={controls}
                 transition={{ duration: 0.3 }}
             >
                 <EditableText
