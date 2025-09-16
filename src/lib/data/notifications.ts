@@ -87,7 +87,7 @@ export const sendBulkNotification = async (
 
     return { success: true, message: `${successCount} notifications sent successfully!` };
   } catch (error: any) {
-    console.error('Error sending push notification:', error.message);
+    console.error('Error sending push notification:', error);
     return { success: false, message: error.message || 'An unknown error occurred.' };
   }
 };
