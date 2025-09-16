@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard, Bell } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -39,6 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { suspendUser, unsuspendUser } from '@/app/actions';
 import { sendPatra, sendBulkPatra } from '@/lib/data/patra';
+import { sendBulkNotification } from '@/lib/data/notifications';
 import { generatePatra } from '@/ai/flows';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -200,6 +201,85 @@ const PatraDialog = ({
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button onClick={handleSendPatra} disabled={isSending}>
                         {isSending ? <LoaderCircle className="animate-spin" /> : "Send Patra"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+const NotificationDialog = ({
+    users,
+    isOpen,
+    onOpenChange,
+}: {
+    users: UserProfile[],
+    isOpen: boolean,
+    onOpenChange: (open: boolean) => void,
+}) => {
+    const [title, setTitle] = useState('');
+    const [body, setBody] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const { toast } = useToast();
+    
+    React.useEffect(() => {
+        if (!isOpen) {
+            setTitle('');
+            setBody('');
+        }
+    }, [isOpen]);
+
+    const handleSendNotification = async () => {
+        if (!title.trim() || !body.trim()) {
+            toast({ variant: 'destructive', title: "Missing fields", description: "Please provide a title and body for the notification." });
+            return;
+        }
+
+        setIsSending(true);
+        try {
+            const result = await sendBulkNotification({
+                recipientIds: users.map(u => u.uid),
+                title,
+                body,
+            });
+            
+            if (result.success) {
+                toast({ title: "Notifications Sent!", description: result.message });
+            } else {
+                 toast({ variant: 'destructive', title: "Sending Failed", description: result.message });
+            }
+
+            onOpenChange(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Send Failed", description: error.message || "Could not send the notifications." });
+        } finally {
+            setIsSending(false);
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Send Notification to {users.length} Users</DialogTitle>
+                    <DialogDescription>
+                        This will send a push notification to all currently filtered users who have enabled them.
+                    </DialogDescription>
+                </DialogHeader>
+                 <div className="py-4 space-y-4">
+                    <div>
+                        <Label htmlFor="notification-title">Title</Label>
+                        <Input id="notification-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Live Class Starting Soon!" />
+                    </div>
+                    <div>
+                        <Label htmlFor="notification-body">Message</Label>
+                        <Textarea id="notification-body" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Your short and engaging message..." className="min-h-[120px]"/>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSendNotification} disabled={isSending}>
+                        {isSending ? <LoaderCircle className="animate-spin" /> : "Send Notification"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -455,6 +535,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
   const [showPatraDialog, setShowPatraDialog] = useState(false);
   const [showBulkPatraDialog, setShowBulkPatraDialog] = useState(false);
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -536,7 +617,11 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
                 </Button>
                  <Button variant="outline" onClick={() => setShowBulkPatraDialog(true)} disabled={filteredUsers.length === 0}>
                     <MessageSquarePlus className="w-4 h-4 mr-2" />
-                    Send to Filtered ({filteredUsers.length})
+                    Send Patra ({filteredUsers.length})
+                </Button>
+                 <Button variant="outline" onClick={() => setShowNotificationDialog(true)} disabled={filteredUsers.length === 0}>
+                    <Bell className="w-4 h-4 mr-2" />
+                    Send Notification ({filteredUsers.length})
                 </Button>
             </div>
         </div>
@@ -651,6 +736,11 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
         users={filteredUsers}
         isOpen={showBulkPatraDialog}
         onOpenChange={setShowBulkPatraDialog}
+    />
+     <NotificationDialog
+        users={filteredUsers}
+        isOpen={showNotificationDialog}
+        onOpenChange={setShowNotificationDialog}
     />
     <BasicInfoDialog
         user={selectedUser}

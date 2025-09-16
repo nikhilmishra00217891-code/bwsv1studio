@@ -1,3 +1,4 @@
+
 import { getAllUsers, getCourses } from "@/lib/data";
 import { UserTableClient } from "./UserTableClient";
 import type { Course, UserProfile } from "@/types";
