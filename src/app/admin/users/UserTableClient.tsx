@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useTransition } from 'react';
+import React, { useState, useMemo, useTransition, useRef } from 'react';
 import type { UserProfile, PatraType, Course } from "@/types";
 import { Input } from "@/components/ui/input";
 import {
@@ -526,12 +526,53 @@ const BasicInfoDialog = ({
     )
 }
 
+const ContextMenu = ({ 
+    user, 
+    isOpen, 
+    onOpenChange, 
+    onActionSelect 
+}: { 
+    user: UserProfile | null, 
+    isOpen: boolean, 
+    onOpenChange: (open: boolean) => void, 
+    onActionSelect: (user: UserProfile, action: 'info' | 'patra' | 'notification' | 'suspend' | 'dashboard') => void 
+}) => {
+    if (!user) return null;
+
+    const handleAction = (action: 'info' | 'patra' | 'notification' | 'suspend' | 'dashboard') => {
+        onActionSelect(user, action);
+        onOpenChange(false);
+    }
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-xs">
+                 <DialogHeader>
+                    <DialogTitle>{user.displayName}</DialogTitle>
+                    <DialogDescription>{user.email}</DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-1 gap-2 pt-4">
+                    <Button variant="outline" className="justify-start" onClick={() => handleAction('info')}><UserIcon className="mr-2 h-4 w-4" /> See Basic Info</Button>
+                    <Button variant="outline" className="justify-start" asChild><Link href={`/admin/users/${user.uid}`}><LayoutDashboard className="mr-2 h-4 w-4" /> View Dashboard</Link></Button>
+                    <Button variant="outline" className="justify-start" onClick={() => handleAction('patra')}><MessageSquarePlus className="mr-2 h-4 w-4" /> Send Patra</Button>
+                    <Button variant="outline" className="justify-start" onClick={() => handleAction('notification')}><Bell className="mr-2 h-4 w-4" /> Send Notification</Button>
+                    <div className="border-t my-2"></div>
+                    {user.suspension?.isSuspended ? (
+                        <Button className="justify-start bg-green-600 hover:bg-green-700" onClick={() => handleAction('suspend')}><UserCheck className="mr-2 h-4 w-4" /> Unsuspend User</Button>
+                    ) : (
+                        <Button variant="destructive" className="justify-start" onClick={() => handleAction('suspend')}><Ban className="mr-2 h-4 w-4" /> Suspend User</Button>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export function UserTableClient({ initialUsers, allCourses }: { initialUsers: UserProfile[], allCourses: Course[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'suspended'>('all');
-  const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
   const [showPatraDialog, setShowPatraDialog] = useState(false);
   const [showBulkPatraDialog, setShowBulkPatraDialog] = useState(false);
@@ -539,9 +580,12 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
   const [showSingleNotificationDialog, setShowSingleNotificationDialog] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [contextMenuUser, setContextMenuUser] = useState<UserProfile | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
+
+  const holdTimeout = useRef<NodeJS.Timeout | null>(null);
 
   React.useEffect(() => {
     setUsers(initialUsers);
@@ -577,7 +621,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     });
   };
 
-  const openActionDialog = (user: UserProfile, action: 'suspend' | 'patra' | 'info' | 'notification') => {
+  const openActionDialog = (user: UserProfile, action: 'suspend' | 'patra' | 'info' | 'notification' | 'dashboard') => {
     setSelectedUser(user);
     if (action === 'suspend') {
         setShowSuspensionDialog(true);
@@ -593,6 +637,24 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
   const handleUserUpdate = (updatedUser: UserProfile) => {
     setUsers(prevUsers => prevUsers.map(u => u.uid === updatedUser.uid ? updatedUser : u));
   }
+
+  const handlePointerDown = (user: UserProfile) => {
+    holdTimeout.current = setTimeout(() => {
+        setContextMenuUser(user);
+    }, 500); // 500ms for a "long press"
+  };
+
+  const handlePointerUp = () => {
+      if(holdTimeout.current) {
+          clearTimeout(holdTimeout.current);
+          holdTimeout.current = null;
+      }
+  };
+  
+  const handleContextMenu = (e: React.MouseEvent, user: UserProfile) => {
+    e.preventDefault();
+    setContextMenuUser(user);
+  };
 
   return (
     <>
@@ -647,7 +709,14 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
             </TableHeader>
             <TableBody>
               {filteredUsers.length > 0 ? filteredUsers.map((user) => (
-                <TableRow key={user.uid} className={cn(user.suspension?.isSuspended && "bg-destructive/5 hover:bg-destructive/10")}>
+                <TableRow 
+                    key={user.uid} 
+                    className={cn(user.suspension?.isSuspended && "bg-destructive/5 hover:bg-destructive/10", "cursor-pointer")}
+                    onContextMenu={(e) => handleContextMenu(e, user)}
+                    onPointerDown={() => handlePointerDown(user)}
+                    onPointerUp={handlePointerUp}
+                    onPointerLeave={handlePointerUp} // Also clear on leaving element
+                >
                   <TableCell>
                     <div className="font-medium">{user.displayName || 'N/A'}</div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
@@ -673,49 +742,45 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
                     }
                   </TableCell>
                    <TableCell className="text-right">
-                    {isProcessing === user.uid ? (
-                        <LoaderCircle className="w-5 h-5 animate-spin ml-auto"/>
-                    ) : (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="w-5 h-5" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => openActionDialog(user, 'info')}>
-                                    <UserIcon className="mr-2 h-4 w-4" />
-                                    See Basic Info
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="w-5 h-5" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onSelect={() => openActionDialog(user, 'info')}>
+                                <UserIcon className="mr-2 h-4 w-4" />
+                                See Basic Info
+                            </DropdownMenuItem>
+                             <DropdownMenuItem asChild>
+                                <Link href={`/admin/users/${user.uid}`}>
+                                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                                    View Dashboard
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => openActionDialog(user, 'patra')}>
+                                <MessageSquarePlus className="mr-2 h-4 w-4" />
+                                Send Patra
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => openActionDialog(user, 'notification')}>
+                                <Bell className="mr-2 h-4 w-4" />
+                                Send Notification
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {user.suspension?.isSuspended ? (
+                                <DropdownMenuItem onSelect={() => openActionDialog(user, 'suspend')} className="text-green-600 focus:text-green-600 focus:bg-green-50">
+                                    <UserCheck className="mr-2 h-4 w-4" />
+                                    Unsuspend User
                                 </DropdownMenuItem>
-                                 <DropdownMenuItem asChild>
-                                    <Link href={`/admin/users/${user.uid}`}>
-                                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                                        View Dashboard
-                                    </Link>
+                            ) : (
+                                <DropdownMenuItem onSelect={() => openActionDialog(user, 'suspend')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Suspend User
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => openActionDialog(user, 'patra')}>
-                                    <MessageSquarePlus className="mr-2 h-4 w-4" />
-                                    Send Patra
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => openActionDialog(user, 'notification')}>
-                                    <Bell className="mr-2 h-4 w-4" />
-                                    Send Notification
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {user.suspension?.isSuspended ? (
-                                    <DropdownMenuItem onSelect={() => openActionDialog(user, 'suspend')} className="text-green-600 focus:text-green-600 focus:bg-green-50">
-                                        <UserCheck className="mr-2 h-4 w-4" />
-                                        Unsuspend User
-                                    </DropdownMenuItem>
-                                ) : (
-                                    <DropdownMenuItem onSelect={() => openActionDialog(user, 'suspend')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                        <Ban className="mr-2 h-4 w-4" />
-                                        Suspend User
-                                    </DropdownMenuItem>
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               )) : (
@@ -764,6 +829,12 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
         isOpen={showInfoDialog}
         onOpenChange={setShowInfoDialog}
         allCourses={allCourses}
+    />
+    <ContextMenu
+        user={contextMenuUser}
+        isOpen={!!contextMenuUser}
+        onOpenChange={() => setContextMenuUser(null)}
+        onActionSelect={openActionDialog}
     />
     </>
   );
