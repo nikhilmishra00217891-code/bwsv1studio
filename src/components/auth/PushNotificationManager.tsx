@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -20,7 +19,7 @@ import { Button } from '../ui/button';
 import { BellRing, BellOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const VAPID_KEY = 'YOUR_VAPID_KEY_HERE';
+const VAPID_KEY = 'BCm2_B1eWYhSdPlv2OaUrP5JyMGA6ZZ4gXhlyV0wc10SJiKbwr6gQBVWIqQ1wsKZfsyH7jB4IchtxdB9yWAfAXE';
 
 export default function PushNotificationManager() {
   const { user } = useAuth();
