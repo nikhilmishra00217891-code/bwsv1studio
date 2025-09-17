@@ -27,5 +27,3 @@ export const customInitApp = (): App => {
         credential: cert(serviceAccount),
     });
 }
-
-    
