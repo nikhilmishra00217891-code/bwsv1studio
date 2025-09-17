@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getMessaging } from 'firebase-admin/messaging';

@@ -1,4 +1,3 @@
-
 import { initializeApp, getApps, cert, getApp, App } from "firebase-admin/app";
 
 // This function ensures that the Firebase Admin SDK is initialized only once.
@@ -7,7 +6,7 @@ export const customInitApp = (): App => {
         return getApp();
     }
     
-    // The service account key is directly embedded here to avoid all parsing issues.
+    // The service account key is directly embedded here.
     // The private_key is wrapped in backticks (`) to handle newlines correctly.
     const serviceAccount = {
       "type": "service_account",
