@@ -300,7 +300,7 @@ const ChatBox = ({ roomId }: { roomId: string }) => {
     )
 }
 
-const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: GenerateQuizInput }) => {
+const WarzoneHostSetup = ({ roomId, settings, isStarting }: { roomId: string, settings?: GenerateQuizInput, isStarting: boolean }) => {
     const defaultSettings = {
         topic: '',
         grade: 'Competitive Exams',
@@ -309,7 +309,6 @@ const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: Gen
     };
     
     const [quizSettings, setQuizSettings] = useState<GenerateQuizInput>(settings || defaultSettings);
-    const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
     
     useEffect(() => {
@@ -335,21 +334,14 @@ const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: Gen
 
     const handleStartBattle = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
         try {
             await startQuiz(roomId);
-            toast({
-                title: "Battle Started!",
-                description: "The quiz is now live for all members.",
-            });
         } catch (error: any) {
             toast({
                 variant: 'destructive',
                 title: "Failed to Start Quiz",
                 description: error.message || "An unknown error occurred.",
             });
-        } finally {
-            setIsLoading(false);
         }
     }
 
@@ -406,8 +398,8 @@ const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: Gen
                             </Select>
                         </div>
                     </div>
-                    <Button type="submit" size="lg" className="w-full" disabled={isLoading || !quizSettings.topic}>
-                        {isLoading ? <LoaderCircle className="animate-spin" /> : 'Start Battle for All'}
+                    <Button type="submit" size="lg" className="w-full" disabled={isStarting || !quizSettings.topic}>
+                        {isStarting ? <LoaderCircle className="animate-spin" /> : 'Start Battle for All'}
                     </Button>
                 </CardContent>
             </form>
@@ -415,7 +407,7 @@ const WarzoneHostSetup = ({ roomId, settings }: { roomId: string, settings?: Gen
     );
 };
 
-const WaitingForHost = ({ settings }: { settings?: GenerateQuizInput }) => (
+const WaitingForHost = ({ settings, isStarting }: { settings?: GenerateQuizInput, isStarting: boolean }) => (
     <Card className="shadow-lg">
         <CardHeader>
              <CardTitle>Waiting for Host</CardTitle>
@@ -423,7 +415,9 @@ const WaitingForHost = ({ settings }: { settings?: GenerateQuizInput }) => (
         </CardHeader>
         <CardContent className="text-center space-y-4">
             <LoaderCircle className="w-12 h-12 text-primary animate-spin mx-auto"/>
-            {settings && settings.topic ? (
+            {isStarting ? (
+                <p className="font-semibold text-primary">The AI is generating the quiz!</p>
+            ) : settings && settings.topic ? (
                 <div className='text-left space-y-2 pt-4 border-t'>
                     <h4 className="font-semibold">Current Settings:</h4>
                     <p className="text-sm text-muted-foreground"><strong>Topic:</strong> {settings.topic}</p>
@@ -640,7 +634,7 @@ const MultiplayerQuizUI = ({ room }: { room: Room }) => {
 
     const handlePrevious = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev + 1);
+            setCurrentQuestionIndex(prev => prev - 1);
         }
     };
     
@@ -949,7 +943,7 @@ const WarzoneUI = () => {
                 <div className="grid lg:grid-cols-3 gap-8 items-start">
                     <div className="lg:col-span-2 space-y-8">
                         <JoinRequestsPanel room={room} onAdmit={handleAdmit} onDeny={handleDeny} />
-                        {isHost ? <WarzoneHostSetup roomId={room.id} settings={room.quizSettings} /> : <WaitingForHost settings={room.quizSettings} />}
+                        {isHost ? <WarzoneHostSetup roomId={room.id} settings={room.quizSettings} isStarting={room.status === 'generating'} /> : <WaitingForHost settings={room.quizSettings} isStarting={room.status === 'generating'} />}
                         <ChatBox roomId={roomId} />
                     </div>
                     <div className="lg:col-span-1">

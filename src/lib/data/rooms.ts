@@ -296,33 +296,45 @@ export const updateQuizSettings = async (roomId: string, settings: Partial<Gener
 
 export const startQuiz = async (roomId: string): Promise<void> => {
     const roomRef = doc(db, "rooms", roomId);
-    const roomSnap = await getDoc(roomRef);
-
-    if (!roomSnap.exists()) {
-        throw new Error("Room not found.");
-    }
-    const roomData = roomSnap.data() as Room;
-
-    if (!roomData.quizSettings?.topic) {
-        throw new Error("Quiz topic must be set before starting.");
-    }
-
-    const quizData = await generateQuiz(roomData.quizSettings);
     
-    const updatedMembers = roomData.members.map(member => ({ 
-        ...member, 
-        answers: {}, 
-        score: 0, 
-        accuracy: 0, 
-        timeTaken: 0,
-        status: 'playing' 
-    }));
+    // Immediately set the status to 'generating'
+    await updateDoc(roomRef, { status: 'generating' });
 
-    await updateDoc(roomRef, {
-        quizData,
-        status: 'in-progress',
-        members: updatedMembers
-    });
+    try {
+        const roomSnap = await getDoc(roomRef);
+        if (!roomSnap.exists()) {
+            throw new Error("Room not found.");
+        }
+        const roomData = roomSnap.data() as Room;
+
+        if (!roomData.quizSettings?.topic) {
+            throw new Error("Quiz topic must be set before starting.");
+        }
+
+        // Generate the quiz in the background
+        const quizData = await generateQuiz(roomData.quizSettings);
+        
+        const updatedMembers = roomData.members.map(member => ({ 
+            ...member, 
+            answers: {}, 
+            score: 0, 
+            accuracy: 0, 
+            timeTaken: 0,
+            status: 'playing' 
+        }));
+
+        // Update the room with the quiz data and start the game
+        await updateDoc(roomRef, {
+            quizData,
+            status: 'in-progress',
+            members: updatedMembers
+        });
+    } catch (error) {
+        // If an error occurs, set the status back to 'waiting'
+        await updateDoc(roomRef, { status: 'waiting' });
+        console.error("Error starting quiz:", error);
+        throw error; // Re-throw to be handled by the client
+    }
 }
 
 export const resetRoomForNewQuiz = async (roomId: string): Promise<void> => {

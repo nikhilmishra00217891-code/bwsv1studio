@@ -245,7 +245,7 @@ export interface Room {
     type: 'focus-zone' | 'warzone';
     hostId: string;
     hostName: string;
-    status: 'waiting' | 'in-progress' | 'finished';
+    status: 'waiting' | 'generating' | 'in-progress' | 'finished';
     members: RoomMember[];
     createdAt: Timestamp;
     joinRequests?: RoomMember[];
