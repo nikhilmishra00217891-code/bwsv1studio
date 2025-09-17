@@ -73,7 +73,6 @@ const sendNotificationFlow = ai.defineFlow(
             notification: {
                 title: input.title,
                 body: input.body,
-                icon: 'https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg',
             },
             tokens: uniqueTokens,
             webpush: {
