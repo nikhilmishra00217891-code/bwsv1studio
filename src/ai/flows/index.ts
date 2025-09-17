@@ -5,3 +5,4 @@ export * from './generic-chat';
 export * from './recommend-content-flow';
 export * from './generate-quiz-flow';
 export * from './generate-patra-flow';
+export * from './send-notification-flow';
