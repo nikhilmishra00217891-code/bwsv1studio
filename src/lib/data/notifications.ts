@@ -15,10 +15,10 @@ interface SendNotificationData {
 export const sendBulkNotification = async (
   data: SendNotificationData
 ): Promise<{ success: boolean; message: string }> => {
-  try {
-    // Ensure Firebase Admin is initialized on each serverless function invocation
-    customInitApp();
+  // Ensure Firebase Admin is initialized on each serverless function invocation
+  customInitApp();
     
+  try {
     if (data.recipientIds.length === 0) {
       return { success: false, message: 'No recipients selected.' };
     }
