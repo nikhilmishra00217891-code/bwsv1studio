@@ -39,7 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { suspendUser, unsuspendUser } from '@/app/actions';
 import { sendPatra, sendBulkPatra } from '@/lib/data/patra';
-import { sendBulkNotification } from '@/lib/data/notifications';
+import { sendNotification } from '@/ai/flows';
 import { generatePatra } from '@/ai/flows';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -75,7 +75,7 @@ const PatraDialog = ({
     const [isGenerating, setIsGenerating] = useState(false);
     const { toast } = useToast();
     
-    const isBulkMode = !!users;
+    const isBulkMode = !!users && users.length > 1;
 
     React.useEffect(() => {
         if (!isOpen) {
@@ -87,7 +87,7 @@ const PatraDialog = ({
     }, [isOpen]);
 
     if (!facultyProfile) return null;
-    if (!user && !isBulkMode) return null;
+    if (!user && !users) return null;
 
 
     const handleSendPatra = async () => {
@@ -98,7 +98,7 @@ const PatraDialog = ({
 
         setIsSending(true);
         try {
-            if (isBulkMode) {
+            if (isBulkMode && users) {
                 await sendBulkPatra({
                     senderId: facultyProfile.uid,
                     senderName: facultyProfile.displayName || 'Faculty',
@@ -152,7 +152,7 @@ const PatraDialog = ({
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{isBulkMode ? `Send Patra to ${users.length} Users` : `Send a Patra to ${user?.displayName}`}</DialogTitle>
+                    <DialogTitle>{isBulkMode ? `Send Patra to ${users?.length} Users` : `Send a Patra to ${user?.displayName}`}</DialogTitle>
                     <DialogDescription>
                         {isBulkMode ? 'Compose a letter to send to all currently filtered users.' : 'Compose a personal letter to guide, praise, or warn the student.'}
                     </DialogDescription>
@@ -237,7 +237,7 @@ const NotificationDialog = ({
 
         setIsSending(true);
         try {
-            const result = await sendBulkNotification({
+            const result = await sendNotification({
                 recipientIds: users.map(u => u.uid),
                 title,
                 body,
@@ -839,3 +839,5 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     </>
   );
 }
+
+    
