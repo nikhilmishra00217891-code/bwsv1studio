@@ -12,7 +12,7 @@ export default function AboutUsTeaser() {
                     <div className="relative w-full h-80 rounded-lg overflow-hidden shadow-lg">
                         <EditableImage
                             contentId="about_teaser_image"
-                            src="https://placehold.co/600x400.png"
+                            src="https://picsum.photos/seed/about/600/400"
                             alt="A group of students learning together with a mentor"
                             fill
                             className="object-cover"

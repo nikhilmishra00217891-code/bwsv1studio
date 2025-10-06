@@ -38,7 +38,7 @@ export default function NewHero() {
                 <div className="relative w-full h-80 md:h-96">
                     <EditableImage
                         contentId="hero_image" 
-                        src="https://placehold.co/800x600.png"
+                        src="https://picsum.photos/seed/hero/800/600"
                         alt="An inspiring illustration of a student learning with a mentor"
                         fill
                         className="object-contain"
