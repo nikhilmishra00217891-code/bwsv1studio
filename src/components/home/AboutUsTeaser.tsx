@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { EditableImage } from "../common/EditableImage";
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 export default function AboutUsTeaser() {
     return (
@@ -12,11 +13,11 @@ export default function AboutUsTeaser() {
                     <div className="relative w-full h-80 rounded-lg overflow-hidden shadow-lg">
                         <EditableImage
                             contentId="about_teaser_image"
-                            src="https://picsum.photos/seed/about/600/400"
-                            alt="A group of students learning together with a mentor"
+                            src={placeholderImages.about_teaser_image.src}
+                            alt={placeholderImages.about_teaser_image.alt}
                             fill
                             className="object-cover"
-                            data-ai-hint="students learning together"
+                            data-ai-hint={placeholderImages.about_teaser_image['data-ai-hint']}
                         />
                     </div>
                     <div className="text-center md:text-left">

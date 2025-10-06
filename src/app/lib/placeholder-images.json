@@ -1,4 +1,15 @@
+
 {
+    "hero_image": {
+        "src": "https://picsum.photos/seed/hero/800/600",
+        "alt": "An inspiring illustration of a student learning with a mentor",
+        "data-ai-hint": "inspiring education mentor"
+    },
+    "about_teaser_image": {
+        "src": "https://picsum.photos/seed/about/600/400",
+        "alt": "A group of students learning together with a mentor",
+        "data-ai-hint": "students learning together"
+    },
     "about_parivar": {
         "src": "https://picsum.photos/seed/family/600/800",
         "alt": "A visual representation of family and community.",

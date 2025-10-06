@@ -1,12 +1,12 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image, { type ImageProps } from 'next/image';
 import { useEditMode } from './EditModeProvider';
 import { Button } from '../ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription as DialogDescriptionComponent } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -24,40 +24,33 @@ export function EditableImage(props: EditableImageProps) {
   const { contentId, src: defaultSrc, alt, className, ...rest } = props;
   const { isEditMode } = useEditMode();
   const { toast } = useToast();
-  const { textContent } = useAuth();
-
-  // State for the *live* URL, which could be from DB or default
-  const [currentSrc, setCurrentSrc] = useState(defaultSrc);
+  const { textContent, loading } = useAuth();
   
-  // State for the dialog input
-  const [newUrl, setNewUrl] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  useEffect(() => {
-    // When textContent loads or changes, update the image source.
-    const liveSrc = textContent[contentId] as string;
-    // If there's a liveSrc, use it. Otherwise, use the default from props.
-    setCurrentSrc(liveSrc || defaultSrc);
-  }, [textContent, contentId, defaultSrc]);
+  
+  // Directly determine the source based on auth context.
+  // This is more stable than using component state and useEffect.
+  const liveSrc = textContent[contentId] as string || defaultSrc;
+  
+  // Use the live source for the dialog input as well.
+  const [newUrl, setNewUrl] = useState(liveSrc);
 
   const openDialog = () => {
-    // When opening the dialog, populate the input with the current live URL.
-    setNewUrl(currentSrc);
+    setNewUrl(liveSrc); // Ensure the dialog opens with the current image URL
     setIsDialogOpen(true);
   };
   
   const handleSave = async (urlToSave: string) => {
     try {
-      // Basic URL validation
       if(urlToSave) new URL(urlToSave);
       
       await saveTextContent(contentId, urlToSave);
-      setCurrentSrc(urlToSave || defaultSrc); // Update live src
       toast({
         title: urlToSave ? 'Image Updated!' : 'Image Reset!',
         description: urlToSave ? 'Your new image is now live.' : 'The image has been reset to its default.',
       });
       setIsDialogOpen(false);
+      // No need to set local state, AuthProvider will trigger re-render
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -68,10 +61,9 @@ export function EditableImage(props: EditableImageProps) {
   };
 
   const handleRemove = () => {
-    handleSave(''); // Saving an empty string effectively removes the custom URL
+    handleSave(''); // Saving an empty string removes the custom URL
   }
   
-  // URL validation for preview only
   const isPreviewableUrl = (url: string) => {
     try {
       new URL(url);
@@ -85,7 +77,7 @@ export function EditableImage(props: EditableImageProps) {
     return (
       <>
         <div className={cn('relative group', className)}>
-          <Image src={currentSrc} alt={alt} className="transition-opacity group-hover:opacity-50" {...rest} />
+          <Image src={liveSrc} alt={alt} className="transition-opacity group-hover:opacity-50" {...rest} />
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button variant="secondary" onClick={openDialog}>
               <Pencil className="mr-2 h-4 w-4" /> Edit Image
@@ -96,9 +88,9 @@ export function EditableImage(props: EditableImageProps) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Update Image URL</DialogTitle>
-              <DialogDescriptionComponent>
+              <DialogDescription>
                 Paste a new URL from an image hosting service like postimg.cc.
-              </DialogDescriptionComponent>
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
               <Label htmlFor="imageUrl">Image URL</Label>
@@ -148,5 +140,5 @@ export function EditableImage(props: EditableImageProps) {
     );
   }
 
-  return <Image src={currentSrc} alt={alt} className={className} {...rest} />;
+  return <Image src={liveSrc} alt={alt} className={className} {...rest} />;
 }

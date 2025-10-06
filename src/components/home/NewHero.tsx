@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { EditableImage } from "../common/EditableImage";
+import placeholderImages from '@/app/lib/placeholder-images.json';
 
 export default function NewHero() {
     const { user } = useAuth();
@@ -38,11 +39,11 @@ export default function NewHero() {
                 <div className="relative w-full h-80 md:h-96">
                     <EditableImage
                         contentId="hero_image" 
-                        src="https://picsum.photos/seed/hero/800/600"
-                        alt="An inspiring illustration of a student learning with a mentor"
+                        src={placeholderImages.hero_image.src}
+                        alt={placeholderImages.hero_image.alt}
                         fill
                         className="object-contain"
-                        data-ai-hint="inspiring education mentor"
+                        data-ai-hint={placeholderImages.hero_image['data-ai-hint']}
                         priority
                     />
                 </div>
