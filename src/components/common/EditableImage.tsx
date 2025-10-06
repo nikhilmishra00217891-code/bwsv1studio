@@ -17,18 +17,17 @@ import { useAuth } from '@/components/auth/AuthProvider';
 
 interface EditableImageProps extends Omit<ImageProps, 'src' | 'alt'> {
   contentId: string;
-  src: string;
+  defaultSrc: string;
   alt: string;
 }
 
-export function EditableImage(props: EditableImageProps) {
-  const { contentId, src: defaultSrc, alt, className, ...rest } = props;
+export function EditableImage({ contentId, defaultSrc, alt, className, ...rest }: EditableImageProps) {
   const { isEditMode } = useEditMode();
   const { toast } = useToast();
   const { textContent } = useAuth();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const liveSrc = textContent[contentId] as string || defaultSrc;
+  const liveSrc = (textContent[contentId] as string) || defaultSrc;
   
   const [newUrl, setNewUrl] = useState(liveSrc);
 
@@ -73,12 +72,12 @@ export function EditableImage(props: EditableImageProps) {
     return (
       <>
         <div className={cn('relative group w-full h-full', className)}>
-          <Image src={liveSrc} alt={alt} className="transition-opacity group-hover:opacity-50" {...rest} />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="secondary" onClick={openDialog}>
-              <Pencil className="mr-2 h-4 w-4" /> Edit Image
-            </Button>
-          </div>
+          <Image src={liveSrc} alt={alt} {...rest} />
+          <button onClick={openDialog} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-2 bg-secondary text-secondary-foreground p-2 rounded-md">
+              <Pencil className="h-4 w-4" /> Edit Image
+            </div>
+          </button>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent>
