@@ -68,12 +68,14 @@ export default function Testimonials() {
              <EditableText
               contentId="testimonialsTitle"
               defaultValue={textContent.testimonialsTitle || "What Our Students Say"}
+              onSave={() => {}}
             />
           </h2>
           <p className="text-lg text-muted-foreground mt-2">
             <EditableText
               contentId="testimonialsSubtitle"
               defaultValue={textContent.testimonialsSubtitle || "Real stories from our growing Parivaar."}
+              onSave={() => {}}
             />
           </p>
         </div>
@@ -96,7 +98,7 @@ export default function Testimonials() {
                       <Avatar className="w-20 h-20 mb-4 border-4 border-primary/20">
                         <EditableImage
                             contentId={`testimonial_avatar_${testimonial.id}`}
-                            src={textContent[`testimonial_avatar_${testimonial.id}`] || testimonial.avatar} 
+                            defaultSrc={textContent[`testimonial_avatar_${testimonial.id}`] || testimonial.avatar} 
                             alt={testimonial.name}
                             width={80}
                             height={80}
