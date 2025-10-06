@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import Image, { type ImageProps } from 'next/image';
-import { useEditMode } from './EditModeProvider';
+import { useEditMode } from '@/components/common/EditModeProvider';
 import { Button } from '../ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
@@ -15,28 +15,25 @@ import { saveTextContent } from '@/lib/data/content';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { useAuth } from '@/components/auth/AuthProvider';
 
-interface EditableImageProps extends Omit<ImageProps, 'src'> {
+interface EditableImageProps extends Omit<ImageProps, 'src' | 'alt'> {
   contentId: string;
-  src: string; // The default/fallback src
+  src: string;
+  alt: string;
 }
 
 export function EditableImage(props: EditableImageProps) {
   const { contentId, src: defaultSrc, alt, className, ...rest } = props;
   const { isEditMode } = useEditMode();
   const { toast } = useToast();
-  const { textContent, loading } = useAuth();
+  const { textContent } = useAuth();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
-  // Directly determine the source based on auth context.
-  // This is more stable than using component state and useEffect.
   const liveSrc = textContent[contentId] as string || defaultSrc;
   
-  // Use the live source for the dialog input as well.
   const [newUrl, setNewUrl] = useState(liveSrc);
 
   const openDialog = () => {
-    setNewUrl(liveSrc); // Ensure the dialog opens with the current image URL
+    setNewUrl(liveSrc);
     setIsDialogOpen(true);
   };
   
@@ -50,7 +47,6 @@ export function EditableImage(props: EditableImageProps) {
         description: urlToSave ? 'Your new image is now live.' : 'The image has been reset to its default.',
       });
       setIsDialogOpen(false);
-      // No need to set local state, AuthProvider will trigger re-render
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -61,7 +57,7 @@ export function EditableImage(props: EditableImageProps) {
   };
 
   const handleRemove = () => {
-    handleSave(''); // Saving an empty string removes the custom URL
+    handleSave('');
   }
   
   const isPreviewableUrl = (url: string) => {
@@ -76,7 +72,7 @@ export function EditableImage(props: EditableImageProps) {
   if (isEditMode) {
     return (
       <>
-        <div className={cn('relative group', className)}>
+        <div className={cn('relative group w-full h-full', className)}>
           <Image src={liveSrc} alt={alt} className="transition-opacity group-hover:opacity-50" {...rest} />
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button variant="secondary" onClick={openDialog}>
@@ -104,7 +100,9 @@ export function EditableImage(props: EditableImageProps) {
              <div className="mt-4">
                 <p className="text-sm font-medium">New Preview</p>
                 {isPreviewableUrl(newUrl) ? (
-                    <Image src={newUrl} alt="New image preview" width={200} height={120} className="mt-2 rounded-md border aspect-video object-contain" />
+                    <div className="relative w-full aspect-video mt-2 rounded-md border">
+                        <Image src={newUrl} alt="New image preview" fill className="object-contain" />
+                    </div>
                 ) : (
                     <div className="mt-2 rounded-md border aspect-video bg-muted flex items-center justify-center">
                         <p className="text-sm text-muted-foreground">Enter a valid URL to see a preview</p>
