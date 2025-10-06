@@ -11,15 +11,13 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 import { ArrowRight, LoaderCircle } from "lucide-react";
 import { EditableText } from "../common/EditableText";
-import { EditableImage } from "../common/EditableImage";
 import { useEffect, useState } from "react";
 
 const CourseCard = ({ course }: { course: Course }) => {
   return (
     <Card className="overflow-hidden h-full flex flex-col group transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="p-0 relative">
-        <EditableImage
-          contentId={`course_thumb_${course.id}`}
+        <Image
           src={course.thumbnail}
           alt={course.title}
           width={600}
@@ -83,12 +81,14 @@ export default function FeaturedCourses() {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold font-headline">
             <EditableText
+              onSave={() => {}}
               contentId="featuredCoursesTitle"
               defaultValue={textContent.featuredCoursesTitle || "Featured Courses"}
             />
           </h2>
           <p className="text-lg text-muted-foreground mt-2">
             <EditableText
+              onSave={() => {}}
               contentId="featuredCoursesSubtitle"
               defaultValue={textContent.featuredCoursesSubtitle || "Start your journey with our most popular courses."}
             />

@@ -1,8 +1,8 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import { EditableImage } from "../common/EditableImage";
 
 export default function AboutUsTeaser() {
     return (
@@ -10,7 +10,8 @@ export default function AboutUsTeaser() {
             <div className="container mx-auto px-6">
                 <div className="grid md:grid-cols-2 gap-12 items-center">
                     <div className="relative w-full h-80 rounded-lg overflow-hidden shadow-lg">
-                        <Image
+                        <EditableImage
+                            contentId="about_teaser_image"
                             src="https://placehold.co/600x400.png"
                             alt="A group of students learning together with a mentor"
                             fill

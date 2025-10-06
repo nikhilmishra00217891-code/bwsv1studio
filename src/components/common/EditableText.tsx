@@ -8,6 +8,8 @@ import { Textarea } from '../ui/textarea';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { saveTextContent } from '@/lib/data/content';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface EditableTextProps {
   contentId: string;
@@ -27,23 +29,25 @@ export function EditableText({
   onSave
 }: EditableTextProps) {
   const { isEditMode } = useEditMode();
+  const { textContent } = useAuth();
   const [text, setText] = useState(defaultValue);
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+
+  const liveValue = textContent[contentId] as string || defaultValue;
 
   useEffect(() => {
-    setText(defaultValue);
-  }, [defaultValue]);
+    setText(liveValue);
+  }, [liveValue]);
 
   const handleSave = async () => {
-    if (text === defaultValue) {
+    if (text === liveValue) {
         setIsEditing(false);
         return;
     };
     try {
-      onSave(contentId, text);
+      await saveTextContent(contentId, text);
+      if (onSave) onSave(contentId, text);
       toast({
         title: "Content saved!",
         description: "Your changes are now live.",

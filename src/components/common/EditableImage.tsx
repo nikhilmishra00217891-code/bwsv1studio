@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { saveTextContent } from '@/lib/data/content';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 
 interface EditableImageProps extends React.ComponentProps<typeof Image> {
@@ -20,14 +21,20 @@ interface EditableImageProps extends React.ComponentProps<typeof Image> {
 }
 
 export function EditableImage(props: EditableImageProps) {
-  const { contentId, src, alt, className, ...rest } = props;
+  const { contentId, src: defaultSrc, alt, className, ...rest } = props;
   const { isEditMode } = useEditMode();
   const { toast } = useToast();
+  const { textContent } = useAuth();
 
-  const [currentSrc, setCurrentSrc] = useState(src);
+  const [currentSrc, setCurrentSrc] = useState(defaultSrc);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newUrl, setNewUrl] = useState('');
   
+  useEffect(() => {
+    const liveSrc = textContent[contentId] as string || defaultSrc;
+    setCurrentSrc(liveSrc);
+  }, [textContent, contentId, defaultSrc]);
+
   // A more robust check to see if the URL is valid enough to be rendered in a preview.
   const isPreviewableUrl = (url: string) => {
     try {
@@ -37,10 +44,6 @@ export function EditableImage(props: EditableImageProps) {
       return false;
     }
   }
-
-  useEffect(() => {
-    setCurrentSrc(src);
-  }, [src]);
 
   const handleSave = async (urlToSave: string) => {
     try {
@@ -122,7 +125,7 @@ export function EditableImage(props: EditableImageProps) {
                       <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                              This will remove the custom URL for this ad slot and revert it to the default placeholder.
+                              This will remove the custom URL and revert to the default placeholder.
                           </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooterComponent>

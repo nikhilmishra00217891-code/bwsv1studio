@@ -5,7 +5,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import { EditableImage } from "../common/EditableImage";
 
 export default function NewHero() {
     const { user } = useAuth();
@@ -36,12 +36,14 @@ export default function NewHero() {
                     </div>
                 </div>
                 <div className="relative w-full h-80 md:h-96">
-                    <Image 
+                    <EditableImage
+                        contentId="hero_image" 
                         src="https://placehold.co/800x600.png"
                         alt="An inspiring illustration of a student learning with a mentor"
                         fill
                         className="object-contain"
                         data-ai-hint="inspiring education mentor"
+                        priority
                     />
                 </div>
             </div>
