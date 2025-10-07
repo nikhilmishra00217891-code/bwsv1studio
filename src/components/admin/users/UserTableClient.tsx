@@ -100,7 +100,7 @@ const MaintenanceModeCard = () => {
     return (
         <Card className={cn(isMaintenanceMode && "border-destructive shadow-lg")}>
             <CardHeader>
-                <CardTitle className="flex items-center gap-3"><Wrench /> Maintenance Mode</CardTitle>
+                <CardTitle className="flex items-center gap-3"><Wrench /> Issue Maintenance</CardTitle>
                 <CardDescription>
                     When enabled, all non-faculty users will see a maintenance page and will not be able to access the app.
                 </CardDescription>
@@ -908,5 +908,3 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     </>
   );
 }
-
-    
