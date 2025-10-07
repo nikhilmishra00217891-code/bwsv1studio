@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Header from "@/components/common/Header";
 import Footer from "@/components/common/Footer";
 import AiMentorWidget from "@/components/common/AiMentorWidget";
@@ -21,6 +20,7 @@ import PushNotificationManager from "@/components/auth/PushNotificationManager";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const { user, userProfile, textContent } = useAuth();
     const [isMounted, setIsMounted] = useState(false);
 
@@ -29,6 +29,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }, []);
 
     const isFocusOrWarZone = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.startsWith('/learnzone');
+    const isMaintenanceBypass = searchParams.get('bypass') === 'true';
 
     if (!isMounted) {
         return (
@@ -39,6 +40,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }
 
     if (textContent.isMaintenanceMode && userProfile?.role !== 'faculty') {
+        // If it's the login page accessed via bypass, show it clean.
+        if (pathname === '/login' && isMaintenanceBypass) {
+             return (
+                 <div className="flex min-h-screen flex-col">
+                    <main className="flex-1">{children}</main>
+                </div>
+            )
+        }
         return <MaintenanceFirewall />;
     }
 
