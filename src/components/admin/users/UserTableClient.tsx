@@ -47,9 +47,6 @@ import { useRouter } from 'next/navigation';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Switch } from '../ui/switch';
-import { saveTextContent } from '@/lib/data/content';
 
 const suspensionReasons = [
     "Violation of Terms of Service",
@@ -57,71 +54,6 @@ const suspensionReasons = [
     "Hacking or security exploit attempt",
     "Payment or subscription issue",
 ];
-
-const MaintenanceModeCard = () => {
-    const { textContent, loading } = useAuth();
-    const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
-    const [isPending, startTransition] = useTransition();
-    const { toast } = useToast();
-
-    React.useEffect(() => {
-        if (!loading) {
-            setIsMaintenanceMode(!!textContent.isMaintenanceMode);
-        }
-    }, [textContent, loading]);
-
-    const handleToggle = (checked: boolean) => {
-        startTransition(async () => {
-            try {
-                await saveTextContent('isMaintenanceMode', checked);
-                setIsMaintenanceMode(checked);
-                toast({
-                    title: `Maintenance Mode ${checked ? 'Enabled' : 'Disabled'}`,
-                    description: checked
-                        ? "Non-faculty users will now see the maintenance page."
-                        : "The app is now live for all users.",
-                });
-            } catch (error) {
-                toast({ variant: 'destructive', title: 'Failed to update status' });
-            }
-        });
-    }
-
-    if (loading) {
-        return (
-            <Card>
-                <CardContent className="p-4 flex items-center justify-center">
-                    <LoaderCircle className="animate-spin" />
-                </CardContent>
-            </Card>
-        )
-    }
-
-    return (
-        <Card className={cn(isMaintenanceMode && "border-destructive shadow-lg")}>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-3"><Wrench /> Issue Maintenance</CardTitle>
-                <CardDescription>
-                    When enabled, all non-faculty users will see a maintenance page and will not be able to access the app.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center justify-between rounded-lg border p-4 bg-background">
-                    <Label htmlFor="maintenance-mode" className="text-base">
-                        {isMaintenanceMode ? "Maintenance Mode is ON" : "Maintenance Mode is OFF"}
-                    </Label>
-                    <Switch
-                        id="maintenance-mode"
-                        checked={isMaintenanceMode}
-                        onCheckedChange={handleToggle}
-                        disabled={isPending}
-                        className="data-[state=checked]:bg-destructive"
-                    />
-                </div>
-            </CardContent>
-        </Card>
-    )
-}
 
 const PatraDialog = ({
     user,
@@ -731,8 +663,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
              <h1 className="text-3xl md:text-4xl font-bold font-headline">User Management</h1>
              <p className="text-muted-foreground">Search, view, and manage all users on the platform.</p>
         </div>
-        
-        <MaintenanceModeCard />
+      
         <AnalyticsDashboard users={users} />
 
         <div className="flex flex-col sm:flex-row gap-4">
