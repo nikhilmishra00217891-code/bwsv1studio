@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard, Bell, Tool, Wrench } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard, Bell, Wrench } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
