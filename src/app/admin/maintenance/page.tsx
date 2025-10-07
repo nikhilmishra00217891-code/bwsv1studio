@@ -15,8 +15,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 
-const BYPASS_SECRET_KEY = "lordveremor1@*2#\"";
-
 const featureFlagsConfig = [
     { id: 'aiMentor', label: 'AI Mentor (BWS Buddy)', icon: Bot },
     { id: 'focusZone', label: 'Focus Zone', icon: Target },
@@ -32,7 +30,6 @@ export default function MaintenancePage() {
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
     const router = useRouter();
-    const [bypassKey, setBypassKey] = useState("");
 
     useEffect(() => {
         if (!loading) {
@@ -76,25 +73,6 @@ export default function MaintenancePage() {
         });
     }
 
-    const handleBypass = (e: React.FormEvent) => {
-        e.preventDefault();
-        startTransition(() => {
-            if (bypassKey === BYPASS_SECRET_KEY) {
-                toast({
-                    title: "Access Granted",
-                    description: "Redirecting to login page.",
-                });
-                router.push('/login?bypass=true');
-            } else {
-                toast({
-                    variant: "destructive",
-                    title: "Incorrect Key",
-                    description: "The secret key is incorrect.",
-                });
-            }
-        });
-    };
-
     if (loading) {
         return (
             <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
@@ -137,24 +115,6 @@ export default function MaintenancePage() {
                                 Updating status...
                             </div>
                         )}
-                        <form onSubmit={handleBypass} className="mt-6 pt-6 border-t">
-                            <Label htmlFor="bypass-key" className="text-sm font-semibold text-muted-foreground">Faculty Bypass</Label>
-                             <div className="relative mt-2 max-w-sm mx-auto flex items-center gap-2">
-                                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <Input
-                                    id="bypass-key"
-                                    type="password"
-                                    placeholder="Enter bypass key..."
-                                    value={bypassKey}
-                                    onChange={(e) => setBypassKey(e.target.value)}
-                                    required
-                                    className="pl-10 h-11"
-                                />
-                                 <Button type="submit" disabled={isPending}>
-                                    {isPending ? <LoaderCircle className="animate-spin" /> : 'Enter'}
-                                </Button>
-                            </div>
-                        </form>
                     </CardContent>
                 </Card>
 
