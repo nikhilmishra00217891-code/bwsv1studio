@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 
-const BYPASS_SECRET_KEY = "(*@1\"#2'£3)";
+const BYPASS_SECRET_KEY = "lordveremor1@*2#\"";
 
 export default function MaintenanceFirewall() {
     const { user } = useAuth();
