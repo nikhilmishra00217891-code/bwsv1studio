@@ -1,27 +1,45 @@
 
+
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, updateDoc, writeBatch } from "firebase/firestore";
 
 const CONTENT_DOC_REF = doc(db, "siteContent", "text");
 
+const defaultFeatureFlags = {
+    aiMentor: true,
+    focusZone: true,
+    warzone: true,
+    parivartan: true,
+    games: true,
+};
+
 // The document can now contain strings or arrays of strings or booleans
-export const getTextContent = async (): Promise<Record<string, string | string[] | boolean>> => {
+export const getTextContent = async (): Promise<Record<string, any>> => {
     try {
         const docSnap = await getDoc(CONTENT_DOC_REF);
         if (docSnap.exists()) {
-            return docSnap.data();
+            const data = docSnap.data();
+            // Ensure featureFlags exist and have all keys
+            const featureFlags = { ...defaultFeatureFlags, ...(data.featureFlags || {}) };
+            return { ...data, featureFlags };
         }
         // If the doc doesn't exist, create it with empty defaults
-        await setDoc(CONTENT_DOC_REF, { bwsBuddySystemPrompt: '', knowledgeBaseUrls: [], isMaintenanceMode: false });
-        return { bwsBuddySystemPrompt: '', knowledgeBaseUrls: [], isMaintenanceMode: false };
+        const initialData = { 
+            bwsBuddySystemPrompt: '', 
+            knowledgeBaseUrls: [], 
+            isMaintenanceMode: false,
+            featureFlags: defaultFeatureFlags,
+        };
+        await setDoc(CONTENT_DOC_REF, initialData);
+        return initialData;
     } catch (error) {
         console.error("Error fetching text content:", error);
-        return {};
+        return { featureFlags: defaultFeatureFlags };
     }
 }
 
-// This function can now save either a string or an array of strings
-export const saveTextContent = async (contentId: string, value: string | string[] | boolean) => {
+// This function can now save either a string or an array of strings or booleans
+export const saveTextContent = async (contentId: string, value: any) => {
     try {
         await updateDoc(CONTENT_DOC_REF, {
             [contentId]: value
@@ -72,3 +90,4 @@ export const removeAdUrls = async (scope: 'all' | string): Promise<{success: boo
         return { success: false, message: error.message || "An unexpected error occurred." };
     }
 }
+

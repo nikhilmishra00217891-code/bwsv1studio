@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
@@ -28,7 +29,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         setIsMounted(true);
     }, []);
 
-    const isFocusOrWarZone = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.startsWith('/learnzone');
+    const featureFlags = (textContent.featureFlags as Record<string, boolean>) || {};
+    const isFocusOrWarZone = (pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.startsWith('/learnzone'));
     const isMaintenanceBypass = searchParams.get('bypass') === 'true';
 
     if (!isMounted) {
@@ -118,7 +120,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         <Phone className="h-8 w-8" />
                         </Link>
                     </Button>
-                    <AiMentorWidget />
+                    {(featureFlags.aiMentor ?? true) && <AiMentorWidget />}
                 </div>
             )}
         </>

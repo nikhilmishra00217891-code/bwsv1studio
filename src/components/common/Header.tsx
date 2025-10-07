@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -78,21 +79,6 @@ const NavLink = ({ href, label, icon: Icon, onSelect, isProtected, isDesktop = f
 
 
 const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/warzone", "/dashboard", "/profile", "/patra"];
-const navLinksData = [
-  { href: "/", label: "Home", icon: Home, isProtected: false },
-  { href: "/courses", label: "Courses", icon: Compass, isProtected: false },
-  { href: "/announcements", label: "Announcements", icon: Megaphone, isProtected: true },
-  { href: "/games", label: "BWS Games", icon: Gamepad2, isProtected: true },
-  { href: "/about", label: "About", icon: Info, isProtected: false },
-  { href: "/contact", label: "Contact", icon: Phone, isProtected: false },
-];
-const futureNavLinks = [
-  { href: "/profile", label: "My Profile", icon: UserCircle, isProtected: true },
-  { href: "/patra", label: "पत्र", icon: Mailbox, isProtected: true },
-  { href: "/focus-zone", label: "Focus Zone", icon: Target, isProtected: true },
-  { href: "/warzone", label: "Warzone", icon: Swords, isProtected: true },
-  { href: "/parivartan", label: "Parivartan Chamber", icon: Users, isProtected: true },
-];
 
 
 const avatarIcons: { [key: string]: React.ElementType } = {
@@ -108,7 +94,7 @@ const avatarIcons: { [key: string]: React.ElementType } = {
 
 
 export default function Header() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, textContent } = useAuth();
   const [isFaculty, setIsFaculty] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -117,6 +103,24 @@ export default function Header() {
   const pathname = usePathname();
   const [hasUnreadPatra, setHasUnreadPatra] = useState(false);
   
+  const featureFlags = (textContent.featureFlags as Record<string, boolean>) || {};
+  
+  const navLinksData = [
+      { href: "/", label: "Home", icon: Home, isProtected: false, flag: true },
+      { href: "/courses", label: "Courses", icon: Compass, isProtected: false, flag: true },
+      { href: "/announcements", label: "Announcements", icon: Megaphone, isProtected: true, flag: true },
+      { href: "/games", label: "BWS Games", icon: Gamepad2, isProtected: true, flag: featureFlags.games ?? true },
+      { href: "/about", label: "About", icon: Info, isProtected: false, flag: true },
+      { href: "/contact", label: "Contact", icon: Phone, isProtected: false, flag: true },
+  ];
+  const futureNavLinks = [
+      { href: "/profile", label: "My Profile", icon: UserCircle, isProtected: true, flag: true },
+      { href: "/patra", label: "पत्र", icon: Mailbox, isProtected: true, flag: true },
+      { href: "/focus-zone", label: "Focus Zone", icon: Target, isProtected: true, flag: featureFlags.focusZone ?? true },
+      { href: "/warzone", label: "Warzone", icon: Swords, isProtected: true, flag: featureFlags.warzone ?? true },
+      { href: "/parivartan", label: "Parivartan Chamber", icon: Users, isProtected: true, flag: featureFlags.parivartan ?? true },
+  ];
+
   const isLearnZone = pathname.startsWith('/courses/') && pathname.includes('/learnzone');
   const isViewingStudentDashboard = pathname.startsWith('/admin/users/');
   
@@ -194,7 +198,7 @@ export default function Header() {
         </div>
         
         <div className="flex-1 justify-center hidden lg:flex">
-             <SmartSearch />
+             {(featureFlags.aiMentor ?? true) && <SmartSearch />}
         </div>
         
         <div className="flex items-center gap-2 md:gap-4 ml-auto">
@@ -249,10 +253,10 @@ export default function Header() {
 
                 <ScrollArea className="flex-grow">
                     <div className="p-6 lg:hidden">
-                      <SmartSearch />
+                      {(featureFlags.aiMentor ?? true) && <SmartSearch />}
                     </div>
                     <nav className="flex flex-col gap-4 text-lg p-6">
-                      {[...navLinksData, { href: "/dashboard", label: "Dashboard", icon: UserCircle, isProtected: true }].map((link) => (
+                      {[...navLinksData, { href: "/dashboard", label: "Dashboard", icon: UserCircle, isProtected: true, flag: true }].filter(l => l.flag).map((link) => (
                         <NavLink key={link.href} {...link} onSelect={handleLinkClick} />
                       ))}
                       {isFaculty && (
@@ -267,7 +271,7 @@ export default function Header() {
                         </>
                       )}
                       <div className="my-2 border-t border-border/50"></div>
-                      {user && futureNavLinks.map((link) => (
+                      {user && futureNavLinks.filter(l => l.flag).map((link) => (
                         <NavLink key={link.label} {...link} onSelect={handleLinkClick} />
                       ))}
                     </nav>
