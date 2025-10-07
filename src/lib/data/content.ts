@@ -4,16 +4,16 @@ import { doc, getDoc, setDoc, updateDoc, writeBatch } from "firebase/firestore";
 
 const CONTENT_DOC_REF = doc(db, "siteContent", "text");
 
-// The document can now contain strings or arrays of strings
-export const getTextContent = async (): Promise<Record<string, string | string[]>> => {
+// The document can now contain strings or arrays of strings or booleans
+export const getTextContent = async (): Promise<Record<string, string | string[] | boolean>> => {
     try {
         const docSnap = await getDoc(CONTENT_DOC_REF);
         if (docSnap.exists()) {
             return docSnap.data();
         }
         // If the doc doesn't exist, create it with empty defaults
-        await setDoc(CONTENT_DOC_REF, { bwsBuddySystemPrompt: '', knowledgeBaseUrls: [] });
-        return { bwsBuddySystemPrompt: '', knowledgeBaseUrls: [] };
+        await setDoc(CONTENT_DOC_REF, { bwsBuddySystemPrompt: '', knowledgeBaseUrls: [], isMaintenanceMode: false });
+        return { bwsBuddySystemPrompt: '', knowledgeBaseUrls: [], isMaintenanceMode: false };
     } catch (error) {
         console.error("Error fetching text content:", error);
         return {};
@@ -21,7 +21,7 @@ export const getTextContent = async (): Promise<Record<string, string | string[]
 }
 
 // This function can now save either a string or an array of strings
-export const saveTextContent = async (contentId: string, value: string | string[]) => {
+export const saveTextContent = async (contentId: string, value: string | string[] | boolean) => {
     try {
         await updateDoc(CONTENT_DOC_REF, {
             [contentId]: value

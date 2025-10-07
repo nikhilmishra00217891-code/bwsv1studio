@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard, Bell } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard, Bell, Tool, Wrench } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -38,7 +38,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { suspendUser, unsuspendUser } from '@/app/actions';
-import { sendPatra } from '@/lib/data/patra';
+import { sendPatra, sendBulkPatra } from '@/lib/data/patra';
 import { sendNotification } from '@/ai/flows';
 import { generatePatra } from '@/ai/flows';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +47,9 @@ import { useRouter } from 'next/navigation';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Switch } from '../ui/switch';
+import { saveTextContent } from '@/lib/data/content';
 
 const suspensionReasons = [
     "Violation of Terms of Service",
@@ -54,6 +57,71 @@ const suspensionReasons = [
     "Hacking or security exploit attempt",
     "Payment or subscription issue",
 ];
+
+const MaintenanceModeCard = () => {
+    const { textContent, loading } = useAuth();
+    const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+    const [isPending, startTransition] = useTransition();
+    const { toast } = useToast();
+
+    React.useEffect(() => {
+        if (!loading) {
+            setIsMaintenanceMode(!!textContent.isMaintenanceMode);
+        }
+    }, [textContent, loading]);
+
+    const handleToggle = (checked: boolean) => {
+        startTransition(async () => {
+            try {
+                await saveTextContent('isMaintenanceMode', checked);
+                setIsMaintenanceMode(checked);
+                toast({
+                    title: `Maintenance Mode ${checked ? 'Enabled' : 'Disabled'}`,
+                    description: checked
+                        ? "Non-faculty users will now see the maintenance page."
+                        : "The app is now live for all users.",
+                });
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Failed to update status' });
+            }
+        });
+    }
+
+    if (loading) {
+        return (
+            <Card>
+                <CardContent className="p-4 flex items-center justify-center">
+                    <LoaderCircle className="animate-spin" />
+                </CardContent>
+            </Card>
+        )
+    }
+
+    return (
+        <Card className={cn(isMaintenanceMode && "border-destructive shadow-lg")}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-3"><Wrench /> Maintenance Mode</CardTitle>
+                <CardDescription>
+                    When enabled, all non-faculty users will see a maintenance page and will not be able to access the app.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center justify-between rounded-lg border p-4 bg-background">
+                    <Label htmlFor="maintenance-mode" className="text-base">
+                        {isMaintenanceMode ? "Maintenance Mode is ON" : "Maintenance Mode is OFF"}
+                    </Label>
+                    <Switch
+                        id="maintenance-mode"
+                        checked={isMaintenanceMode}
+                        onCheckedChange={handleToggle}
+                        disabled={isPending}
+                        className="data-[state=checked]:bg-destructive"
+                    />
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
 
 const PatraDialog = ({
     user,
@@ -75,7 +143,7 @@ const PatraDialog = ({
     const [isGenerating, setIsGenerating] = useState(false);
     const { toast } = useToast();
     
-    const isBulkMode = !!users;
+    const isBulkMode = !!users && users.length > 1;
 
     React.useEffect(() => {
         if (!isOpen) {
@@ -87,7 +155,7 @@ const PatraDialog = ({
     }, [isOpen]);
 
     if (!facultyProfile) return null;
-    if (!user && !isBulkMode) return null;
+    if (!user && !users) return null;
 
 
     const handleSendPatra = async () => {
@@ -99,16 +167,14 @@ const PatraDialog = ({
         setIsSending(true);
         try {
             if (isBulkMode && users) {
-                // This would need a new function in patra.ts for bulk sending
-                // For now, let's assume it exists or loop (though inefficient)
-                // await sendBulkPatra({
-                //     senderId: facultyProfile.uid,
-                //     senderName: facultyProfile.displayName || 'Faculty',
-                //     recipientIds: users.map(u => u.uid),
-                //     type,
-                //     title,
-                //     content
-                // });
+                await sendBulkPatra({
+                    senderId: facultyProfile.uid,
+                    senderName: facultyProfile.displayName || 'Faculty',
+                    recipientIds: users.map(u => u.uid),
+                    type,
+                    title,
+                    content
+                });
                 toast({ title: "Bulk Patra Sent!", description: `Your letter has been sent to ${users.length} users.` });
             } else if (user) {
                 await sendPatra({
@@ -154,7 +220,7 @@ const PatraDialog = ({
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{isBulkMode ? `Send Patra to ${users ? users.length : 0} Users` : `Send a Patra to ${user?.displayName}`}</DialogTitle>
+                    <DialogTitle>{isBulkMode ? `Send Patra to ${users?.length} Users` : `Send a Patra to ${user?.displayName}`}</DialogTitle>
                     <DialogDescription>
                         {isBulkMode ? 'Compose a letter to send to all currently filtered users.' : 'Compose a personal letter to guide, praise, or warn the student.'}
                     </DialogDescription>
@@ -247,10 +313,11 @@ const NotificationDialog = ({
             
             if (result.success) {
                 toast({ title: "Notifications Sent!", description: result.message });
-                onOpenChange(false);
             } else {
                  toast({ variant: 'destructive', title: "Sending Failed", description: result.message });
             }
+
+            onOpenChange(false);
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Send Failed", description: error.message || "Could not send the notifications." });
         } finally {
@@ -664,7 +731,8 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
              <h1 className="text-3xl md:text-4xl font-bold font-headline">User Management</h1>
              <p className="text-muted-foreground">Search, view, and manage all users on the platform.</p>
         </div>
-      
+        
+        <MaintenanceModeCard />
         <AnalyticsDashboard users={users} />
 
         <div className="flex flex-col sm:flex-row gap-4">
@@ -840,3 +908,5 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     </>
   );
 }
+
+    

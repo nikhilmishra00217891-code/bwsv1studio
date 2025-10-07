@@ -4,7 +4,7 @@
 import { auth, db } from "@/lib/firebase";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { createContext, useContext, useEffect, useState, type ReactNode, Dispatch, SetStateAction } from "react";
 import type { UserProfile } from "@/types";
 import { getTextContent } from "@/lib/data/content";
@@ -13,7 +13,7 @@ import { useTheme } from "next-themes";
 interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
-  textContent: Record<string, string>;
+  textContent: Record<string, string | string[] | boolean>;
   loading: boolean;
   setUserProfile: Dispatch<SetStateAction<UserProfile | null>>;
 }
@@ -29,18 +29,23 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [textContent, setTextContent] = useState<Record<string, string>>({});
+  const [textContent, setTextContent] = useState<Record<string, string | string[] | boolean>>({});
   const [loading, setLoading] = useState(true);
   const { setTheme } = useTheme();
 
   useEffect(() => {
-    const fetchContent = async () => {
-        const content = await getTextContent();
-        setTextContent(content);
-    };
-    fetchContent();
+    // Listen for real-time updates to the site content
+    const contentDocRef = doc(db, "siteContent", "text");
+    const unsubscribeContent = onSnapshot(contentDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setTextContent(docSnap.data());
+        } else {
+            // Create default if it doesn't exist
+            getTextContent().then(setTextContent);
+        }
+    });
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
         // Fetch user profile from Firestore
@@ -62,7 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      unsubscribeContent();
+    };
   }, [setTheme]);
 
   return (

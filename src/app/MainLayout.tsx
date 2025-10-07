@@ -12,6 +12,7 @@ import Link from "next/link";
 import FeedbackWidget from "@/components/common/FeedbackWidget";
 import { useAuth } from "@/components/auth/AuthProvider";
 import SuspendedAccountFirewall from "@/components/auth/SuspendedAccountFirewall";
+import MaintenanceFirewall from "@/components/common/MaintenanceFirewall";
 import { useState, useEffect } from "react";
 import PwaInstall from "@/components/common/PwaInstall";
 import CourseDrawer from "@/components/common/CourseDrawer";
@@ -20,7 +21,7 @@ import PushNotificationManager from "@/components/auth/PushNotificationManager";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const { user, userProfile } = useAuth();
+    const { user, userProfile, textContent } = useAuth();
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -35,6 +36,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <main className="flex-1">{children}</main>
             </div>
         )
+    }
+
+    if (textContent.isMaintenanceMode && userProfile?.role !== 'faculty') {
+        return <MaintenanceFirewall />;
     }
 
     if (isFocusOrWarZone) {
