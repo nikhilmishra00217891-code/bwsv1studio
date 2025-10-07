@@ -54,7 +54,6 @@ const genericChatFlow = ai.defineFlow(
     }));
 
     const { text } = await ai.generate({
-      model: 'googleai/gemini-pro',
       system: systemPrompt,
       history,
       prompt: input.message,
