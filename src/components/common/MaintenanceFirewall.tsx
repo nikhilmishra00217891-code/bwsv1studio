@@ -11,6 +11,7 @@ import { auth } from "@/lib/firebase";
 import { Input } from "../ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
 
 const BYPASS_SECRET_KEY = "BWS@Faculty#2024";
 
