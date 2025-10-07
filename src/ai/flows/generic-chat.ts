@@ -24,7 +24,7 @@ const GenericChatInputSchema = z.object({
 export type GenericChatInput = z.infer<typeof GenericChatInputSchema>;
 
 const GenericChatOutputSchema = z.object({
-  answer: z.string().describe('The AI\'s response to the user.'),
+  answer: z.string().describe("The AI's response to the user."),
 });
 export type GenericChatOutput = z.infer<typeof GenericChatOutputSchema>;
 
