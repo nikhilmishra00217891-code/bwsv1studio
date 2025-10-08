@@ -58,7 +58,7 @@ export const createCoupon = async (
 };
 
 /**
- * Retrieves all coupons for a given course.
+ * Retrieves all coupons for a given course. This is safe for server-side fetching.
  */
 export const getCouponsForCourse = async (courseId: string): Promise<Coupon[]> => {
   const couponsColRef = collection(db, `courses/${courseId}/coupons`);

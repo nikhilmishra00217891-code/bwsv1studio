@@ -1,6 +1,6 @@
 
 import { getCourseById } from "@/lib/data";
-import { listenForCoupons } from "@/lib/data/coupons";
+import { getCouponsForCourse } from "@/lib/data/coupons";
 import { notFound } from "next/navigation";
 import CouponManagementClient from "./CouponManagementClient";
 
@@ -14,7 +14,7 @@ export default async function ManageCourseCouponsPage({ params }: { params: { co
 
     // We fetch initial coupons here, but the client will listen for real-time updates.
     // This is good for initial render performance.
-    const initialCoupons = await listenForCoupons(params.courseId, () => {});
+    const initialCoupons = await getCouponsForCourse(params.courseId);
 
     return <CouponManagementClient initialCourse={course} initialCoupons={initialCoupons} />;
 }
