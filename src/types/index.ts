@@ -69,6 +69,16 @@ export interface UserMission {
     details: string;
 }
 
+export interface Coupon {
+  id: string;
+  code: string;
+  courseId: string;
+  discountPercentage: number;
+  isActive: boolean;
+  createdAt: Timestamp;
+  timesUsed: number;
+}
+
 export interface Course {
   id: string;
   title: string;

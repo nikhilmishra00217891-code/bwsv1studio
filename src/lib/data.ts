@@ -4,6 +4,7 @@ import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter
 import { db } from "./firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion, limit, arrayRemove } from "firebase/firestore";
 import type { User } from "firebase/auth";
+export * from './data/coupons';
 
 const serializeTimestamps = (data: any): any => {
     if (data === null || typeof data !== 'object') {
