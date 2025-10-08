@@ -156,6 +156,15 @@ export default function CouponManagementClient({ initialCourse, initialCoupons }
         }
     }
 
+    const getCouponDate = (coupon: Coupon) => {
+        if (!coupon.createdAt) return new Date();
+        // Timestamps from server are strings, from client are objects
+        if (typeof coupon.createdAt === 'string') {
+            return new Date(coupon.createdAt);
+        }
+        return (coupon.createdAt as any).toDate();
+    }
+
     return (
         <div className="animate-fade-in p-4 md:p-8 space-y-6">
             <div className="flex items-center gap-4">
@@ -197,7 +206,7 @@ export default function CouponManagementClient({ initialCourse, initialCoupons }
                                 <TableRow key={coupon.id} className={cn(!coupon.isActive && 'bg-muted/50')}>
                                     <TableCell className="font-mono font-semibold">{coupon.code}</TableCell>
                                     <TableCell>{coupon.discountPercentage}%</TableCell>
-                                    <TableCell>{format(new Date((coupon.createdAt as any)?.toDate()), 'PPP')}</TableCell>
+                                    <TableCell>{format(getCouponDate(coupon), 'PPP')}</TableCell>
                                     <TableCell>{coupon.timesUsed}</TableCell>
                                     <TableCell>
                                         <Badge variant={coupon.isActive ? 'default' : 'secondary'} className={cn(coupon.isActive && 'bg-green-600')}>{coupon.isActive ? 'Active' : 'Inactive'}</Badge>
