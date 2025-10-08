@@ -12,8 +12,19 @@ import {
   deleteDoc,
   onSnapshot,
   orderBy,
+  Timestamp,
 } from "firebase/firestore";
 import type { Coupon } from "@/types";
+
+const serializeCoupon = (doc: any): Coupon => {
+    const data = doc.data();
+    const coupon = { id: doc.id, ...data } as Coupon;
+    if (data.createdAt instanceof Timestamp) {
+        coupon.createdAt = data.createdAt.toDate().toISOString() as any;
+    }
+    return coupon;
+};
+
 
 /**
  * Creates a new discount coupon for a specific course.
@@ -66,7 +77,7 @@ export const getCouponsForCourse = async (courseId: string): Promise<Coupon[]> =
     return [];
   }
 
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Coupon);
+  return snapshot.docs.map(serializeCoupon);
 };
 
 /**
@@ -80,7 +91,7 @@ export const listenForCoupons = (
   const q = query(couponsColRef, orderBy("createdAt", "desc"));
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
-    const coupons = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
+    const coupons = snapshot.docs.map(serializeCoupon);
     callback(coupons);
   }, (error) => {
     console.error(`Error listening for coupons in course ${courseId}:`, error);

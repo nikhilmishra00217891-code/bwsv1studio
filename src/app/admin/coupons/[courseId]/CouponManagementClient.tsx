@@ -44,6 +44,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { Timestamp } from 'firebase/firestore';
 
 const CreateCouponDialog = ({ courseId, onCouponCreated }: { courseId: string, onCouponCreated: () => void }) => {
     const [code, setCode] = useState('');
@@ -158,11 +159,19 @@ export default function CouponManagementClient({ initialCourse, initialCoupons }
 
     const getCouponDate = (coupon: Coupon) => {
         if (!coupon.createdAt) return new Date();
-        // Timestamps from server are strings, from client are objects
+        
+        // Firestore Timestamps from onSnapshot are objects, from server they are strings.
         if (typeof coupon.createdAt === 'string') {
             return new Date(coupon.createdAt);
         }
-        return (coupon.createdAt as any).toDate();
+        
+        // Check if it looks like a Firestore Timestamp object
+        if (coupon.createdAt && typeof (coupon.createdAt as any).toDate === 'function') {
+            return (coupon.createdAt as any).toDate();
+        }
+
+        // Fallback for unexpected formats
+        return new Date();
     }
 
     return (
