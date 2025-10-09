@@ -1,4 +1,5 @@
 
+
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -13,6 +14,7 @@ import {
   onSnapshot,
   orderBy,
   Timestamp,
+  increment,
 } from "firebase/firestore";
 import type { Coupon } from "@/types";
 
@@ -120,3 +122,39 @@ export const deleteCoupon = async (courseId: string, couponId: string): Promise<
   const couponDocRef = doc(db, `courses/${courseId}/coupons`, couponId);
   await deleteDoc(couponDocRef);
 };
+
+
+/**
+ * Validates a coupon code for a given course and returns the discount percentage if valid.
+ */
+export const applyCoupon = async (courseId: string, code: string): Promise<{ success: boolean; discount?: number; message: string; }> => {
+    const couponCode = code.trim().toUpperCase();
+    if (!couponCode) {
+        return { success: false, message: 'Please enter a coupon code.' };
+    }
+
+    const couponsColRef = collection(db, `courses/${courseId}/coupons`);
+    const q = query(couponsColRef, where('code', '==', couponCode), limit(1));
+    
+    try {
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            return { success: false, message: 'Invalid coupon code.' };
+        }
+
+        const couponDoc = snapshot.docs[0];
+        const coupon = couponDoc.data() as Coupon;
+
+        if (!coupon.isActive) {
+            return { success: false, message: 'This coupon is no longer active.' };
+        }
+        
+        // This is a placeholder. A real implementation might check usage limits, expiry dates, etc.
+
+        return { success: true, discount: coupon.discountPercentage, message: 'Coupon applied successfully!' };
+
+    } catch (error) {
+        console.error("Error applying coupon:", error);
+        return { success: false, message: 'An server error occurred while verifying the coupon.' };
+    }
+}

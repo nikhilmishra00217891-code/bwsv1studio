@@ -320,7 +320,7 @@ export async function isUserEnrolled(userId: string, courseId: string): Promise<
   return enrolledCourses.includes(courseId);
 }
 
-export const enrollInCourse = async (userId: string, courseId: string): Promise<void> => {
+export const enrollInCourse = async (userId: string, courseId: string, couponCode?: string): Promise<void> => {
     const userRef = doc(db, "users", userId);
     const userSnap = await getDoc(userRef);
 
@@ -341,6 +341,19 @@ export const enrollInCourse = async (userId: string, courseId: string): Promise<
             completedLessons: []
         }
     });
+
+    // If a coupon was used, increment its usage count
+    if (couponCode) {
+        const couponsColRef = collection(db, `courses/${courseId}/coupons`);
+        const q = query(couponsColRef, where('code', '==', couponCode.toUpperCase()), limit(1));
+        const couponSnapshot = await getDocs(q);
+        if (!couponSnapshot.empty) {
+            const couponDoc = couponSnapshot.docs[0];
+            await updateDoc(couponDoc.ref, {
+                timesUsed: increment(1)
+            });
+        }
+    }
 }
 
 
