@@ -1,5 +1,4 @@
 
-
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -15,6 +14,7 @@ import {
   orderBy,
   Timestamp,
   increment,
+  limit,
 } from "firebase/firestore";
 import type { Coupon } from "@/types";
 
