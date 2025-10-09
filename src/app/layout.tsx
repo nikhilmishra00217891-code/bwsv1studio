@@ -24,7 +24,8 @@ export const metadata: Metadata = {
   icons: {
     icon: "https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg",
     apple: "https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg",
-  }
+  },
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
