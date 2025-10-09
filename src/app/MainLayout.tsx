@@ -3,7 +3,6 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import Header from "@/components/common/Header";
 import Footer from "@/components/common/Footer";
 import AiMentorWidget from "@/components/common/AiMentorWidget";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import { useState, useEffect } from "react";
 import PwaInstall from "@/components/common/PwaInstall";
 import CourseDrawer from "@/components/common/CourseDrawer";
 import PushNotificationManager from "@/components/auth/PushNotificationManager";
+import Header from "@/components/common/Header";
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +30,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     }, []);
 
     const featureFlags = (textContent.featureFlags as Record<string, boolean>) || {};
-    const isFocusOrWarZone = (pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.startsWith('/learnzone'));
     const isMaintenanceBypass = searchParams.get('bypass') === 'true';
 
     if (!isMounted) {
@@ -53,15 +52,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         return <MaintenanceFirewall />;
     }
 
-    if (isFocusOrWarZone) {
-         return (
-             <div className="flex min-h-screen flex-col">
-                <main className="flex-1">{children}</main>
-            </div>
-        )
-    }
-
-    const isOnboarding = pathname === '/onboarding';
     const isHomepage = pathname === '/';
     const isAboutPage = pathname === '/about';
     const isDashboard = pathname === '/dashboard';
@@ -90,7 +80,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <>
             <PushNotificationManager />
             <div className="flex min-h-screen flex-col">
-                {!isOnboarding && <Header />}
                 <main className="flex-1">{children}</main>
                 {!isGamePage && !isAdminPage && !isCoursePage && (
                     <>

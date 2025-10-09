@@ -8,6 +8,8 @@ import { ThemeProvider } from "@/components/common/ThemeProvider";
 import { EditModeProvider } from "@/components/common/EditModeProvider";
 import MainLayout from "./MainLayout";
 import CustomThemeProvider from "@/components/common/CustomThemeProvider";
+import Header from "@/components/common/Header";
+import { headers } from "next/headers";
 
 
 const poppins = Poppins({
@@ -32,6 +34,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = headers();
+  const pathname = headersList.get("x-pathname") || "";
+
+  const isOnboarding = pathname === '/onboarding';
+  const isFocusOrWarZone = (pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.startsWith('/learnzone'));
+
+  const showHeader = !isOnboarding && !isFocusOrWarZone;
+
   return (
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
        <head>
@@ -47,6 +57,7 @@ export default function RootLayout({
           >
             <CustomThemeProvider>
               <EditModeProvider>
+                {showHeader && <Header />}
                 <MainLayout>
                   {children}
                 </MainLayout>
