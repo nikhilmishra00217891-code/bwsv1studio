@@ -25,7 +25,6 @@ export const metadata: Metadata = {
     icon: "https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg",
     apple: "https://i.postimg.cc/FR3TT8KL/IMG-20250915-WA0003-1.jpg",
   },
-  themeColor: "#000000",
 };
 
 export default function RootLayout({
@@ -35,7 +34,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
-       <head/>
+       <head>
+        <meta name="theme-color" content="#000000" />
+       </head>
       <body className={`${poppins.variable} font-body antialiased select-none`}>
         <AuthProvider>
           <ThemeProvider
