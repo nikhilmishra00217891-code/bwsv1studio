@@ -7,6 +7,7 @@ const CONTENT_DOC_REF = doc(db, "siteContent", "text");
 
 const defaultFeatureFlags = {
     aiMentor: true,
+    courses: true,
     focusZone: true,
     warzone: true,
     parivartan: true,
@@ -90,4 +91,3 @@ export const removeAdUrls = async (scope: 'all' | string): Promise<{success: boo
         return { success: false, message: error.message || "An unexpected error occurred." };
     }
 }
-

@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Wrench, LoaderCircle, KeyRound, Bot, Target, Swords, Users, Gamepad2 } from "lucide-react";
+import { Wrench, LoaderCircle, KeyRound, Bot, Target, Swords, Users, Gamepad2, Compass } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { saveTextContent } from '@/lib/data/content';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 
 const featureFlagsConfig = [
     { id: 'aiMentor', label: 'AI Mentor (BWS Buddy)', icon: Bot },
+    { id: 'courses', label: 'Courses Page', icon: Compass },
     { id: 'focusZone', label: 'Focus Zone', icon: Target },
     { id: 'warzone', label: 'Warzone (Quizzes)', icon: Swords },
     { id: 'parivartan', label: 'Parivartan Chamber', icon: Users },
