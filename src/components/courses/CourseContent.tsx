@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { listenForLiveChatMessages, toggleLessonCompletion } from "@/lib/data";
 import { sendLiveChatMessage } from "@/lib/data/courses";
-import { useEffect, useRef, useState, FormEvent, useCallback } from "react";
+import { useEffect, useRef, useState, FormEvent, useCallback, useMemo } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { format, formatDistanceToNow } from "date-fns";
@@ -381,7 +381,7 @@ const LessonListView = ({ chapter, onLessonClick, courseId }: { chapter: Chapter
                                             <div>
                                                 <span className="font-semibold">{lesson.title}</span>
                                                 {lesson.status === 'scheduled' && lesson.scheduledTime && (
-                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3"/> {format(new Date(lesson.scheduledTime), 'PPP p')}</p>
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3"/> {format(new Date(lesson.scheduledTime as any), 'PPP p')}</p>
                                                 )}
                                             </div>
                                             <Badge variant="destructive" className="ml-auto animate-pulse">
