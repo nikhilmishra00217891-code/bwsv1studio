@@ -40,16 +40,19 @@ const ScheduleLessonDialog = ({
     isOpen,
     onOpenChange,
     onSubmit,
+    isScheduled,
+    setIsScheduled,
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (title: string, url: string, scheduleTime: Date | null) => void;
+    isScheduled: boolean;
+    setIsScheduled: (isScheduled: boolean) => void;
 }) => {
     const [title, setTitle] = useState('');
     const [url, setUrl] = useState('');
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [time, setTime] = useState('09:00'); // Default time
-    const [isScheduled, setIsScheduled] = useState(true);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -153,6 +156,7 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
     
     const [isScheduling, setIsScheduling] = useState(false);
     const [schedulingChapter, setSchedulingChapter] = useState<{ subjectId: string; chapterId: string } | null>(null);
+    const [isScheduled, setIsScheduled] = useState(true);
 
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
@@ -368,6 +372,8 @@ export default function CourseFlowEditorClient({ initialCourse }: { initialCours
             isOpen={isScheduling}
             onOpenChange={setIsScheduling}
             onSubmit={handleAddOrScheduleLesson}
+            isScheduled={isScheduled}
+            setIsScheduled={setIsScheduled}
         />
         </>
     );
