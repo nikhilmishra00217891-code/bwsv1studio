@@ -15,9 +15,9 @@ import { Progress } from "../ui/progress";
 import type { UserProfile } from "@/types";
 import { ScrollArea } from "../ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { useTheme } from "next-themes";
 import { Badge } from "../ui/badge";
 import { PhoneNumberInput, countries } from "../common/PhoneNumberInput";
@@ -1082,14 +1082,19 @@ export function OnboardingForm() {
     switch (step) {
       case 2: // Basic Details
         if (!userData.displayName) return false;
+        
         // If they signed up with phone, they MUST provide an email.
-        if (user?.phoneNumber && !userData.email) return false;
-        // If they signed up with email, they MUST provide a phone.
-        if (user?.email && (!userData.mobile || !userData.mobile.number)) return false;
-        if (userData.mobile?.number) {
-            const country = countries.find(c => c.code === userData.mobile?.countryCode) || countries[0];
-            if(userData.mobile.number.length !== country.digits) return false;
+        if (user?.phoneNumber && !userData.email) {
+            // A simple regex to check for something that looks like an email.
+            return /\S+@\S+\.\S+/.test(userData.email || '');
         }
+
+        // If they signed up with email or Google, they MUST provide a phone.
+        if (user?.email && (!userData.mobile || !userData.mobile.number)) {
+             const country = countries.find(c => c.code === userData.mobile?.countryCode) || countries[0];
+            return (userData.mobile?.number?.length || 0) === country.digits;
+        }
+
         return true;
       case 3: // Academic Info
         return !!userData.grade && !!userData.board && !!userData.subjects && userData.subjects.length > 0;
@@ -1233,3 +1238,4 @@ export function OnboardingForm() {
     </div>
   );
 }
+
