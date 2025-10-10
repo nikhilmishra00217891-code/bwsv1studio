@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -22,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTheme } from "next-themes";
 import { Badge } from "../ui/badge";
 import { PhoneNumberInput, countries } from "../common/PhoneNumberInput";
+import { updateEmail } from "firebase/auth";
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
     return (
@@ -166,7 +166,7 @@ const OnboardingStepWrapper = ({ title, children, step, totalSteps }: { title: s
     </div>
 )
 
-const BasicDetailsStep = ({ data, setData, totalSteps, email }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number, email: string | null }) => {
+const BasicDetailsStep = ({ data, setData, totalSteps, email, phone }: { data: Partial<UserProfile>, setData: (d: Partial<UserProfile>) => void, totalSteps: number, email: string | null, phone: string | null }) => {
     return (
         <OnboardingStepWrapper title="Tell Us a Little About Yourself" step={2} totalSteps={totalSteps}>
             <div className="max-w-lg mx-auto space-y-8">
@@ -182,31 +182,58 @@ const BasicDetailsStep = ({ data, setData, totalSteps, email }: { data: Partial<
                     />
                 </div>
 
-                <div className="relative flex items-center">
-                    <Mail className="absolute left-4 w-5 h-5 text-muted-foreground" />
-                    <Input 
-                        type="email" 
-                        placeholder="Your email"
-                        className="pl-12 h-14 text-lg bg-muted/50"
-                        value={email || ''}
-                        readOnly
-                        disabled
-                    />
-                </div>
+                 {phone ? (
+                     <div className="relative flex items-center">
+                        <Mail className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                        <Input 
+                            type="email" 
+                            placeholder="Your recovery email"
+                            className="pl-12 h-14 text-lg"
+                            value={data.email || ''}
+                            onChange={(e) => setData({ email: e.target.value })}
+                            required
+                        />
+                    </div>
+                 ) : (
+                    <div className="relative flex items-center">
+                        <Mail className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                        <Input 
+                            type="email" 
+                            placeholder="Your email"
+                            className="pl-12 h-14 text-lg bg-muted/50"
+                            value={email || ''}
+                            readOnly
+                            disabled
+                        />
+                    </div>
+                 )}
 
-                <div>
-                    <PhoneNumberInput 
-                        value={data.mobile || { countryCode: '+91', number: '' }}
-                        onChange={(value) => setData({ mobile: value })}
-                        className="h-14"
-                        inputClassName="h-14 text-lg"
-                        required
-                    />
-                    <p className="text-xs text-muted-foreground text-center mt-2">
-                        We will need it for your account recovery when needed!
-                    </p>
-                </div>
-
+                {email ? (
+                     <div>
+                        <PhoneNumberInput 
+                            value={data.mobile || { countryCode: '+91', number: '' }}
+                            onChange={(value) => setData({ mobile: value })}
+                            className="h-14"
+                            inputClassName="h-14 text-lg"
+                            required
+                        />
+                         <p className="text-xs text-muted-foreground text-center mt-2">
+                            We will need it for your account recovery when needed!
+                        </p>
+                    </div>
+                ) : (
+                    <div className="relative flex items-center">
+                        <Phone className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                        <Input 
+                            type="tel" 
+                            placeholder="Your phone number"
+                            className="pl-12 h-14 text-lg bg-muted/50"
+                            value={phone || ''}
+                            readOnly
+                            disabled
+                        />
+                    </div>
+                )}
 
                 <div className="relative flex items-center">
                     <Cake className="absolute left-4 w-5 h-5 text-muted-foreground" />
@@ -873,31 +900,31 @@ const ThemeCustomizationStep = ({ data, setData, totalSteps }: { data: Partial<U
                                         <Label>Hue ({primaryHue})</Label>
                                         <Slider value={[primaryHue]} onValueChange={([val]) => handlePrimaryHueChange(val)} max={360} step={1} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>Saturation ({primarySaturation}%)</Label>
-                                        <Slider value={[primarySaturation]} onValueChange={([val]) => handlePrimarySaturationChange(val)} max={100} step={1} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Lightness ({primaryLightness}%)</Label>
-                                        <Slider value={[primaryLightness]} onValueChange={([val]) => handlePrimaryLightnessChange(val)} max={100} step={1} />
-                                    </div>
-                                </div>
-                                {/* Accent Color */}
-                                <div className="space-y-4">
+                                   <div className="space-y-2">
+                                      <Label>Saturation ({primarySaturation}%)</Label>
+                                      <Slider value={[primarySaturation]} onValueChange={([val]) => handlePrimarySaturationChange(val)} max={100} step={1} />
+                                  </div>
+                                   <div className="space-y-2">
+                                      <Label>Lightness ({primaryLightness}%)</Label>
+                                      <Slider value={[primaryLightness]} onValueChange={([val]) => handlePrimaryLightnessChange(val)} max={100} step={1} />
+                                  </div>
+                              </div>
+                               {/* Accent Color */}
+                               <div className="space-y-4">
                                      <h4 className="font-semibold text-center">Page Background</h4>
                                     <div className="space-y-2">
                                         <Label>Hue ({backgroundHue})</Label>
                                         <Slider value={[backgroundHue]} onValueChange={([val]) => handleBackgroundHueChange(val)} max={360} step={1} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>Saturation ({backgroundSaturation}%)</Label>
-                                        <Slider value={[backgroundSaturation]} onValueChange={([val]) => handleBackgroundSaturationChange(val)} max={100} step={1} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Lightness ({backgroundLightness}%)</Label>
-                                        <Slider value={[backgroundLightness]} onValueChange={([val]) => handleBackgroundLightnessChange(val)} max={100} step={1} />
-                                    </div>
-                                </div>
+                                   <div className="space-y-2">
+                                      <Label>Saturation ({backgroundSaturation}%)</Label>
+                                      <Slider value={[backgroundSaturation]} onValueChange={([val]) => handleBackgroundSaturationChange(val)} max={100} step={1} />
+                                  </div>
+                                   <div className="space-y-2">
+                                      <Label>Lightness ({backgroundLightness}%)</Label>
+                                      <Slider value={[backgroundLightness]} onValueChange={([val]) => handleBackgroundLightnessChange(val)} max={100} step={1} />
+                                  </div>
+                              </div>
                             </div>
                          </div>
                      )}
@@ -1020,7 +1047,12 @@ export function OnboardingForm() {
   
   useEffect(() => {
     if (user && !userData.displayName) {
-        setUserData(prev => ({...prev, displayName: user.displayName || '', email: user.email || ''}))
+        setUserData(prev => ({
+            ...prev,
+            displayName: user.displayName || '',
+            email: user.email || '',
+            mobile: user.phoneNumber ? { countryCode: '', number: user.phoneNumber } : prev.mobile,
+        }));
     }
     if (!userData.theme) {
         setUserData(prev => ({...prev, theme: theme || 'light' }));
@@ -1049,9 +1081,16 @@ export function OnboardingForm() {
   const isStepValid = () => {
     switch (step) {
       case 2: // Basic Details
-        if (!userData.mobile || !userData.mobile.countryCode || !userData.mobile.number) return false;
-        const country = countries.find(c => c.code === userData.mobile?.countryCode) || countries[0];
-        return !!userData.displayName && userData.mobile.number.length === country.digits;
+        if (!userData.displayName) return false;
+        // If they signed up with phone, they MUST provide an email.
+        if (user?.phoneNumber && !userData.email) return false;
+        // If they signed up with email, they MUST provide a phone.
+        if (user?.email && (!userData.mobile || !userData.mobile.number)) return false;
+        if (userData.mobile?.number) {
+            const country = countries.find(c => c.code === userData.mobile?.countryCode) || countries[0];
+            if(userData.mobile.number.length !== country.digits) return false;
+        }
+        return true;
       case 3: // Academic Info
         return !!userData.grade && !!userData.board && !!userData.subjects && userData.subjects.length > 0;
       case 4: // Learning Journey
@@ -1081,6 +1120,22 @@ export function OnboardingForm() {
     setIsLoading(true);
     try {
         const finalProfile = { ...userData, onboardingComplete: true };
+
+        // If user signed up with phone, we need to update their email in Firebase Auth
+        if (user.phoneNumber && finalProfile.email && finalProfile.email !== user.email) {
+            try {
+                // This is a protected operation and may fail.
+                await updateEmail(user, finalProfile.email);
+            } catch (authError: any) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Could not set recovery email',
+                    description: 'Please ensure the email is valid and not already in use. You can try again later from your profile.',
+                });
+                // We don't block onboarding for this, just save to profile
+            }
+        }
+        
         await updateUserProfile(user.uid, finalProfile);
         
         // This is the crucial fix: update the user profile in the auth context
@@ -1126,7 +1181,7 @@ export function OnboardingForm() {
   const renderStep = () => {
     switch(step) {
         case 1: return <div className="flex h-full items-center justify-center"><WelcomeStep onNext={nextStep} /></div>;
-        case 2: return <BasicDetailsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} email={user?.email ?? null} />;
+        case 2: return <BasicDetailsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} email={user.email} phone={user.phoneNumber} />;
         case 3: return <AcademicInfoStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 4: return <LearningJourneyStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;
         case 5: return <InterestsStep data={userData} setData={updateLocalUserData} totalSteps={totalSteps} />;

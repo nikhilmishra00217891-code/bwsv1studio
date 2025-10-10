@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { messaging } from "@/lib/firebase";
 import { getToken } from "firebase/messaging";
 import { savePushToken, removePushToken } from "@/lib/data";
@@ -286,6 +286,9 @@ export default function ProfilePage() {
       </div>
     );
   }
+  
+  const primaryIdentifier = user.email || user.phoneNumber;
+  const isEmailLogin = !!user.email;
 
   return (
     <>
@@ -356,17 +359,17 @@ export default function ProfilePage() {
                       <Input id="age" type="number" value={profileData.age || ''} onChange={e => setProfileData(p => ({...p!, age: parseInt(e.target.value) || undefined}))} />
                   </div>
                   <div>
-                       <Label htmlFor="email">Email</Label>
+                       <Label htmlFor="primary-id">Primary Login</Label>
                        <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
-                          <Mail className="w-4 h-4"/>
-                          <span>{user.email}</span>
+                          {isEmailLogin ? <Mail className="w-4 h-4"/> : <Phone className="w-4 h-4"/>}
+                          <span>{primaryIdentifier}</span>
                        </div>
                   </div>
                    <div>
-                      <Label htmlFor="mobile">Mobile Number</Label>
+                       <Label htmlFor="recovery-id">Recovery {isEmailLogin ? "Phone" : "Email"}</Label>
                        <div className="flex items-center gap-2 p-2 h-10 rounded-md bg-muted text-muted-foreground text-sm">
-                          <Phone className="w-4 h-4"/>
-                          <span>{userProfile.mobile?.countryCode} {userProfile.mobile?.number || "Not provided"}</span>
+                          {isEmailLogin ? <Phone className="w-4 h-4"/> : <Mail className="w-4 h-4"/>}
+                           <span>{isEmailLogin ? `${userProfile.mobile?.countryCode || ''} ${userProfile.mobile?.number || "Not set"}` : (userProfile.email || "Not set")}</span>
                        </div>
                   </div>
                   <div>
@@ -576,5 +579,3 @@ export default function ProfilePage() {
     </>
   );
 }
-
-    

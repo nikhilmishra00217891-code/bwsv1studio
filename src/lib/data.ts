@@ -225,7 +225,7 @@ export const createStudentProfile = async (user: User) => {
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
-        const { uid, email, displayName } = user;
+        const { uid, email, displayName, phoneNumber } = user;
         const createdAt = new Date();
 
         try {
@@ -233,6 +233,7 @@ export const createStudentProfile = async (user: User) => {
                 uid,
                 email,
                 displayName,
+                phoneNumber,
                 role: 'student',
                 createdAt,
                 onboardingComplete: false,

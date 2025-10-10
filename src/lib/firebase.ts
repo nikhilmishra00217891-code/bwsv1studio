@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getMessaging } from "firebase/messaging";
 
@@ -28,4 +28,4 @@ const messaging = () => {
     return null;
 }
 
-export { app, auth, db, messaging };
+export { app, auth, db, messaging, GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber };
