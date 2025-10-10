@@ -58,6 +58,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const isGamePage = pathname.startsWith('/games/');
     const isAdminPage = pathname.startsWith('/admin/');
     const isCoursePage = pathname.startsWith('/courses/') && pathname.length > '/courses/'.length;
+    const isOnboarding = pathname === '/onboarding';
 
     if (userProfile?.suspension?.isSuspended) {
         return <SuspendedAccountFirewall reason={userProfile.suspension.reason} />;
@@ -75,13 +76,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     
     const showFloatingButtons = isHomepage || isAboutPage;
     const showCourseDrawer = user && (isHomepage || isAboutPage || isDashboard);
+    const showFooter = !isGamePage && !isAdminPage && !isCoursePage && !isOnboarding;
 
     return (
         <>
             <PushNotificationManager />
             <div className="flex min-h-screen flex-col">
                 <main className="flex-1">{children}</main>
-                {!isGamePage && !isAdminPage && !isCoursePage && (
+                {showFooter && (
                     <>
                         <PwaInstall />
                         <Footer />

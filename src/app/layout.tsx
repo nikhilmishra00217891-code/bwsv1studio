@@ -38,7 +38,7 @@ export default function RootLayout({
   const pathname = headersList.get("x-pathname") || "";
 
   const isOnboarding = pathname === '/onboarding';
-  const isFocusOrWarZone = (pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.startsWith('/learnzone'));
+  const isFocusOrWarZone = (pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.startsWith('/courses') && pathname.includes('/learnzone'));
 
   const showHeader = !isOnboarding && !isFocusOrWarZone;
 
