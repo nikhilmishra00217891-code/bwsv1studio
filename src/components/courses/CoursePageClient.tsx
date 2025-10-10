@@ -51,6 +51,7 @@ import { useEditMode } from "@/components/common/EditModeProvider";
 import Link from "next/link";
 import { EditableImage } from "../common/EditableImage";
 import { saveTextContent, getTextContent } from "@/lib/data/content";
+import { Slider } from "../ui/slider";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
@@ -145,6 +146,13 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             description: "Could not delete the course.",
         });
     }
+  }
+  
+  const handleSubjectProgressChange = (subjectId: string, newProgress: number) => {
+    const newSubjects = course.subjects.map(s => 
+      s.id === subjectId ? { ...s, progress: newProgress } : s
+    );
+    handleSaveCourse({ subjects: newSubjects });
   }
 
   const CourseFacultyControls = () => (
@@ -392,6 +400,28 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                         </Button>
                     )}
                </div>
+               
+               {isEditMode && course.subjects && (
+                    <Card className="p-4">
+                        <CardTitle className="text-lg mb-4">Official Subject Progress</CardTitle>
+                        <div className="space-y-6">
+                            {course.subjects.map(subject => (
+                                <div key={subject.id}>
+                                    <Label className="font-semibold">{subject.title}</Label>
+                                    <div className="flex items-center gap-4 mt-2">
+                                        <Slider 
+                                            value={[subject.progress || 0]}
+                                            onValueChange={([val]) => handleSubjectProgressChange(subject.id, val)}
+                                            max={100}
+                                            step={1}
+                                        />
+                                        <span className="font-bold text-primary text-sm w-12 text-center">{subject.progress || 0}%</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+               )}
           </div>
           <div className="space-y-4">
               <CourseVideo course={course} />

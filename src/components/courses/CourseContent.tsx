@@ -11,7 +11,7 @@ import { Card, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
-import { listenForLiveChatMessages } from "@/lib/data";
+import { listenForLiveChatMessages, toggleLessonCompletion } from "@/lib/data";
 import { sendLiveChatMessage } from "@/lib/data/courses";
 import { useEffect, useRef, useState, FormEvent, useCallback } from "react";
 import { useAuth } from "../auth/AuthProvider";
@@ -235,8 +235,26 @@ const ChapterGrid = ({ course, subject, onChapterSelect }: { course: Course; sub
 }
 
 const LectureView = ({ course, subject, chapter, lesson }: { course: Course; subject: Subject; chapter: Chapter; lesson: Lesson }) => {
+    const { user, userProfile } = useAuth();
+    const { toast } = useToast();
     const videoId = extractYouTubeVideoId(lesson.content || "");
     const isLive = lesson.status === 'live';
+
+    const isCompleted = useMemo(() => 
+        userProfile?.progress?.[course.id]?.completedLessons?.includes(lesson.id) || false,
+    [userProfile, course.id, lesson.id]);
+    
+    const handleToggleComplete = async () => {
+        if (!user) return;
+        try {
+            await toggleLessonCompletion(user.uid, course.id, lesson.id);
+            toast({
+                title: isCompleted ? "Marked as Incomplete" : "Marked as Complete!",
+            })
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Something went wrong" });
+        }
+    }
 
     return (
         <div className="grid lg:grid-cols-3 gap-8 p-4 md:p-8 max-w-full">
@@ -265,8 +283,8 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                     <div className="flex items-center gap-2 w-full md:w-auto">
                         <Button variant="outline" size="icon"><Heart /></Button>
                         <Button variant="outline" size="icon"><ThumbsUp /></Button>
-                        <Button size="lg" className="w-full">
-                            <CheckCircle className="mr-2"/> Mark as Complete
+                        <Button size="lg" className="w-full" onClick={handleToggleComplete} variant={isCompleted ? "secondary" : "default"}>
+                            <CheckCircle className="mr-2"/> {isCompleted ? 'Mark as Incomplete' : 'Mark as Complete'}
                         </Button>
                     </div>
                 </div>
@@ -301,9 +319,31 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     )
 }
 
-const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLessonClick: (lesson: Lesson) => void }) => {
+const LessonListView = ({ chapter, onLessonClick, courseId }: { chapter: Chapter, onLessonClick: (lesson: Lesson) => void, courseId: string }) => {
+    const { userProfile } = useAuth();
     const liveAndScheduledLessons = chapter.lessons.filter(l => l.status === 'live' || l.status === 'scheduled');
     const recordedLessons = chapter.lessons.filter(l => l.status === 'recorded');
+
+    const completedLessons = useMemo(() => new Set(userProfile?.progress?.[courseId]?.completedLessons || []), [userProfile, courseId]);
+
+    const renderLessonList = (lessons: Lesson[]) => (
+        <div className="space-y-3">
+            {lessons.map(lesson => (
+                <button key={lesson.id} onClick={() => onLessonClick(lesson)} className="w-full text-left">
+                    <Card className="hover:bg-muted/80">
+                        <CardContent className="p-4 flex items-center gap-4">
+                            {completedLessons.has(lesson.id) ? (
+                                <CheckCircle className="w-6 h-6 text-green-500" />
+                            ) : (
+                                <BookText className="w-6 h-6 text-muted-foreground"/>
+                            )}
+                            <span className={cn("font-semibold", completedLessons.has(lesson.id) && "text-muted-foreground line-through")}>{lesson.title}</span>
+                        </CardContent>
+                    </Card>
+                </button>
+            ))}
+        </div>
+    );
 
     return (
         <div className="p-4 md:p-8">
@@ -326,20 +366,7 @@ const LessonListView = ({ chapter, onLessonClick }: { chapter: Chapter, onLesson
                     </TabsTrigger>
                 </TabsList>
                  <TabsContent value="recorded" className="mt-6">
-                     {recordedLessons.length > 0 ? (
-                        <div className="space-y-3">
-                            {recordedLessons.map(lesson => (
-                                <button key={lesson.id} onClick={() => onLessonClick(lesson)} className="w-full text-left">
-                                    <Card className="hover:bg-muted/80">
-                                        <CardContent className="p-4 flex items-center gap-4">
-                                            <BookText className="w-6 h-6 text-muted-foreground"/>
-                                            <span className="font-semibold text-muted-foreground">{lesson.title}</span>
-                                        </CardContent>
-                                    </Card>
-                                </button>
-                            ))}
-                        </div>
-                     ) : (
+                     {recordedLessons.length > 0 ? renderLessonList(recordedLessons) : (
                          <Card className="p-8 text-center text-muted-foreground">No recorded sessions available for this chapter yet.</Card>
                      )}
                  </TabsContent>
@@ -381,7 +408,7 @@ export function CourseContent({ course, selectedSubject, selectedChapter, select
     }
 
     if (selectedChapter) {
-        return <LessonListView chapter={selectedChapter} onLessonClick={onLessonClick} />;
+        return <LessonListView chapter={selectedChapter} onLessonClick={onLessonClick} courseId={course.id} />;
     }
 
     if (selectedSubject) {

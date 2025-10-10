@@ -94,7 +94,6 @@ export interface Course {
   subjects: Subject[];
   isActive: boolean;
   youtubeLink?: string;
-  courseCompletionPercent?: number; // Faculty-driven progress
   isFree?: boolean;
 }
 
