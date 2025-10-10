@@ -3,7 +3,7 @@
 "use client";
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, BookText, ChevronRight, Video, CheckCircle2, X, Megaphone, Calendar, FolderKanban, Target } from 'lucide-react';
+import { BookOpen, BookText, ChevronRight, Video, CheckCircle2, X, Megaphone, Calendar, FolderKanban, Target, SlidersHorizontal } from 'lucide-react';
 import type { Course, Subject, Chapter, Lesson } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -102,6 +102,7 @@ export const CourseSidebar = ({ course, isOpen, onClose, isFaculty }: { course: 
                                  <div className="my-2 border-t -mx-4" />
                                     <p className="px-2 text-xs font-semibold text-muted-foreground uppercase">Faculty Tools</p>
                                     <SidebarMenuItem icon={Target} label="Today's Mission" href={`/courses/${course.id}/learnzone/todays-mission`} />
+                                    <SidebarMenuItem icon={SlidersHorizontal} label="Course Progress" href={`/courses/${course.id}/learnzone/progress`} />
                                 </>
                              )}
                         </div>
