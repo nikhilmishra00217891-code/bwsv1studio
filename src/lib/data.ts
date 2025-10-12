@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
+import type { Course, EnrolledCourse, UserProfile, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
 import { firestore as adminDb } from "./firebase/admin"; 
 import { Timestamp } from "firebase-admin/firestore";
 
@@ -56,35 +56,6 @@ export const getCoursesByIds = async (ids: string[]): Promise<Course[]> => {
 
     return snapshot.docs.map(doc => serializeTimestamps({ id: doc.id, ...doc.data() }) as Course);
 }
-
-
-export const testimonials: Testimonial[] = [
-  {
-    id: "t1",
-    name: "Aman Kumar",
-    role: "JEE Aspirant",
-    avatar: "https://i.postimg.cc/d1W1VcYF/aman-kumar.png",
-    text: "BiharWaleSirji feels like learning from an elder brother. The concepts are explained so clearly, and the AI mentor is a game-changer for late-night doubts!",
-  },
-  {
-    id: "t2",
-    name: "Sunita Singh",
-    role: "NEET Aspirant",
-    avatar: "https://placehold.co/100x100.png",
-    text: "The personal touch is what makes this platform special. Priya Didi's biology course is fantastic. I finally feel confident in my preparation.",
-  },
-  {
-    id: "t3",
-    name: "Rajesh Mahto",
-    role: "BPSC Aspirant",
-    avatar: "https://placehold.co/100x100.png",
-    text: "Finally, a platform that understands students from Bihar. The teaching style is relatable, and the content is top-notch. Highly recommended.",
-  },
-];
-
-export const getTestimonials = async (): Promise<Testimonial[]> => {
-  return testimonials;
-};
 
 
 export const getEnrolledCoursesForUser = async (userId: string): Promise<EnrolledCourse[]> => {
