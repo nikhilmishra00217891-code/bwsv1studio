@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useState, useMemo, useTransition, useRef } from 'react';
+import React, { useState, useMemo, useTransition, useRef, useEffect } from 'react';
 import type { UserProfile, PatraType, Course } from "@/types";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard, Bell, Wrench } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard, Bell, Play } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -572,6 +571,7 @@ const ContextMenu = ({
 export function UserTableClient({ initialUsers, allCourses }: { initialUsers: UserProfile[], allCourses: Course[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchQuery, setActiveSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'suspended'>('all');
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
   const [showPatraDialog, setShowPatraDialog] = useState(false);
@@ -587,7 +587,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
 
   const holdTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setUsers(initialUsers);
   }, [initialUsers]);
 
@@ -600,9 +600,9 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
       searchableUsers = users.filter(user => user.suspension?.isSuspended);
     }
     
-    if (!searchTerm) return searchableUsers;
+    if (!activeSearchQuery) return searchableUsers;
 
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const lowerCaseSearchTerm = activeSearchQuery.toLowerCase();
 
     // Smart search logic
     if (lowerCaseSearchTerm.startsWith('/grade')) {
@@ -629,7 +629,18 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
         const emailMatch = user.email && user.email.toLowerCase().includes(lowerCaseSearchTerm);
         return nameMatch || emailMatch;
     });
-  }, [users, searchTerm, filter, allCourses]);
+  }, [users, activeSearchQuery, filter, allCourses]);
+
+  const handleRunSearch = () => {
+    setActiveSearchQuery(searchTerm);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleRunSearch();
+    }
+  };
+
 
   const handleRefresh = () => {
     startTransition(() => {
@@ -687,12 +698,23 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
         <AnalyticsDashboard users={users} />
 
         <div className="flex flex-col sm:flex-row gap-4">
-            <Input
-            placeholder="Search by name, email, /grade... or /course..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-            />
+             <div className="relative max-w-sm">
+                <Input
+                    placeholder="Search by name, email, or /grade..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="pr-12"
+                />
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                    onClick={handleRunSearch}
+                >
+                    <Play className="h-4 w-4"/>
+                </Button>
+            </div>
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
                     <Button variant={filter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('all')}>All</Button>
@@ -859,3 +881,4 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     </>
   );
 }
+    
