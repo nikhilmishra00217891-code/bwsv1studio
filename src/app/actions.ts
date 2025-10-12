@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat, recommendContent } from "@/ai/flows";
@@ -178,7 +179,7 @@ export async function removeKnowledgeBaseUrl(url: string): Promise<{success: boo
 }
 
 
-export async function getUrlMetadata(url: string): Promise<{ title: string; description: string; image: string; siteName: string } | null> {
+export async function getUrlMetadata(url: string): Promise<{ url: string; title: string; description: string; image: string; siteName: string } | null> {
     try {
         const response = await fetch(url, {
              headers: {
@@ -205,7 +206,7 @@ export async function getUrlMetadata(url: string): Promise<{ title: string; desc
             image = new URL(image, urlObj.origin).href;
         }
 
-        return { title, description, image, siteName };
+        return { url, title, description, image, siteName };
     } catch (error) {
         console.error(`Failed to fetch metadata for ${url}:`, error);
         return null;

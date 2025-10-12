@@ -2,12 +2,12 @@
 
 "use client";
 
-import type { Course, Lesson, Subject, Chapter, LiveChatMessage } from "@/types";
+import type { Course, Lesson, Subject, Chapter, LiveChatMessage, UrlMetadata } from "@/types";
 import { Button } from "../ui/button";
-import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock } from 'lucide-react';
+import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock, Edit, Trash2, Link as LinkIcon, XCircle } from 'lucide-react';
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
@@ -23,6 +23,8 @@ import { Badge } from "../ui/badge";
 import StudyMaterialEditor from "./StudyMaterialEditor";
 import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
+import { getUrlMetadata } from "@/app/actions";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 
 interface CourseContentProps {
     course: Course;
@@ -147,6 +149,33 @@ const LiveChat = ({ course, subject, chapter, lesson }: { course: Course; subjec
     )
 }
 
+const LinkPreview = ({ metadata, onRemove, isFaculty }: { metadata: UrlMetadata, onRemove?: () => void, isFaculty: boolean }) => {
+    return (
+        <div className="relative group">
+            <a href={metadata.url} target="_blank" rel="noopener noreferrer" className="block mt-3">
+                <Card className="flex flex-col sm:flex-row overflow-hidden transition-all duration-200 hover:border-primary/50">
+                    {metadata.image && (
+                         <div className="flex-shrink-0 w-full sm:w-32 h-32 sm:h-auto relative">
+                            <Image src={metadata.image} alt={metadata.title || 'Link preview'} fill className="object-cover"/>
+                        </div>
+                    )}
+                    <div className="p-3 flex flex-col justify-center overflow-hidden flex-grow">
+                        <p className="text-xs text-muted-foreground truncate">{metadata.siteName}</p>
+                        <p className="font-semibold truncate">{metadata.title}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{metadata.description}</p>
+                    </div>
+                </Card>
+            </a>
+            {isFaculty && onRemove && (
+                 <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100" onClick={onRemove}>
+                    <Trash2 className="w-4 h-4"/>
+                </Button>
+            )}
+        </div>
+    )
+}
+
+
 const SubjectGrid = ({ course, onSubjectSelect }: { course: Course, onSubjectSelect: (subject: Subject) => void }) => {
     return (
         <div className="p-4 md:p-8">
@@ -243,7 +272,9 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     const isFaculty = userProfile?.role === 'faculty';
     
     const [notes, setNotes] = useState(lesson.notes || '');
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [attachment, setAttachment] = useState<UrlMetadata | null>(lesson.notesAttachment || null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const isCompleted = useMemo(() => 
         userProfile?.progress?.[course.id]?.completedLessons?.includes(lesson.id) || false,
@@ -251,15 +282,9 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     
     useEffect(() => {
         setNotes(lesson.notes || '');
-    }, [lesson.notes]);
-
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-    }, [notes]);
-
+        setAttachment(lesson.notesAttachment || null);
+    }, [lesson]);
+    
     const handleToggleComplete = async () => {
         if (!user) return;
         try {
@@ -273,13 +298,56 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     }
 
     const handleNotesSave = async () => {
+        setIsLoading(true);
         try {
-            await updateLesson(course.id, subject.id, chapter.id, { ...lesson, notes });
+            let newAttachment: UrlMetadata | null = attachment;
+            const urlRegex = /(https?:\/\/[^\s]+)/;
+            const urlMatch = notes.match(urlRegex);
+
+            if (urlMatch && (!attachment || attachment.url !== urlMatch[0])) {
+                const metadata = await getUrlMetadata(urlMatch[0]);
+                if (metadata) {
+                    newAttachment = { ...metadata, url: urlMatch[0] };
+                }
+            } else if (!urlMatch) {
+                newAttachment = null;
+            }
+
+            await updateLesson(course.id, subject.id, chapter.id, { 
+                ...lesson, 
+                notes,
+                notesAttachment: newAttachment
+            });
+
+            setAttachment(newAttachment);
+            setIsEditing(false);
             toast({ title: "Notes Saved!" });
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Failed to save notes.' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Failed to save notes.', description: error.message });
+        } finally {
+            setIsLoading(false);
         }
     }
+
+    const handleDeleteNotes = async () => {
+        setIsLoading(true);
+         try {
+            await updateLesson(course.id, subject.id, chapter.id, { 
+                ...lesson, 
+                notes: '',
+                notesAttachment: null
+            });
+            setNotes('');
+            setAttachment(null);
+            setIsEditing(false);
+            toast({ title: "Notes Deleted" });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Failed to delete notes.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
 
     return (
         <div className="grid lg:grid-cols-3 gap-8 p-4 md:p-8 max-w-full">
@@ -315,33 +383,73 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                 </div>
 
                 <Card className="mt-8">
-                    <div className="p-6">
-                        <h3 className="text-xl font-bold font-headline mb-4">Lecture Notes</h3>
-                        {isFaculty ? (
-                            <div className="space-y-2">
-                                <Label htmlFor="lecture-notes">Edit notes for this lesson:</Label>
-                                <Textarea
-                                    ref={textareaRef}
-                                    id="lecture-notes"
-                                    placeholder="Add notes for students here..."
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    onBlur={handleNotesSave}
-                                    className="resize-none overflow-hidden"
-                                />
-                            </div>
-                        ) : (
-                             <ScrollArea className="h-72">
-                                <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
-                                    {notes ? (
-                                        <p className="whitespace-pre-wrap">{notes}</p>
-                                    ) : (
-                                        <p className="text-muted-foreground">No notes available for this lesson yet.</p>
-                                    )}
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="text-xl font-headline">Lecture Notes</CardTitle>
+                            {isFaculty && !isEditing && (notes || attachment) && (
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                                        <Edit className="mr-2 h-4 w-4"/> Edit
+                                    </Button>
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="sm">
+                                                <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>This will permanently delete the notes for this lesson.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleDeleteNotes}>Delete</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
-                            </ScrollArea>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {isFaculty ? (
+                            isEditing || (!notes && !attachment) ? (
+                                <div className="space-y-4">
+                                    <Label htmlFor="lecture-notes">
+                                        {isEditing ? "Editing notes..." : "Add notes for this lesson. Paste a link to generate a preview."}
+                                    </Label>
+                                    <Textarea
+                                        id="lecture-notes"
+                                        placeholder="Type notes or paste a link here..."
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        className="min-h-24"
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                        {isEditing && <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>}
+                                        <Button onClick={handleNotesSave} disabled={isLoading}>
+                                            {isLoading ? <LoaderCircle className="animate-spin mr-2"/> : <Send className="mr-2 h-4 w-4" />}
+                                            Save Notes
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    {notes && <p className="whitespace-pre-wrap">{notes}</p>}
+                                    {attachment && <LinkPreview metadata={attachment} />}
+                                </div>
+                            )
+                        ) : (
+                             <div className="prose prose-sm dark:prose-invert max-w-none">
+                                {notes && <p className="whitespace-pre-wrap">{notes}</p>}
+                                {attachment && <LinkPreview metadata={attachment} />}
+                                {(!notes && !attachment) && (
+                                    <p className="text-muted-foreground italic">No notes available for this lesson yet.</p>
+                                )}
+                            </div>
                         )}
-                    </div>
+                    </CardContent>
                 </Card>
             </div>
             <div className="lg:col-span-1">

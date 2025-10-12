@@ -11,6 +11,14 @@ export interface LiveChatMessage {
   timestamp: Timestamp;
 }
 
+export interface UrlMetadata {
+    url: string;
+    title: string;
+    description: string;
+    image: string;
+    siteName: string;
+}
+
 export interface Lesson {
   id: string;
   title: string;
@@ -98,13 +106,6 @@ export interface Course {
   isFree?: boolean;
 }
 
-export interface UrlMetadata {
-    url: string;
-    title: string;
-    description: string;
-    image: string;
-    siteName: string;
-}
 
 export interface PollOption {
     text: string;
