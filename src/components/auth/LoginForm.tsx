@@ -31,7 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import { KeyRound, Mail, User as UserIcon, LoaderCircle, Sparkles, LockKeyhole, Phone } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { createStudentProfile, createFacultyProfile } from "@/lib/data";
+import { createStudentProfile, createFacultyProfile } from "@/lib/data/user";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { PhoneNumberInput } from "../common/PhoneNumberInput";
@@ -450,5 +450,3 @@ export function LoginForm() {
     </>
   );
 }
-
-    
