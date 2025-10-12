@@ -604,12 +604,31 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
 
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
+    // Smart search logic
+    if (lowerCaseSearchTerm.startsWith('/grade')) {
+        const gradeQuery = lowerCaseSearchTerm.substring(6).trim();
+        return searchableUsers.filter(user => user.grade?.toLowerCase() === gradeQuery);
+    }
+
+    if (lowerCaseSearchTerm.startsWith('/course')) {
+        const courseQuery = lowerCaseSearchTerm.substring(7).trim();
+        const targetCourse = allCourses.find(c => c.title.replace(/\s+/g, '').toLowerCase() === courseQuery.replace(/\s+/g, ''));
+
+        if (targetCourse) {
+            return searchableUsers.filter(user => user.enrolledCourses?.includes(targetCourse.id));
+        } else {
+            // If the exact course name isn't found, return no users.
+            return [];
+        }
+    }
+
+    // Default search
     return searchableUsers.filter(user => {
         const nameMatch = user.displayName && user.displayName.toLowerCase().includes(lowerCaseSearchTerm);
         const emailMatch = user.email && user.email.toLowerCase().includes(lowerCaseSearchTerm);
         return nameMatch || emailMatch;
     });
-  }, [users, searchTerm, filter]);
+  }, [users, searchTerm, filter, allCourses]);
 
   const handleRefresh = () => {
     startTransition(() => {
@@ -668,7 +687,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
 
         <div className="flex flex-col sm:flex-row gap-4">
             <Input
-            placeholder="Search by name or email..."
+            placeholder="Search by name, email, /grade... or /course..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
