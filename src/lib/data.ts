@@ -161,7 +161,7 @@ export const getCourseById = async (id: string): Promise<Course | null> => {
     const courseDocRef = adminDb.collection('courses').doc(id);
     const docSnap = await courseDocRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
         return serializeTimestamps({ id: docSnap.id, ...docSnap.data() }) as Course;
     } else {
         return null;
