@@ -1,9 +1,4 @@
 
-// Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-
 // Re-export client-side instances
 export * from './firebase/client';
 
@@ -12,24 +7,9 @@ export * from './firebase/client';
 // but for client-side operations, the instances from './firebase/client' should be used.
 // We re-export them here for convenience and backwards compatibility in existing files.
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCdXe1KoEr_JleNIUy80XJO_buL6JO_4lE",
-  authDomain: "biharwalesirji-w4n4b.firebaseapp.com",
-  projectId: "biharwalesirji-w4n4b",
-  storageBucket: "biharwalesirji-w4n4b.appspot.com",
-  messagingSenderId: "207265599257",
-  appId: "1:207265599257:web:67f9753a0650f500c43f88"
-};
-
-
-// Initialize Firebase - THIS IS THE LEGACY SETUP. NEW CODE SHOULD USE a./firebase/client
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db_legacy = getFirestore(app);
-
-
-// Export server-safe modules
+// Export server-safe modules for use in server components if needed, though direct import is cleaner.
+import { GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 export { GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber };
 
-// Export the legacy instance for files that might still use it during transition.
-export { db_legacy as db };
+// The legacy db instance is removed to prevent conflicts.
+// All imports should now point to './firebase/client' for the client-side db.
