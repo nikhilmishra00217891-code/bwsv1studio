@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, BookOpen, Bot, Linkedin, Youtube } from "lucide-react";
 import Link from "next/link";
-import { getCourseById } from "@/lib/data/courses";
+import { getCourseById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import mentorData from "@/app/lib/mentors.json";
 
