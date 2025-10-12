@@ -18,6 +18,7 @@ export interface Lesson {
   duration: string; 
   content: string; // URL for video/pdf, or JSON for quiz
   notes?: string;
+  notesAttachment?: UrlMetadata | null;
   status: 'live' | 'recorded' | 'scheduled';
   scheduledTime?: Timestamp | string | null;
 }
