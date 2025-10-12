@@ -39,7 +39,8 @@ export default function AnalyticsDashboard({ users, allCourses }: { users: UserP
             .map(([name, count]) => ({ name, count }))
             .sort((a,b) => b.count - a.count);
 
-        const courseMap = new Map(allCourses.map(course => [course.id, course.title]));
+        const safeAllCourses = allCourses || [];
+        const courseMap = new Map(safeAllCourses.map(course => [course.id, course.title]));
         const courseDistribution = users.reduce((acc, user) => {
             user.enrolledCourses?.forEach(courseId => {
                 const courseTitle = courseMap.get(courseId) || 'Unknown Course';
@@ -158,3 +159,4 @@ export default function AnalyticsDashboard({ users, allCourses }: { users: UserP
         </div>
     );
 }
+

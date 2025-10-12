@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard, Bell } from 'lucide-react';
+import { MoreHorizontal, Ban, UserCheck, LoaderCircle, RefreshCw, MessageSquarePlus, BrainCircuit, User as UserIcon, LayoutDashboard, Bell, Play } from 'lucide-react';
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -664,7 +664,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
              <p className="text-muted-foreground">Search, view, and manage all users on the platform.</p>
         </div>
       
-        <AnalyticsDashboard users={users} />
+        <AnalyticsDashboard users={users} allCourses={allCourses} />
 
         <div className="flex flex-col sm:flex-row gap-4">
             <Input
@@ -839,5 +839,5 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     </>
   );
 }
-
     
+
