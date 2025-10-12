@@ -2,7 +2,7 @@
 'use server';
 
 import type { Course, EnrolledCourse, UserProfile, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
-import { firestore as adminDb } from "./firebase/admin"; 
+import { getAdminDb } from "./firebase/admin"; 
 import { Timestamp } from "firebase-admin/firestore";
 
 const serializeTimestamps = (data: any): any => {
@@ -28,6 +28,7 @@ const serializeTimestamps = (data: any): any => {
 }
 
 export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> => {
+  const adminDb = getAdminDb();
   const coursesCol = adminDb.collection("courses");
   
   let query;
@@ -50,6 +51,7 @@ export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> 
 export const getCoursesByIds = async (ids: string[]): Promise<Course[]> => {
     if (ids.length === 0) return [];
     
+    const adminDb = getAdminDb();
     const coursesCol = adminDb.collection("courses");
     // Firestore 'in' query is limited to 30 items. If you expect more, you'll need to batch requests.
     const snapshot = await coursesCol.where('__name__', 'in', ids).get();
@@ -60,6 +62,7 @@ export const getCoursesByIds = async (ids: string[]): Promise<Course[]> => {
 
 export const getEnrolledCoursesForUser = async (userId: string): Promise<EnrolledCourse[]> => {
   try {
+    const adminDb = getAdminDb();
     const userDocRef = adminDb.collection('users').doc(userId);
     const userDocSnap = await userDocRef.get();
 
@@ -104,6 +107,7 @@ export const getEnrolledCoursesForUser = async (userId: string): Promise<Enrolle
 };
 
 export const getAllUsers = async (): Promise<UserProfile[]> => {
+    const adminDb = getAdminDb();
     const usersCol = adminDb.collection("users");
     const q = usersCol.orderBy("displayName");
     const snapshot = await q.get();
@@ -120,6 +124,7 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
 
 
 export async function getEnrolledCourseData(userId: string, courseId: string): Promise<{progress: number, completedLessons: string[]} | null> {
+    const adminDb = getAdminDb();
     const userDoc = await adminDb.collection('users').doc(userId).get();
     if (!userDoc.exists) {
         return null;
@@ -129,6 +134,7 @@ export async function getEnrolledCourseData(userId: string, courseId: string): P
 
 
 export const getCompletedMissionsForUser = async (userId: string): Promise<Set<string>> => {
+    const adminDb = getAdminDb();
     const today = new Date().toISOString().split('T')[0];
     const docRef = adminDb.collection(`users/${userId}/missionCompletion`).doc(today);
     const docSnap = await docRef.get();
@@ -141,6 +147,7 @@ export const getCompletedMissionsForUser = async (userId: string): Promise<Set<s
 };
 
 export async function isUserEnrolled(userId: string, courseId: string): Promise<boolean> {
+  const adminDb = getAdminDb();
   const userDoc = await adminDb.collection('users').doc(userId).get();
   if (!userDoc.exists) {
     return false;
@@ -150,6 +157,7 @@ export async function isUserEnrolled(userId: string, courseId: string): Promise<
 }
 
 export const getCourseById = async (id: string): Promise<Course | null> => {
+    const adminDb = getAdminDb();
     const courseDocRef = adminDb.collection('courses').doc(id);
     const docSnap = await courseDocRef.get();
 

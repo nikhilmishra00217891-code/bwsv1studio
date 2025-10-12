@@ -5,7 +5,7 @@ import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericCha
 import { doc, getDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from "firebase/firestore";
 import type { UserProfile } from "@/types";
 import { JSDOM } from 'jsdom';
-import { customInitApp, firestore as adminFirestore } from "@/lib/firebase/admin";
+import { customInitApp, getAdminDb } from "@/lib/firebase/admin";
 import { getMessaging } from "firebase-admin/messaging";
 import { db } from "@/lib/firebase/client"; // Keep client db for client-side actions
 
@@ -213,6 +213,7 @@ interface SendNotificationInput {
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string; }> {
   // Ensure Firebase Admin is initialized
   customInitApp();
+  const adminFirestore = getAdminDb();
 
   try {
     if (input.recipientIds.length === 0) {

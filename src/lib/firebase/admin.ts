@@ -33,6 +33,8 @@ export const customInitApp = (): App => {
     return app;
 }
 
-// Initialize and export firestore admin instance
-customInitApp();
-export const firestore = getFirestore();
+// A new getter function to ensure Firestore is retrieved after initialization.
+export const getAdminDb = () => {
+    customInitApp();
+    return getFirestore();
+}
