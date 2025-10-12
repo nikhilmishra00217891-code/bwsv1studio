@@ -888,6 +888,3 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
   );
 }
     
-
-
-    

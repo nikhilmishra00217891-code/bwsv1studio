@@ -285,5 +285,3 @@ export async function sendNotification(input: SendNotificationInput): Promise<{ 
     return { success: false, message: `An unknown server error occurred: ${error.message}` };
   }
 }
-
-    
