@@ -10,9 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getMessaging } from 'firebase-admin/messaging';
-import { customInitApp } from '@/lib/firebase/admin';
-import { db } from '@/lib/firebase/client';
-import { doc, getDoc } from 'firebase/firestore';
+import { customInitApp, firestore as adminFirestore } from '@/lib/firebase/admin';
 import type { UserProfile } from '@/types';
 
 // Ensure Firebase Admin is initialized
@@ -49,12 +47,13 @@ const sendNotificationFlow = ai.defineFlow(
             return { success: false, message: 'No recipients selected.' };
         }
 
-        const userDocs = await Promise.all(
-            input.recipientIds.map(id => getDoc(doc(db, 'users', id)))
+        const userDocsPromises = input.recipientIds.map(id => 
+            adminFirestore.collection('users').doc(id).get()
         );
+        const userDocs = await Promise.all(userDocsPromises);
 
         const tokens = userDocs.reduce<string[]>((acc, userDoc) => {
-            if (userDoc.exists()) {
+            if (userDoc.exists) {
                 const userProfile = userDoc.data() as UserProfile;
                 if (userProfile.pushTokens && userProfile.pushTokens.length > 0) {
                     acc.push(...userProfile.pushTokens);

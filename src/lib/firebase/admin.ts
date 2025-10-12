@@ -1,5 +1,8 @@
 import { initializeApp, getApps, cert, getApp, App } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 import serviceAccount from './serviceAccount.json';
+
+let app: App;
 
 // This function ensures that the Firebase Admin SDK is initialized only once.
 export const customInitApp = (): App => {
@@ -22,7 +25,13 @@ export const customInitApp = (): App => {
         universe_domain: string;
     };
     
-    return initializeApp({
+    app = initializeApp({
         credential: cert(typedServiceAccount),
     });
+
+    return app;
 }
+
+// Initialize and export firestore admin instance
+customInitApp();
+export const firestore = getFirestore();
