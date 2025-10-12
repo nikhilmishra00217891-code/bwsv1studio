@@ -11,7 +11,7 @@ import { Card, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
-import { listenForLiveChatMessages, toggleLessonCompletion } from "@/lib/data/courses";
+import { listenForLiveChatMessages, toggleLessonCompletion, updateLesson } from "@/lib/data/courses";
 import { sendLiveChatMessage } from "@/lib/data/courses";
 import { useEffect, useRef, useState, FormEvent, useCallback, useMemo } from "react";
 import { useAuth } from "../auth/AuthProvider";
@@ -21,6 +21,8 @@ import { Input } from "../ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "../ui/badge";
 import StudyMaterialEditor from "./StudyMaterialEditor";
+import { Textarea } from "../ui/textarea";
+import { Label } from "../ui/label";
 
 interface CourseContentProps {
     course: Course;
@@ -238,12 +240,26 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     const { user, userProfile } = useAuth();
     const { toast } = useToast();
     const videoId = extractYouTubeVideoId(lesson.content || "");
-    const isLive = lesson.status === 'live';
+    const isFaculty = userProfile?.role === 'faculty';
+    
+    const [notes, setNotes] = useState(lesson.notes || '');
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const isCompleted = useMemo(() => 
         userProfile?.progress?.[course.id]?.completedLessons?.includes(lesson.id) || false,
     [userProfile, course.id, lesson.id]);
     
+    useEffect(() => {
+        setNotes(lesson.notes || '');
+    }, [lesson.notes]);
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [notes]);
+
     const handleToggleComplete = async () => {
         if (!user) return;
         try {
@@ -253,6 +269,15 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
             })
         } catch (error) {
             toast({ variant: 'destructive', title: "Something went wrong" });
+        }
+    }
+
+    const handleNotesSave = async () => {
+        try {
+            await updateLesson(course.id, subject.id, chapter.id, { ...lesson, notes });
+            toast({ title: "Notes Saved!" });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Failed to save notes.' });
         }
     }
 
@@ -292,15 +317,30 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                 <Card className="mt-8">
                     <div className="p-6">
                         <h3 className="text-xl font-bold font-headline mb-4">Lecture Notes</h3>
-                        <ScrollArea className="h-72">
-                            <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
-                                {lesson.notes ? (
-                                    <p className="whitespace-pre-wrap">{lesson.notes}</p>
-                                ) : (
-                                    <p className="text-muted-foreground">No notes available for this lesson yet.</p>
-                                )}
+                        {isFaculty ? (
+                            <div className="space-y-2">
+                                <Label htmlFor="lecture-notes">Edit notes for this lesson:</Label>
+                                <Textarea
+                                    ref={textareaRef}
+                                    id="lecture-notes"
+                                    placeholder="Add notes for students here..."
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    onBlur={handleNotesSave}
+                                    className="resize-none overflow-hidden"
+                                />
                             </div>
-                        </ScrollArea>
+                        ) : (
+                             <ScrollArea className="h-72">
+                                <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
+                                    {notes ? (
+                                        <p className="whitespace-pre-wrap">{notes}</p>
+                                    ) : (
+                                        <p className="text-muted-foreground">No notes available for this lesson yet.</p>
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        )}
                     </div>
                 </Card>
             </div>
@@ -409,6 +449,3 @@ export function CourseContent({ course, selectedSubject, selectedChapter, select
 
     return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;
 }
-
-
-    

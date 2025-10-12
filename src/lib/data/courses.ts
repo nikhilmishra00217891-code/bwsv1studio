@@ -1,4 +1,5 @@
 
+
 "use client"; // This file now contains client-side and server-side logic, mark it for client.
 
 import { db } from "@/lib/firebase/client"; // Use client-side db for client-callable functions
