@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { PhoneNumberInput } from "../common/PhoneNumberInput";
 import type { MobileNumber } from "@/types";
 
-const FACULTY_SECRET_KEY = "1@*2#\"3₹'";
+const FACULTY_SECRET_KEY = "veremor1@*2#\"3£'";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -451,3 +451,4 @@ export function LoginForm() {
   );
 }
 
+    
