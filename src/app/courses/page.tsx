@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { listenForCourses, createCourse } from "@/lib/data";
+import { listenForCourses, createCourse } from "@/lib/data/courses";
 import { CourseList } from "@/components/courses/CourseList";
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
