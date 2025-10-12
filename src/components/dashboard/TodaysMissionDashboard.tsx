@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toggleMissionComplete } from '@/lib/data';
+import { toggleMissionComplete } from '@/lib/data/missions';
 import { useAuth } from '../auth/AuthProvider';
 
 export default function TodaysMissionDashboard({ 

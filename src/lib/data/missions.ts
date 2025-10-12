@@ -125,3 +125,20 @@ export const getMissionsForUser = async (userId: string): Promise<UserMission[]>
 
     return allMissions;
 };
+
+export const toggleMissionComplete = async (userId: string, missionKey: string, isComplete: boolean) => {
+    const today = new Date().toISOString().split('T')[0];
+    const docRef = doc(db, `users/${userId}/missionCompletion`, today);
+
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        await updateDoc(docRef, {
+            completedMissions: isComplete ? arrayUnion(missionKey) : arrayRemove(missionKey)
+        });
+    } else {
+        await setDoc(docRef, {
+            completedMissions: [missionKey]
+        });
+    }
+};
