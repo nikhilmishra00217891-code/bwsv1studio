@@ -33,7 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { messaging } from "@/lib/firebase";
 import { getToken } from "firebase/messaging";
-import { savePushToken, removePushToken } from "@/lib/data";
+import { savePushToken, removePushToken } from "@/lib/data/user";
 
 const VAPID_KEY = 'BCm2_B1eWYhSdPlv2OaUrP5JyMGA6ZZ4gXhlyV0wc10SJiKbwr6gQBVWIqQ1wsKZfsyH7jB4IchtxdB9yWAfAXE';
 

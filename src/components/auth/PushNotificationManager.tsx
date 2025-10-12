@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
 import { messaging } from '@/lib/firebase';
 import { getToken } from 'firebase/messaging';
 import { useAuth } from './AuthProvider';
-import { savePushToken } from '@/lib/data';
+import { savePushToken } from '@/lib/data/user';
 import {
   AlertDialog,
   AlertDialogAction,

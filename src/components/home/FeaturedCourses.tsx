@@ -1,7 +1,7 @@
 
 "use client";
 
-import { getFeaturedCourses } from "@/lib/data";
+import { getFeaturedCourses } from "@/lib/data/courses";
 import { getTextContent } from "@/lib/data/content";
 import type { Course } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
