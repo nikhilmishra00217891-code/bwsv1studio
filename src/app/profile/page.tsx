@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile } from "@/lib/data";
+import { updateUserProfile } from "@/lib/data/user";
 import {
     AlertDialog,
     AlertDialogAction,

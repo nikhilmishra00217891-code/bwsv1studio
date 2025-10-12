@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthProvider";
 import { useRouter } from "next/navigation";
-import { updateUserProfile } from "@/lib/data";
+import { updateUserProfile } from "@/lib/data/user";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, MoveRight, User, Cake, School, BookCopy, Target, Pencil, Check, Brain, Gauge, Timer, UserCheck, Star, Trophy, Gift, Lightbulb, Handshake, Sun, Sunset, Moon, Sparkles, Book, Atom, Sigma, FlaskConical, Languages, Milestone, Computer, Earth, History, Scale, Briefcase, Leaf, Globe, Calculator, BrainCircuit, Music, Gamepad2, Mic2, Code, Clapperboard, BookOpen, MessageCircle, PenSquare, Palette, Smile, Dices, Mail, Phone, Rocket, VenetianMask, Award, StarIcon, Cat, Bird, FerrisWheel } from "lucide-react";
 import { Button } from "../ui/button";
@@ -1238,4 +1238,3 @@ export function OnboardingForm() {
     </div>
   );
 }
-

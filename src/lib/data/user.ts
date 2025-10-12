@@ -2,6 +2,7 @@
 "use client";
 
 import { db } from "@/lib/firebase/client";
+import type { UserProfile } from "@/types";
 import {
   doc,
   updateDoc,
@@ -30,3 +31,8 @@ export const removePushToken = async (userId: string, token: string): Promise<vo
         pushTokens: arrayRemove(token)
     });
 };
+
+export const updateUserProfile = async (userId: string, profileData: Partial<UserProfile>) => {
+    const userDocRef = doc(db, "users", userId);
+    await updateDoc(userDocRef, profileData);
+}
