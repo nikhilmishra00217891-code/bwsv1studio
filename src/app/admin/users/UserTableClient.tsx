@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useTransition, useRef } from 'react';
@@ -572,6 +573,7 @@ const ContextMenu = ({
 export function UserTableClient({ initialUsers, allCourses }: { initialUsers: UserProfile[], allCourses: Course[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchQuery, setActiveSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'suspended'>('all');
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(false);
   const [showPatraDialog, setShowPatraDialog] = useState(false);
@@ -600,16 +602,51 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
       searchableUsers = users.filter(user => user.suspension?.isSuspended);
     }
     
-    if (!searchTerm) return searchableUsers;
+    if (!activeSearchQuery) return searchableUsers;
 
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const lowerCaseSearchTerm = activeSearchQuery.toLowerCase();
 
+    // Smart search logic
+    const gradeMatch = lowerCaseSearchTerm.match(/^\/grade\s*(.*)/);
+    if (gradeMatch) {
+        const gradeQuery = gradeMatch[1].trim();
+        if (!gradeQuery) return searchableUsers;
+        return searchableUsers.filter(user => user.grade?.toLowerCase().replace(/\s+/g, '') === gradeQuery.replace(/\s+/g, ''));
+    }
+
+    const courseMatch = lowerCaseSearchTerm.match(/^\/course\s*(.*)/);
+    if (courseMatch) {
+        const courseQuery = courseMatch[1].trim();
+        if (!courseQuery) return searchableUsers;
+        
+        const targetCourse = allCourses.find(c => c.title.toLowerCase().trim() === courseQuery);
+        if (targetCourse) {
+            return searchableUsers.filter(user => user.enrolledCourses?.includes(targetCourse.id));
+        } else {
+            return []; // No exact match found, return no users.
+        }
+    }
+
+
+    // Default search
     return searchableUsers.filter(user => {
         const nameMatch = user.displayName && user.displayName.toLowerCase().includes(lowerCaseSearchTerm);
         const emailMatch = user.email && user.email.toLowerCase().includes(lowerCaseSearchTerm);
         return nameMatch || emailMatch;
     });
-  }, [users, searchTerm, filter]);
+  }, [users, activeSearchQuery, filter, allCourses]);
+
+  const handleRunSearch = () => {
+    setActiveSearchQuery(searchTerm);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleRunSearch();
+    }
+  };
+
 
   const handleRefresh = () => {
     startTransition(() => {
@@ -667,12 +704,24 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
         <AnalyticsDashboard users={users} allCourses={allCourses} />
 
         <div className="flex flex-col sm:flex-row gap-4">
-            <Input
-            placeholder="Search by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-            />
+             <div className="relative max-w-sm">
+                <Input
+                    placeholder="Search name, email, or use /grade, /course"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="pr-12"
+                />
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                    onClick={handleRunSearch}
+                    aria-label="Run Search"
+                >
+                    <Play className="h-4 w-4"/>
+                </Button>
+            </div>
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 rounded-md border p-1 bg-background">
                     <Button variant={filter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setFilter('all')}>All</Button>
@@ -841,3 +890,5 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
 }
     
 
+
+    
