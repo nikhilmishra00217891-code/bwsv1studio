@@ -1,0 +1,44 @@
+
+{
+    "mentors": [
+        {
+            "id": "aman",
+            "name": "Aman Kumar",
+            "role": "Founder & Physics Mentor",
+            "avatar": "https://i.postimg.cc/d1W1VcYF/aman-kumar.png",
+            "bio": "With a passion for making physics intuitive and exciting, Aman founded BiharWaleSirji to bring a new, relatable teaching style to students across India. His mission is to build a 'Parivaar' where every student feels supported and empowered to achieve their dreams.",
+            "subjects": ["Physics", "Mathematics"],
+            "philosophy": "Teach with the heart of an elder brother, not a stranger.",
+            "socials": {
+                "youtube": "https://www.youtube.com/@biharwalesirji",
+                "linkedin": "#"
+            }
+        },
+        {
+            "id": "priya",
+            "name": "Dr. Priya Singh",
+            "role": "Biology & Chemistry Mentor",
+            "avatar": "https://placehold.co/400x400.png",
+            "bio": "Dr. Singh brings her extensive knowledge and experience from the medical field into the classroom. She excels at breaking down complex biological and chemical processes into easy-to-understand concepts, preparing students for NEET and other competitive exams with a deep conceptual foundation.",
+            "subjects": ["Biology", "Chemistry"],
+            "philosophy": "Understanding the 'why' is more important than memorizing the 'what'.",
+            "socials": {
+                "youtube": "#",
+                "linkedin": "#"
+            }
+        },
+        {
+            "id": "rajesh",
+            "name": "Rajesh Mahto",
+            "role": "Mathematics & Aptitude Mentor",
+            "avatar": "https://placehold.co/400x400.png",
+            "bio": "A mathematics wizard, Rajesh believes that anyone can excel at math with the right guidance. He specializes in shortcuts, mental math techniques, and logical reasoning, making him a favorite among students preparing for competitive exams that require speed and accuracy.",
+            "subjects": ["Mathematics", "Logical Reasoning"],
+            "philosophy": "There is always a shorter, smarter way to solve a problem.",
+            "socials": {
+                "youtube": "#",
+                "linkedin": "#"
+            }
+        }
+    ]
+}

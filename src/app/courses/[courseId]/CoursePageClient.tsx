@@ -1,17 +1,18 @@
 
+
 'use client';
 
-import type { Course } from "@/types";
+import type { Course, Subject } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState, useMemo, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, updateCourse } from "@/lib/data";
+import { deleteCourse, updateCourse, isUserEnrolled, enrollInCourse } from "@/lib/data/courses";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,6 +38,10 @@ import {
   Pencil,
   PlusCircle,
   Workflow,
+  X,
+  IndianRupee,
+  LogIn,
+  ArrowRight,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -48,6 +53,7 @@ import { useEditMode } from "@/components/common/EditModeProvider";
 import Link from "next/link";
 import { EditableImage } from "../common/EditableImage";
 import { saveTextContent, getTextContent } from "@/lib/data/content";
+import { Slider } from "../ui/slider";
 
 const extractYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
@@ -76,6 +82,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
   const [textContent, setTextContent] = useState<Record<string, string>>({});
   const { user, userProfile, loading: authLoading } = useAuth();
   const [isCurrentUserFaculty, setIsCurrentUserFaculty] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
   const { isEditMode, setIsEditMode } = useEditMode();
   const { toast } = useToast();
   const router = useRouter();
@@ -92,7 +99,12 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
 
   useEffect(() => {
     setIsCurrentUserFaculty(userProfile?.role === 'faculty');
-  }, [userProfile]);
+     if (user) {
+      isUserEnrolled(user.uid, course.id).then(setIsEnrolled);
+    } else {
+      setIsEnrolled(false);
+    }
+  }, [userProfile, user, course.id]);
 
   const handleSaveText = async (contentId: string, value: string) => {
     await saveTextContent(contentId, value);
@@ -136,6 +148,13 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             description: "Could not delete the course.",
         });
     }
+  }
+  
+  const handleSubjectProgressChange = (subjectId: string, newProgress: number) => {
+    const newSubjects = course.subjects.map(s => 
+      s.id === subjectId ? { ...s, progress: newProgress } : s
+    );
+    handleSaveCourse({ subjects: newSubjects });
   }
 
   const CourseFacultyControls = () => (
@@ -214,14 +233,23 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
         />
         <div className="relative z-20 grid md:grid-cols-3 gap-8 items-end text-foreground">
             <div className="md:col-span-2">
-                 <EditableText onSave={handleSaveText} as="badge" contentId={`course_category_${course.id}`} defaultValue={textContent[`course_category_${course.id}`] || course.category} />
-                <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in">
-                   <EditableText onSave={(contentId, value) => { handleSaveText(contentId, value); handleSaveCourse({ title: value }); }} contentId={`course_title_${course.id}`} defaultValue={textContent[`course_title_${course.id}`] || course.title} />
+                 <EditableText onSave={(contentId, value) => handleSaveCourse({ category: value })} as="badge" contentId={`course_category_${course.id}`} defaultValue={course.category} />
+                 <EditableText onSave={(contentId, value) => handleSaveCourse({ grade: value })} as="badge" contentId={`course_grade_${course.id}`} defaultValue={course.grade} className="ml-2" />
+                <h1 className="text-3xl md:text-5xl font-bold font-headline tracking-tight animate-drop-in mt-2">
+                   <EditableText onSave={(contentId, value) => handleSaveCourse({ title: value })} contentId={`course_title_${course.id}`} defaultValue={course.title} />
                 </h1>
+                 <div className="mt-4 text-2xl font-bold font-headline text-primary flex items-center gap-1">
+                    <IndianRupee className="w-6 h-6"/>
+                     <EditableText 
+                        onSave={(contentId, value) => handleSaveCourse({ price: Number(value) || 0 })} 
+                        contentId={`course_price_${course.id}`} 
+                        defaultValue={String(course.price)} 
+                     />
+                 </div>
             </div>
             <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_duration_${course.id}`} defaultValue={textContent[`course_duration_${course.id}`] || "8 hours total"} /></div>
-                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_lessons_${course.id}`} defaultValue={textContent[`course_lessons_${course.id}`] || `${totalLessons} lessons`} /></div>
+                <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_lessons_count_${course.id}`} defaultValue={textContent[`course_lessons_count_${course.id}`] || `${totalLessons} lessons`} /></div>
                 <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_completion_${course.id}`} defaultValue={textContent[`course_completion_${course.id}`] || "25% complete"} /></div>
             </div>
         </div>
@@ -236,7 +264,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                 </div>
               <div className="flex-grow text-center sm:text-left">
                   <h3 className="text-xl font-bold font-headline">
-                    <EditableText onSave={(contentId, value) => { handleSaveText(contentId, value); handleSaveCourse({ mentorName: value }); }} contentId={`course_mentor_${course.id}`} defaultValue={textContent[`course_mentor_${course.id}`] || course.mentorName} /> & Team
+                    <EditableText onSave={(contentId, value) => handleSaveCourse({ mentorName: value })} contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} /> & Team
                   </h3>
                   <p className="text-muted-foreground">Your Mentors</p>
               </div>
@@ -252,12 +280,19 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                    <div className="relative w-24 h-24">
                        <EditableImage contentId={`course_mentor_avatar_${course.id}`} src={textContent[`course_mentor_avatar_${course.id}`] || "https://i.postimg.cc/d1W1VcYF/aman-kumar.png"} alt="Mentor Avatar" fill className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
                    </div>
-                  <DialogTitle className="text-2xl font-headline"><EditableText onSave={(contentId, value) => { handleSaveText(contentId, value); handleSaveCourse({ mentorName: value }); }} contentId={`course_mentor_${course.id}`} defaultValue={textContent[`course_mentor_${course.id}`] || course.mentorName} /> & Team</DialogTitle>
+                  <DialogTitle className="text-2xl font-headline"><EditableText onSave={(contentId, value) => handleSaveCourse({ mentorName: value })} contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} /> & Team</DialogTitle>
                   <DialogDescription>Your guides, friends, and mentors on this journey.</DialogDescription>
               </DialogHeader>
               <div className="py-4 text-center text-muted-foreground">
                    <EditableText onSave={handleSaveText} multiline contentId={`course_mentor_bio_${course.id}`} defaultValue={textContent[`course_mentor_bio_${course.id}`] || "With over a decade of experience in making complex topics feel like a story, our mentors are here to ensure you not only crack your exams but also fall in love with the subject. We believe in the 'Parivaar' philosophy - teaching with the care of an elder brother."} />
               </div>
+              <DialogFooter>
+                  <Button asChild>
+                    <Link href={`/courses/${course.id}/mentors`}>
+                        View More <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+              </DialogFooter>
           </DialogContent>
       </Dialog>
   )
@@ -303,29 +338,107 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
     )
   }
 
-  const CourseOverview = ({ course }: { course: Course }) => (
+  const CourseActionButton = () => {
+    if (isCurrentUserFaculty || isEnrolled) {
+      return (
+        <Button size="lg" className="w-full !h-14 text-lg" asChild>
+          <Link href={`/courses/${course.id}/learnzone`}>
+            <PlayCircle className="mr-2 h-6 w-6" /> Go to Course
+          </Link>
+        </Button>
+      );
+    }
+
+    return (
+      <Button size="lg" className="w-full !h-14 text-lg" asChild>
+        <Link href={`/courses/${course.id}/checkout`}>
+          <LogIn className="mr-2 h-6 w-6" /> Enroll Now
+        </Link>
+      </Button>
+    );
+  };
+
+
+  const CourseOverview = ({ course }: { course: Course }) => {
+    const handleBadgeSave = (index: number) => (contentId: string, value: string) => {
+        const newTags = [...(course.tags || [])];
+        newTags[index] = value;
+        handleSaveCourse({ tags: newTags });
+    }
+    
+    const addTag = () => {
+        const currentTags = course.tags || [];
+        handleSaveCourse({ tags: [...currentTags, "New Tag ✨"] });
+    }
+
+    const removeTag = (index: number) => {
+        const currentTags = course.tags || [];
+        const newTags = currentTags.filter((_, i) => i !== index);
+        handleSaveCourse({ tags: newTags });
+    }
+
+    const tags = course.tags && course.tags.length > 0 ? course.tags : [];
+
+
+    return (
       <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
                <h3 className="text-2xl font-bold font-headline">About This Course</h3>
                 <div className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    <EditableText onSave={(contentId, value) => { handleSaveText(contentId, value); handleSaveCourse({ description: value }); }} multiline contentId={`course_description_${course.id}`} defaultValue={textContent[`course_description_${course.id}`] || course.description} />
+                    <EditableText onSave={(contentId, value) => handleSaveCourse({ description: value })} multiline contentId={`course_description_${course.id}`} defaultValue={course.description} />
                 </div>
-               <div className="flex flex-wrap gap-2">
-                  <Badge>Exam Prep 🔥</Badge>
-                  <Badge>Conceptual 🧠</Badge>
-                  <Badge>Quick Revision ⚡</Badge>
+               <div className="flex flex-wrap items-center gap-2">
+                    {tags.map((tag, index) => (
+                         <div key={index} className="relative group">
+                            <EditableText 
+                                as="badge"
+                                onSave={handleBadgeSave(index)}
+                                contentId={`course_tag_${course.id}_${index}`}
+                                defaultValue={tag}
+                            />
+                             {isEditMode && (
+                                <button onClick={() => removeTag(index)} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <X className="w-3 h-3"/>
+                                </button>
+                             )}
+                        </div>
+                    ))}
+                    {isEditMode && (
+                        <Button variant="outline" size="sm" onClick={addTag}>
+                            <PlusCircle className="w-4 h-4 mr-2"/> Add Tag
+                        </Button>
+                    )}
                </div>
+               
+               {isEditMode && course.subjects && (
+                    <Card className="p-4">
+                        <CardTitle className="text-lg mb-4">Official Subject Progress</CardTitle>
+                        <div className="space-y-6">
+                            {course.subjects.map(subject => (
+                                <div key={subject.id}>
+                                    <Label className="font-semibold">{subject.title}</Label>
+                                    <div className="flex items-center gap-4 mt-2">
+                                        <Slider 
+                                            value={[subject.progress || 0]}
+                                            onValueChange={([val]) => handleSubjectProgressChange(subject.id, val)}
+                                            max={100}
+                                            step={1}
+                                        />
+                                        <span className="font-bold text-primary text-sm w-12 text-center">{subject.progress || 0}%</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+               )}
           </div>
           <div className="space-y-4">
               <CourseVideo course={course} />
-               <Button size="lg" className="w-full !h-14 text-lg" asChild>
-                  <Link href={`/courses/${course.id}/learnzone`}>
-                    <PlayCircle className="mr-2 h-6 w-6" /> Go to Course
-                  </Link>
-              </Button>
+               <CourseActionButton />
           </div>
       </div>
-  )
+    )
+}
 
   if (authLoading) {
     return <div className="flex h-[calc(100vh-8rem)] items-center justify-center"><LoaderCircle className="h-12 w-12 animate-spin text-primary" /></div>
