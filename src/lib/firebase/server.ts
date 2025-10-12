@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { customInitApp } from "./admin";
 import { UserProfile } from "@/types";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db } from "./client";
 
 customInitApp();
 

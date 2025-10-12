@@ -11,7 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getMessaging } from 'firebase-admin/messaging';
 import { customInitApp } from '@/lib/firebase/admin';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 

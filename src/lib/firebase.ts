@@ -1,3 +1,4 @@
+
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
@@ -22,8 +23,13 @@ const firebaseConfig = {
 };
 
 
-// Initialize Firebase
+// Initialize Firebase - THIS IS THE LEGACY SETUP. NEW CODE SHOULD USE a./firebase/client
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const db_legacy = getFirestore(app);
+
 
 // Export server-safe modules
 export { GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber };
+
+// Export the legacy instance for files that might still use it during transition.
+export { db_legacy as db };
