@@ -607,18 +607,19 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     // Smart search logic
     if (lowerCaseSearchTerm.startsWith('/grade')) {
         const gradeQuery = lowerCaseSearchTerm.substring(6).trim();
-        return searchableUsers.filter(user => user.grade?.toLowerCase() === gradeQuery);
+        if (!gradeQuery) return searchableUsers;
+        return searchableUsers.filter(user => user.grade?.toLowerCase().replace(/\s+/g, '') === gradeQuery.replace(/\s+/g, ''));
     }
 
     if (lowerCaseSearchTerm.startsWith('/course')) {
         const courseQuery = lowerCaseSearchTerm.substring(7).trim();
-        const targetCourse = allCourses.find(c => c.title.replace(/\s+/g, '').toLowerCase() === courseQuery.replace(/\s+/g, ''));
+        if (!courseQuery) return searchableUsers;
+        const targetCourse = allCourses.find(c => c.title.toLowerCase().trim() === courseQuery);
 
         if (targetCourse) {
             return searchableUsers.filter(user => user.enrolledCourses?.includes(targetCourse.id));
         } else {
-            // If the exact course name isn't found, return no users.
-            return [];
+            return []; // No exact match found, return no users.
         }
     }
 
