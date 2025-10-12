@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import type { Course, Lesson, Subject, Chapter, LiveChatMessage } from "@/types";
@@ -109,7 +108,7 @@ const LiveChat = ({ course, subject, chapter, lesson }: { course: Course; subjec
             <CardContent className="p-4 flex-grow flex flex-col">
                 <div className="flex items-center gap-2 border-b pb-2 mb-4">
                     <Sparkles className="w-5 h-5 text-primary" />
-                    <h3 className="font-bold text-lg">Live Discussion</h3>
+                    <h3 className="font-bold text-lg">Discussion</h3>
                 </div>
                 <ScrollArea className="flex-grow pr-4" ref={scrollAreaRef}>
                     <div className="space-y-4">
@@ -305,15 +304,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                 </Card>
             </div>
             <div className="lg:col-span-1">
-                 {isLive ? (
-                    <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} />
-                 ) : (
-                    <Card>
-                        <CardContent className="p-8 text-center text-muted-foreground">
-                            This was a recorded session. The live chat is not available.
-                        </CardContent>
-                    </Card>
-                 )}
+                <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} />
             </div>
         </div>
     )
@@ -418,3 +409,5 @@ export function CourseContent({ course, selectedSubject, selectedChapter, select
     return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;
 }
 
+
+    
