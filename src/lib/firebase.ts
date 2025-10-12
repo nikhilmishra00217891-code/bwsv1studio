@@ -1,8 +1,15 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getMessaging } from "firebase/messaging";
+
+// Re-export client-side instances
+export * from './firebase/client';
+
+// NOTE: The 'auth' and 'db' instances are now primarily initialized in 'firebase/client.ts'.
+// This file can be used for server-side or shared configuration if needed,
+// but for client-side operations, the instances from './firebase/client' should be used.
+// We re-export them here for convenience and backwards compatibility in existing files.
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -17,15 +24,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
 
-// Initialize Firebase Cloud Messaging and get a reference to the service
-const messaging = () => {
-    if (typeof window !== 'undefined' && getApps().length > 0) {
-        return getMessaging(app);
-    }
-    return null;
-}
-
-export { app, auth, db, messaging, GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber };
+// Export server-safe modules
+export { GoogleAuthProvider, RecaptchaVerifier, signInWithPhoneNumber };

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { auth, db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase/client"; // Correctly import from the client-only file
 import type { User } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
