@@ -1,7 +1,7 @@
 
-"use server";
+"use client"; // This file now contains client-side and server-side logic, mark it for client.
 
-import { db } from "@/lib/firebase/client";
+import { db } from "@/lib/firebase/client"; // Use client-side db for client-callable functions
 import {
   doc,
   getDoc,
@@ -18,9 +18,145 @@ import {
   onSnapshot,
   limit,
   Timestamp,
+  where,
+  increment
 } from "firebase/firestore";
 import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial, StudyMaterialLink } from "@/types";
 import { getUrlMetadata } from "@/app/actions";
+
+// --- Client-side callable functions ---
+
+export const listenForCourses = (isFaculty: boolean, callback: (courses: Course[]) => void): () => void => {
+    const coursesCol = collection(db, "courses");
+    
+    let q;
+    if (isFaculty) {
+        q = query(coursesCol, orderBy("title"));
+    } else {
+        q = query(coursesCol, where("isActive", "==", true), orderBy("title"));
+    }
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+            callback([]);
+            return;
+        }
+        const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Course);
+        callback(courses);
+    }, (error) => {
+        console.error("Error listening for courses:", error);
+        callback([]);
+    });
+
+    return unsubscribe;
+};
+
+export const createCourse = async ({ title, category, grade, price }: { title: string; category: string; grade: string; price: number; }): Promise<string> => {
+  const coursesCol = collection(db, "courses");
+  const newCourseData: Omit<Course, 'id'> = {
+    title: title || "New Course Title",
+    category: category || "New Category",
+    grade: grade || "Uncategorized",
+    price: price || 0,
+    description: "A comprehensive introduction to the fundamental principles of this new course.",
+    mentorName: "Prof. S. Verma",
+    thumbnail: "https://placehold.co/600x400.png?text=New+Course",
+    isActive: false,
+    subjects: [],
+    lessons: [],
+    youtubeLink: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    courseCompletionPercent: 0,
+    tags: ["New"],
+  };
+  const docRef = await addDoc(coursesCol, newCourseData);
+  return docRef.id;
+}
+
+export const updateCourse = async (courseId: string, data: Partial<Course>): Promise<Course> => {
+    const courseRef = doc(db, "courses", courseId);
+    await updateDoc(courseRef, data);
+    const updatedDoc = await getDoc(courseRef);
+    return { id: updatedDoc.id, ...updatedDoc.data() } as Course;
+}
+
+export const deleteCourse = async (courseId: string) => {
+    const courseRef = doc(db, "courses", courseId);
+    await deleteDoc(courseRef);
+}
+
+export const getFeaturedCourses = async (): Promise<Course[]> => {
+  const coursesCol = collection(db, "courses");
+  const q = query(coursesCol, where("isActive", "==", true), limit(3)); // Fetch 3 active courses
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) return [];
+  
+  const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Course);
+  return courses;
+};
+
+export const enrollInCourse = async (userId: string, courseId: string, couponCode?: string): Promise<void> => {
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+        throw new Error("User profile not found.");
+    }
+    
+    await updateDoc(userRef, {
+        enrolledCourses: arrayUnion(courseId)
+    });
+
+    const progressField = `progress.${courseId}`;
+    await updateDoc(userRef, {
+        [progressField]: {
+            progress: 0,
+            completedLessons: []
+        }
+    });
+
+    if (couponCode) {
+        const couponsColRef = collection(db, `courses/${courseId}/coupons`);
+        const q = query(couponsColRef, where('code', '==', couponCode.toUpperCase()), limit(1));
+        const couponSnapshot = await getDocs(q);
+        if (!couponSnapshot.empty) {
+            const couponDoc = couponSnapshot.docs[0];
+            await updateDoc(couponDoc.ref, {
+                timesUsed: increment(1)
+            });
+        }
+    }
+}
+
+export const toggleLessonCompletion = async (userId: string, courseId: string, lessonId: string) => {
+    const userRef = doc(db, 'users', userId);
+    
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) {
+        throw "User does not exist!";
+    }
+    
+    const userData = userDoc.data() as UserProfile;
+    const progressData = userData.progress?.[courseId] || { completedLessons: [] };
+    const completedLessons = new Set(progressData.completedLessons);
+    
+    if (completedLessons.has(lessonId)) {
+        completedLessons.delete(lessonId);
+    } else {
+        completedLessons.add(lessonId);
+    }
+    
+    const updatedCompletedLessons = Array.from(completedLessons);
+    
+    const progressField = `progress.${courseId}.completedLessons`;
+    await updateDoc(userRef, {
+        [progressField]: updatedCompletedLessons
+    });
+};
+
+
+// --- Functions below might be server-callable, ensure they use adminDB if so ---
+// For now, they are marked with 'use client' so they use the client 'db'
 
 export const addSubject = async (courseId: string, subjectTitle: string): Promise<Course> => {
     const courseRef = doc(db, 'courses', courseId);
@@ -157,8 +293,6 @@ export const deleteLesson = async (courseId: string, subjectId: string, chapterI
     return courseData;
 };
 
-// --- Live Chat Functions ---
-
 export const sendLiveChatMessage = async (
     courseId: string, subjectId: string, chapterId: string, lessonId: string,
     message: Omit<LiveChatMessage, 'id' | 'timestamp'>
@@ -169,25 +303,6 @@ export const sendLiveChatMessage = async (
         timestamp: serverTimestamp()
     });
 };
-
-export const deleteLiveChatHistory = async (courseId: string, subjectId: string, chapterId: string, lessonId: string) => {
-    const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
-    const snapshot = await getDocs(chatColRef);
-    
-    if (snapshot.empty) {
-        return;
-    }
-    
-    const batch = writeBatch(db);
-    snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-    
-    await batch.commit();
-}
-
-
-// --- Study Material Functions ---
 
 const findAndModifyMaterial = (
   materials: StudyMaterial[],
@@ -358,7 +473,6 @@ export const updateLessonStatus = async (
     }
 }
 
-// Moves a lesson from 'scheduled' or 'live' to 'recorded'
 export const endLiveSession = async (
     courseId: string,
     subjectId: string,
@@ -384,7 +498,7 @@ export const endLiveSession = async (
         if (lessonIndex === -1) throw new Error("Lesson not found.");
         
         courseData.subjects[subjectIndex].chapters[chapterIndex].lessons[lessonIndex].status = 'recorded';
-        courseData.subjects[subjectIndex].chapters[chapterIndex].lessons[lessonIndex].scheduledTime = null; // Clear scheduled time
+        courseData.subjects[subjectIndex].chapters[chapterIndex].lessons[lessonIndex].scheduledTime = null; 
         
         await updateDoc(courseRef, { subjects: courseData.subjects });
 
@@ -393,4 +507,22 @@ export const endLiveSession = async (
         console.error("Error ending session: ", error);
         return { success: false, message: error.message || "An unknown error occurred." };
     }
+};
+
+export const listenForLiveChatMessages = (
+    courseId: string, subjectId: string, chapterId: string, lessonId: string,
+    callback: (messages: LiveChatMessage[]) => void
+): (() => void) => {
+    const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
+    const q = query(chatColRef, orderBy("timestamp", "asc"), limit(100));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const messages = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        } as LiveChatMessage));
+        callback(messages);
+    });
+
+    return unsubscribe;
 };

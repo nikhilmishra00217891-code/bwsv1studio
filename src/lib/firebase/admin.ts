@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, cert, getApp, App } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import serviceAccount from './serviceAccount.json';
