@@ -1,7 +1,7 @@
 
 
 import type { Course, Testimonial, EnrolledCourse, UserProfile, Subject, Chapter, Lesson, LiveChatMessage } from "@/types";
-import { db } from "./firebase";
+import { db } from "./firebase/client";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, orderBy, onSnapshot, Timestamp, increment, arrayUnion, limit, arrayRemove } from "firebase/firestore";
 import type { User } from "firebase/auth";
 export * from './data/coupons';
@@ -455,3 +455,5 @@ export const toggleLessonCompletion = async (userId: string, courseId: string, l
         [progressField]: updatedCompletedLessons
     });
 };
+
+    
