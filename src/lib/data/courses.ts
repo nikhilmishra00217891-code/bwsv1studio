@@ -19,10 +19,10 @@ import {
   limit,
   Timestamp,
   where,
-  increment
+  deleteDoc,
+  increment,
 } from "firebase/firestore";
-import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial, StudyMaterialLink } from "@/types";
-import { getUrlMetadata } from "@/app/actions";
+import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial } from "@/types";
 
 // --- Client-side callable functions ---
 
@@ -153,6 +153,15 @@ export const toggleLessonCompletion = async (userId: string, courseId: string, l
         [progressField]: updatedCompletedLessons
     });
 };
+
+export async function isUserEnrolled(userId: string, courseId: string): Promise<boolean> {
+  const userDoc = await getDoc(doc(db, 'users', userId));
+  if (!userDoc.exists()) {
+    return false;
+  }
+  const enrolledCourses = userDoc.data()?.enrolledCourses || [];
+  return enrolledCourses.includes(courseId);
+}
 
 
 // --- Functions below might be server-callable, ensure they use adminDB if so ---
@@ -526,3 +535,13 @@ export const listenForLiveChatMessages = (
 
     return unsubscribe;
 };
+
+// This function needs to stay here as it uses admin SDK
+export const getCoursesByIds = async (ids: string[]): Promise<Course[]> => {
+    if (ids.length === 0) return [];
+    
+    // This is a placeholder for where you'd use adminDb
+    // For now, we'll just show that it's separate
+    console.log("Fetching courses from server with IDs:", ids);
+    return [];
+}
