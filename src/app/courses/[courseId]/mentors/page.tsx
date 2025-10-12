@@ -7,6 +7,7 @@ import Link from "next/link";
 import { getCourseById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import mentorData from "@/app/lib/mentors.json";
+import Image from "next/image";
 
 export default async function MentorsPage({ params }: { params: { courseId: string } }) {
     const course = await getCourseById(params.courseId);
