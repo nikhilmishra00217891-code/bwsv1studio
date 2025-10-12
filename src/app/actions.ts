@@ -2,12 +2,11 @@
 "use server";
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat, recommendContent } from "@/ai/flows";
-import { doc, getDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from "firebase/firestore";
 import type { UserProfile } from "@/types";
 import { JSDOM } from 'jsdom';
 import { getAdminDb } from "@/lib/firebase/admin";
 import { getMessaging } from "firebase-admin/messaging";
-import { db } from "@/lib/firebase/client"; // Keep client db for client-side actions
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -58,10 +57,11 @@ export async function submitFeedback(userId: string, feedback: string): Promise<
   }
 
   try {
-    const userDocRef = doc(db, "users", userId);
-    const userDocSnap = await getDoc(userDocRef);
+    const adminDb = getAdminDb();
+    const userDocRef = adminDb.collection("users").doc(userId);
+    const userDocSnap = await userDocRef.get();
 
-    if (!userDocSnap.exists()) {
+    if (!userDocSnap.exists) {
       return { success: false, message: "User profile not found." };
     }
 
@@ -108,13 +108,14 @@ export async function submitFeedback(userId: string, feedback: string): Promise<
 
 export async function suspendUser(userId: string, reason: string): Promise<{success: boolean, message: string}> {
   try {
-    const userDocRef = doc(db, 'users', userId);
+    const adminDb = getAdminDb();
+    const userDocRef = adminDb.collection('users').doc(userId);
     const suspensionData = {
         isSuspended: true,
         reason: reason,
-        suspendedAt: serverTimestamp(),
+        suspendedAt: FieldValue.serverTimestamp(),
     };
-    await updateDoc(userDocRef, { suspension: suspensionData });
+    await userDocRef.update({ suspension: suspensionData });
     return { success: true, message: "User successfully suspended." };
   } catch (error: any) {
     console.error("Error suspending user:", error);
@@ -124,13 +125,14 @@ export async function suspendUser(userId: string, reason: string): Promise<{succ
 
 export async function unsuspendUser(userId: string): Promise<{success: boolean, message: string}> {
   try {
-    const userDocRef = doc(db, 'users', userId);
+    const adminDb = getAdminDb();
+    const userDocRef = adminDb.collection('users').doc(userId);
     const suspensionData = {
         isSuspended: false,
-        reason: "",
+        reason: null,
         suspendedAt: null,
     };
-    await updateDoc(userDocRef, { suspension: suspensionData });
+    await userDocRef.update({ suspension: suspensionData });
     return { success: true, message: "User successfully unsuspended." };
   } catch (error: any) {
     console.error("Error unsuspending user:", error);
@@ -138,17 +140,21 @@ export async function unsuspendUser(userId: string): Promise<{success: boolean, 
   }
 }
 
-const CONTENT_DOC_REF = doc(db, "siteContent", "text");
+const CONTENT_DOC_REF_PATH = "siteContent/text";
 
 export async function addKnowledgeBaseUrl(url: string): Promise<{success: boolean, message: string}> {
     try {
-        await updateDoc(CONTENT_DOC_REF, {
-            knowledgeBaseUrls: arrayUnion(url)
+        const adminDb = getAdminDb();
+        const contentDocRef = adminDb.doc(CONTENT_DOC_REF_PATH);
+        await contentDocRef.update({
+            knowledgeBaseUrls: FieldValue.arrayUnion(url)
         });
         return { success: true, message: "URL added to knowledge base." };
     } catch (error: any) {
-         if (error.code === 'not-found') {
-            await setDoc(CONTENT_DOC_REF, { knowledgeBaseUrls: [url] });
+         if (error.code === 'not-found' || error.code === 5) {
+            const adminDb = getAdminDb();
+            const contentDocRef = adminDb.doc(CONTENT_DOC_REF_PATH);
+            await contentDocRef.set({ knowledgeBaseUrls: [url] });
             return { success: true, message: "URL added to knowledge base." };
         } else {
             console.error("Error adding URL:", error);
@@ -159,8 +165,10 @@ export async function addKnowledgeBaseUrl(url: string): Promise<{success: boolea
 
 export async function removeKnowledgeBaseUrl(url: string): Promise<{success: boolean, message: string}> {
     try {
-        await updateDoc(CONTENT_DOC_REF, {
-            knowledgeBaseUrls: arrayRemove(url)
+        const adminDb = getAdminDb();
+        const contentDocRef = adminDb.doc(CONTENT_DOC_REF_PATH);
+        await contentDocRef.update({
+            knowledgeBaseUrls: FieldValue.arrayRemove(url)
         });
         return { success: true, message: "URL removed from knowledge base." };
     } catch (error: any) {
@@ -211,7 +219,6 @@ interface SendNotificationInput {
 }
 
 export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string; }> {
-  // getAdminDb() now handles initialization.
   const adminFirestore = getAdminDb();
 
   try {

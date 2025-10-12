@@ -4,7 +4,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import serviceAccount from './serviceAccount.json';
 
 // This function ensures that the Firebase Admin SDK is initialized only once.
-const customInitApp = (): App => {
+const ensureAdminApp = (): App => {
     if (getApps().length > 0) {
         return getApp();
     }
@@ -33,7 +33,7 @@ const customInitApp = (): App => {
 
 // A new getter function that guarantees initialization before returning the db instance.
 export const getAdminDb = () => {
-    customInitApp();
+    ensureAdminApp();
     return getFirestore();
 }
 

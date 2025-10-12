@@ -1,12 +1,9 @@
 
 import { auth as adminAuth } from "firebase-admin";
 import { cookies } from "next/headers";
-import { customInitApp } from "./admin";
+import { getAdminDb } from "./admin";
 import { UserProfile } from "@/types";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "./client";
-
-customInitApp();
 
 export const getSession = async () => {
     try {
@@ -25,9 +22,10 @@ export const getSession = async () => {
 export const isFaculty = async (userId: string): Promise<boolean> => {
     if (!userId) return false;
     try {
-        const userDocRef = doc(db, 'users', userId);
-        const userDocSnap = await getDoc(userDocRef);
-        return userDocSnap.exists() && userDocSnap.data().role === 'faculty';
+        const adminDb = getAdminDb();
+        const userDocRef = adminDb.collection('users').doc(userId);
+        const userDocSnap = await userDocRef.get();
+        return userDocSnap.exists && userDocSnap.data()?.role === 'faculty';
     } catch (error) {
         console.error("Error checking faculty status:", error);
         return false;
@@ -36,10 +34,11 @@ export const isFaculty = async (userId: string): Promise<boolean> => {
 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
     if (!userId) return null;
-    const userDocRef = doc(db, 'users', userId);
-    const docSnap = await getDoc(userDocRef);
+    const adminDb = getAdminDb();
+    const userDocRef = adminDb.collection('users').doc(userId);
+    const docSnap = await userDocRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
         return docSnap.data() as UserProfile;
     }
     return null;
