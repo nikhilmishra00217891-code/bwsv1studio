@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getCourseById, enrollInCourse } from "@/lib/data";
+import { getCourseById, enrollInCourse } from "@/lib/data/courses";
 import { applyCoupon } from "@/lib/data/coupons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -216,3 +216,5 @@ export default function CheckoutPage() {
         </div>
     )
 }
+
+    

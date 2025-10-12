@@ -156,14 +156,7 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
     });
 };
 
-export async function isUserEnrolled(userId: string, courseId: string): Promise<boolean> {
-  const userDoc = await adminDb.collection('users').doc(userId).get();
-  if (!userDoc.exists) {
-    return false;
-  }
-  const enrolledCourses = userDoc.data()?.enrolledCourses || [];
-  return enrolledCourses.includes(courseId);
-}
+
 
 
 export async function getEnrolledCourseData(userId: string, courseId: string): Promise<{progress: number, completedLessons: string[]} | null> {
@@ -186,3 +179,6 @@ export const getCompletedMissionsForUser = async (userId: string): Promise<Set<s
     }
     return new Set();
 };
+
+
+    

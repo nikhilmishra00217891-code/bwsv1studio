@@ -22,7 +22,7 @@ import {
   deleteDoc,
   increment,
 } from "firebase/firestore";
-import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial } from "@/types";
+import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial, UserProfile } from "@/types";
 
 // --- Client-side callable functions ---
 
@@ -63,9 +63,6 @@ export const createCourse = async ({ title, category, grade, price }: { title: s
     thumbnail: "https://placehold.co/600x400.png?text=New+Course",
     isActive: false,
     subjects: [],
-    lessons: [],
-    youtubeLink: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    courseCompletionPercent: 0,
     tags: ["New"],
   };
   const docRef = await addDoc(coursesCol, newCourseData);
@@ -83,6 +80,18 @@ export const deleteCourse = async (courseId: string) => {
     const courseRef = doc(db, "courses", courseId);
     await deleteDoc(courseRef);
 }
+
+export const getCourseById = async (id: string): Promise<Course | null> => {
+    const courseDocRef = doc(db, 'courses', id);
+    const docSnap = await getDoc(courseDocRef);
+
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as Course;
+    } else {
+        return null;
+    }
+}
+
 
 export const getFeaturedCourses = async (): Promise<Course[]> => {
   const coursesCol = collection(db, "courses");
@@ -536,12 +545,4 @@ export const listenForLiveChatMessages = (
     return unsubscribe;
 };
 
-// This function needs to stay here as it uses admin SDK
-export const getCoursesByIds = async (ids: string[]): Promise<Course[]> => {
-    if (ids.length === 0) return [];
     
-    // This is a placeholder for where you'd use adminDb
-    // For now, we'll just show that it's separate
-    console.log("Fetching courses from server with IDs:", ids);
-    return [];
-}
