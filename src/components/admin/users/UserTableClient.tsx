@@ -37,9 +37,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { suspendUser, unsuspendUser } from '@/app/actions';
+import { suspendUser, unsuspendUser, sendNotification } from '@/app/actions';
 import { sendPatra, sendBulkPatra } from '@/lib/data/patra';
-import { sendNotification } from '@/ai/flows';
 import { generatePatra } from '@/ai/flows';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -883,3 +882,5 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
   );
 }
     
+
+

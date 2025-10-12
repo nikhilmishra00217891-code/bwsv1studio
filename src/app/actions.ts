@@ -2,10 +2,12 @@
 "use server";
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat, recommendContent } from "@/ai/flows";
-import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from "firebase/firestore";
 import type { UserProfile } from "@/types";
 import { JSDOM } from 'jsdom';
+import { customInitApp, firestore as adminFirestore } from "@/lib/firebase/admin";
+import { getMessaging } from "firebase-admin/messaging";
+import { db } from "@/lib/firebase/client"; // Keep client db for client-side actions
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -200,4 +202,85 @@ export async function getUrlMetadata(url: string): Promise<{ title: string; desc
         console.error(`Failed to fetch metadata for ${url}:`, error);
         return null;
     }
+}
+
+interface SendNotificationInput {
+  recipientIds: string[];
+  title: string;
+  body: string;
+}
+
+export async function sendNotification(input: SendNotificationInput): Promise<{ success: boolean; message: string; }> {
+  // Ensure Firebase Admin is initialized
+  customInitApp();
+
+  try {
+    if (input.recipientIds.length === 0) {
+      return { success: false, message: 'No recipients selected.' };
+    }
+
+    const userDocsPromises = input.recipientIds.map(id =>
+      adminFirestore.collection('users').doc(id).get()
+    );
+    const userDocs = await Promise.all(userDocsPromises);
+
+    const tokens = userDocs.reduce<string[]>((acc, userDoc) => {
+      if (userDoc.exists) {
+        const userProfile = userDoc.data() as UserProfile;
+        if (userProfile.pushTokens && userProfile.pushTokens.length > 0) {
+          acc.push(...userProfile.pushTokens);
+        }
+      }
+      return acc;
+    }, []);
+
+    const uniqueTokens = [...new Set(tokens)];
+
+    if (uniqueTokens.length === 0) {
+      return { success: false, message: 'No registered devices found for the selected users.' };
+    }
+
+    const message = {
+      notification: {
+        title: input.title,
+        body: input.body,
+      },
+      tokens: uniqueTokens,
+      webpush: {
+        fcmOptions: {
+          link: '/dashboard'
+        }
+      }
+    };
+
+    const response = await getMessaging().sendEachForMulticast(message);
+
+    const successCount = response.successCount;
+    const failureCount = response.failureCount;
+
+    if (failureCount > 0) {
+      console.error(`Failed to send ${failureCount} notifications.`);
+      response.responses.forEach(resp => {
+        if (!resp.success) {
+          console.error('FCM Error:', resp.error);
+        }
+      });
+      return {
+        success: successCount > 0,
+        message: `${successCount} sent, ${failureCount} failed. Check server logs for details.`
+      };
+    }
+
+    return { success: true, message: `${successCount} notifications sent successfully!` };
+
+  } catch (error: any) {
+    console.error('Critical Error in sendNotification:', error);
+    if (error.code === 'messaging/authentication-error' || error.code === 'app/invalid-credential') {
+      return { success: false, message: "Firebase Authentication Error: The service account key might be invalid or missing permissions. Please check your project settings." };
+    }
+    if (error.message.includes("Billing account not configured")) {
+        return { success: false, message: "Firebase Billing Error: Your project might need to be upgraded to the Blaze plan to use this feature."};
+    }
+    return { success: false, message: `An unknown server error occurred: ${error.message}` };
+  }
 }
