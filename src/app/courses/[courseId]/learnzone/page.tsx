@@ -59,3 +59,4 @@ export default function CourseLearnPage({ params }: { params: { courseId: string
         </Suspense>
     );
 }
+

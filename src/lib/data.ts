@@ -47,17 +47,6 @@ export const getCourses = async (isFaculty: boolean = false): Promise<Course[]> 
 };
 
 
-export const getCourseById = async (id: string): Promise<Course | null> => {
-    const courseDocRef = adminDb.collection('courses').doc(id);
-    const docSnap = await courseDocRef.get();
-
-    if (docSnap.exists) {
-        return serializeTimestamps({ id: docSnap.id, ...docSnap.data() }) as Course;
-    } else {
-        return null;
-    }
-}
-
 export const getCoursesByIds = async (ids: string[]): Promise<Course[]> => {
     if (ids.length === 0) return [];
     
@@ -180,5 +169,22 @@ export const getCompletedMissionsForUser = async (userId: string): Promise<Set<s
     return new Set();
 };
 
+export async function isUserEnrolled(userId: string, courseId: string): Promise<boolean> {
+  const userDoc = await adminDb.collection('users').doc(userId).get();
+  if (!userDoc.exists) {
+    return false;
+  }
+  const enrolledCourses = userDoc.data()?.enrolledCourses || [];
+  return enrolledCourses.includes(courseId);
+}
 
-    
+export const getCourseById = async (id: string): Promise<Course | null> => {
+    const courseDocRef = adminDb.collection('courses').doc(id);
+    const docSnap = await courseDocRef.get();
+
+    if (docSnap.exists) {
+        return serializeTimestamps({ id: docSnap.id, ...docSnap.data() }) as Course;
+    } else {
+        return null;
+    }
+}

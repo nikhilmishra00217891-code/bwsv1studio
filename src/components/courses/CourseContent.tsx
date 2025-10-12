@@ -11,7 +11,7 @@ import { Card, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
-import { listenForLiveChatMessages, toggleLessonCompletion } from "@/lib/data";
+import { listenForLiveChatMessages, toggleLessonCompletion } from "@/lib/data/courses";
 import { sendLiveChatMessage } from "@/lib/data/courses";
 import { useEffect, useRef, useState, FormEvent, useCallback, useMemo } from "react";
 import { useAuth } from "../auth/AuthProvider";
@@ -417,3 +417,4 @@ export function CourseContent({ course, selectedSubject, selectedChapter, select
 
     return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;
 }
+

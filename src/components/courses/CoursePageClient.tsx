@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import type { Course, Subject } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState, useMemo, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteCourse, updateCourse, isUserEnrolled } from "@/lib/data/courses";
+import { deleteCourse, updateCourse, isUserEnrolled, enrollInCourse } from "@/lib/data/courses";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
