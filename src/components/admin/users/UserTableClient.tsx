@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useTransition, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useTransition, useRef } from 'react';
 import type { UserProfile, PatraType, Course } from "@/types";
 import { Input } from "@/components/ui/input";
 import {
@@ -588,7 +588,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
 
   const holdTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setUsers(initialUsers);
   }, [initialUsers]);
 
@@ -696,7 +696,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
              <p className="text-muted-foreground">Search, view, and manage all users on the platform.</p>
         </div>
       
-        <AnalyticsDashboard users={users} />
+        <AnalyticsDashboard users={users} allCourses={allCourses} />
 
         <div className="flex flex-col sm:flex-row gap-4">
              <div className="relative max-w-sm">
