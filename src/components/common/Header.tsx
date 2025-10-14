@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox, UserCog, Wrench, TicketPercent, CreditCard } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox, UserCog, Wrench, TicketPercent, CreditCard, MessageSquareHeart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -78,7 +78,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect, isProtected, isDesktop = f
 };
 
 
-const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/warzone", "/dashboard", "/profile", "/patra"];
+const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/warzone", "/dashboard", "/profile", "/patra", "/reviews"];
 
 
 const avatarIcons: { [key: string]: React.ElementType } = {
@@ -110,6 +110,7 @@ export default function Header() {
       { href: "/courses", label: "Courses", icon: Compass, isProtected: false, flag: featureFlags.courses ?? true },
       { href: "/announcements", label: "Announcements", icon: Megaphone, isProtected: true, flag: true },
       { href: "/games", label: "BWS Games", icon: Gamepad2, isProtected: true, flag: featureFlags.games ?? true },
+      { href: "/reviews", label: "Reviews", icon: MessageSquareHeart, isProtected: true, flag: true },
       { href: "/about", label: "About", icon: Info, isProtected: false, flag: true },
       { href: "/contact", label: "Contact", icon: Phone, isProtected: false, flag: true },
   ];
@@ -265,6 +266,7 @@ export default function Header() {
                           <p className="px-2 text-sm font-semibold text-muted-foreground">Faculty Tools</p>
                           <NavLink href="/admin/users" label="User Management" icon={Users} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/payments" label="Payment Settings" icon={CreditCard} onSelect={handleLinkClick} isProtected />
+                          <NavLink href="/admin/reviews" label="Review Management" icon={MessageSquareHeart} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/ai-controls" label="AI Controls" icon={BrainCircuit} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/course-flow" label="Course Flow" icon={Workflow} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/live-sessions" label="Live Sessions" icon={Radio} onSelect={handleLinkClick} isProtected />

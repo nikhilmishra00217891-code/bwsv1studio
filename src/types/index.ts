@@ -134,11 +134,15 @@ export interface CourseAnnouncement {
 }
 
 export interface Testimonial {
-  id: "t1" | "t2" | "t3" | "t4" | "t5";
-  name: string;
-  role: string;
-  avatar: string;
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  userGrade: string;
   text: string;
+  rating: number;
+  isFeatured: boolean;
+  createdAt: Timestamp;
 }
 
 // EnrolledCourse now extends Course to include all its properties
