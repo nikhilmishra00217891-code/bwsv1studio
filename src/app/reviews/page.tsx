@@ -1,97 +1,65 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Star, LoaderCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { submitTestimonial, getUserTestimonial } from '@/lib/data/testimonials';
+import { Star, LoaderCircle, MessageSquareHeart } from 'lucide-react';
 import type { Testimonial } from '@/types';
 import { useRouter } from 'next/navigation';
+import { listenForAllTestimonials } from '@/lib/data/testimonials';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
 
-const StarRating = ({ rating, setRating }: { rating: number, setRating: (rating: number) => void }) => {
+const ReviewCard = ({ testimonial }: { testimonial: Testimonial }) => {
     return (
-        <div className="flex justify-center gap-2">
-            {[...Array(5)].map((_, index) => {
-                const starValue = index + 1;
-                return (
-                    <button key={starValue} onClick={() => setRating(starValue)}>
-                        <Star className={`w-10 h-10 transition-colors ${starValue <= rating ? 'text-accent fill-accent' : 'text-muted-foreground/50'}`} />
-                    </button>
-                );
-            })}
-        </div>
+        <Card className="h-full flex flex-col">
+            <CardContent className="flex flex-col items-center text-center p-6 flex-grow">
+                <Avatar className="w-16 h-16 mb-4 border-4 border-primary/20">
+                    <AvatarImage src={testimonial.userAvatar} alt={testimonial.userName}/>
+                    <AvatarFallback>{testimonial.userName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <p className="font-semibold text-lg">{testimonial.userName}</p>
+                <p className="text-sm text-muted-foreground">{testimonial.userGrade}</p>
+                <div className="flex text-accent my-3">
+                    {[...Array(5)].map((_, i) => <Star key={i} className={`w-5 h-5 ${i < testimonial.rating ? 'fill-current' : ''}`} />)}
+                </div>
+                <blockquote className="text-foreground/80 italic mt-2 flex-grow border-t pt-4">
+                    &ldquo;{testimonial.text}&rdquo;
+                </blockquote>
+                 <p className="text-xs text-muted-foreground mt-4">
+                    {testimonial.createdAt ? formatDistanceToNow(testimonial.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
+                </p>
+            </CardContent>
+        </Card>
     );
-}
+};
 
 export default function ReviewsPage() {
-    const { user, userProfile, loading } = useAuth();
-    const { toast } = useToast();
+    const { user, loading } = useAuth();
     const router = useRouter();
-
-    const [rating, setRating] = useState(0);
-    const [text, setText] = useState('');
-    const [existingTestimonial, setExistingTestimonial] = useState<Testimonial | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
     const [dataLoading, setDataLoading] = useState(true);
 
     useEffect(() => {
-        if (loading) return;
-        if (!user) {
-            router.push('/login?redirect=/reviews');
-            return;
-        }
-
-        getUserTestimonial(user.uid).then(testimonial => {
-            if (testimonial) {
-                setExistingTestimonial(testimonial);
-                setRating(testimonial.rating);
-                setText(testimonial.text);
-            }
+        setDataLoading(true);
+        const unsubscribe = listenForAllTestimonials((data) => {
+            setTestimonials(data);
             setDataLoading(false);
         });
+        return () => unsubscribe();
+    }, []);
 
-    }, [user, loading, router]);
-    
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!user || !userProfile) return;
-        if (rating === 0) {
-            toast({ variant: 'destructive', title: 'Please provide a rating.' });
-            return;
+    const handleWriteReview = () => {
+        if (!user) {
+            router.push('/login?redirect=/reviews/form');
+        } else {
+            router.push('/reviews/form');
         }
-        if (text.trim().length < 20) {
-            toast({ variant: 'destructive', title: 'Please write a bit more!', description: 'Your review must be at least 20 characters.' });
-            return;
-        }
-        
-        setIsSubmitting(true);
-        try {
-            const testimonialData: Partial<Testimonial> = {
-                userId: user.uid,
-                userName: userProfile.displayName || 'Anonymous Student',
-                userAvatar: userProfile.avatar,
-                userGrade: userProfile.grade || 'N/A',
-                rating,
-                text,
-            };
-            
-            await submitTestimonial(testimonialData, existingTestimonial?.id);
-            
-            toast({ title: 'Review Submitted!', description: 'Thank you for your valuable feedback.' });
-            router.push('/');
+    };
 
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Submission Failed', description: error.message });
-        } finally {
-            setIsSubmitting(false);
-        }
-    }
-    
     if (loading || dataLoading) {
         return (
             <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
@@ -101,37 +69,34 @@ export default function ReviewsPage() {
     }
 
     return (
-        <div className="bg-card/50 py-20 md:py-28 animate-fade-in">
-            <div className="container mx-auto max-w-2xl">
-                <Card className="shadow-xl border-primary/20">
-                    <form onSubmit={handleSubmit}>
-                        <CardHeader className="text-center">
-                            <CardTitle className="text-3xl font-headline">Share Your Experience</CardTitle>
-                            <CardDescription>Your feedback helps our Parivaar grow. Tell us what you think!</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-8">
-                            <div className="space-y-4">
-                                <Label className="text-center block font-semibold text-lg">Your Rating</Label>
-                                <StarRating rating={rating} setRating={setRating} />
-                            </div>
-                             <div className="space-y-4">
-                                <Label htmlFor="review-text" className="text-center block font-semibold text-lg">Your Review</Label>
-                                <Textarea 
-                                    id="review-text"
-                                    placeholder="Write about your experience, what you liked, or what could be improved..."
-                                    value={text}
-                                    onChange={(e) => setText(e.target.value)}
-                                    className="min-h-[180px] text-base"
-                                />
-                            </div>
+        <div className="bg-card/50 min-h-screen py-16 md:py-24">
+            <div className="container mx-auto px-6 max-w-5xl">
+                 <div className="text-center mb-12">
+                    <div className="inline-block bg-primary/10 p-4 rounded-full mb-4">
+                        <MessageSquareHeart className="w-12 h-12 text-primary" />
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Voices of Our Parivaar</h1>
+                    <p className="text-lg text-muted-foreground mt-4">
+                        Read what our students have to say about their journey with us.
+                    </p>
+                    <Button size="lg" className="mt-8" onClick={handleWriteReview}>
+                        Write Your Own Review
+                    </Button>
+                </div>
+
+                {testimonials.length > 0 ? (
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {testimonials.map(testimonial => (
+                            <ReviewCard key={testimonial.id} testimonial={testimonial} />
+                        ))}
+                    </div>
+                ) : (
+                    <Card>
+                        <CardContent className="p-12 text-center">
+                            <p className="text-muted-foreground">No reviews have been shared yet. Be the first!</p>
                         </CardContent>
-                        <CardFooter>
-                            <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-                                {isSubmitting ? <LoaderCircle className="animate-spin" /> : (existingTestimonial ? 'Update My Review' : 'Submit My Review')}
-                            </Button>
-                        </CardFooter>
-                    </form>
-                </Card>
+                    </Card>
+                )}
             </div>
         </div>
     );

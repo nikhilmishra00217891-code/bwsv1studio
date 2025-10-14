@@ -59,6 +59,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const isAdminPage = pathname.startsWith('/admin/');
     const isCoursePage = pathname.startsWith('/courses/') && pathname.length > '/courses/'.length;
     const isOnboarding = pathname === '/onboarding';
+    const isReviewsPage = pathname === '/reviews';
 
     if (userProfile?.suspension?.isSuspended) {
         return <SuspendedAccountFirewall reason={userProfile.suspension.reason} />;
@@ -76,7 +77,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     
     const showFloatingButtons = isHomepage || isAboutPage;
     const showCourseDrawer = user && (isHomepage || isAboutPage || isDashboard);
-    const showFooter = !isGamePage && !isAdminPage && !isCoursePage && !isOnboarding;
+    const showFooter = !isGamePage && !isAdminPage && !isCoursePage && !isOnboarding && !isReviewsPage;
 
     return (
         <>

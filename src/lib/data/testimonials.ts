@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { db } from "@/lib/firebase/client";
@@ -15,6 +16,7 @@ import {
   orderBy,
   onSnapshot,
   limit,
+  deleteDoc,
 } from "firebase/firestore";
 import type { Testimonial } from "@/types";
 
@@ -89,4 +91,12 @@ export const listenForAllTestimonials = (callback: (testimonials: Testimonial[])
 export const toggleTestimonialFeature = async (testimonialId: string, isFeatured: boolean): Promise<void> => {
     const testimonialRef = doc(db, 'testimonials', testimonialId);
     await updateDoc(testimonialRef, { isFeatured });
+};
+
+/**
+ * Deletes a testimonial from the database.
+ */
+export const deleteTestimonial = async (testimonialId: string): Promise<void> => {
+    const testimonialRef = doc(db, 'testimonials', testimonialId);
+    await deleteDoc(testimonialRef);
 };

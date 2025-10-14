@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,12 +8,15 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Star, LoaderCircle, MessageSquareHeart } from 'lucide-react';
+import { Star, LoaderCircle, MessageSquareHeart, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import type { Testimonial } from '@/types';
-import { listenForAllTestimonials, toggleTestimonialFeature } from '@/lib/data/testimonials';
+import { listenForAllTestimonials, toggleTestimonialFeature, deleteTestimonial } from '@/lib/data/testimonials';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 
 export default function ReviewManagementPage() {
@@ -34,6 +38,15 @@ export default function ReviewManagementPage() {
             toast({ title: `Review ${isFeatured ? 'featured' : 'unfeatured'}.` });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        }
+    };
+    
+    const handleDelete = async (testimonialId: string) => {
+        try {
+            await deleteTestimonial(testimonialId);
+            toast({ title: "Review Deleted" });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
         }
     };
     
@@ -70,7 +83,8 @@ export default function ReviewManagementPage() {
                                 <TableHead>Rating</TableHead>
                                 <TableHead>Review</TableHead>
                                 <TableHead>Submitted</TableHead>
-                                <TableHead className="text-right">Feature on Homepage</TableHead>
+                                <TableHead className="text-center">Feature</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -98,18 +112,37 @@ export default function ReviewManagementPage() {
                                         <p className="max-w-md truncate">{t.text}</p>
                                     </TableCell>
                                     <TableCell className="text-muted-foreground text-xs">
-                                        {formatDistanceToNow(t.createdAt.toDate(), { addSuffix: true })}
+                                        {t.createdAt ? formatDistanceToNow(t.createdAt.toDate(), { addSuffix: true }) : 'N/A'}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-center">
                                         <Switch
                                             checked={t.isFeatured}
                                             onCheckedChange={(checked) => handleFeatureToggle(t.id, checked)}
                                         />
                                     </TableCell>
+                                    <TableCell className="text-right">
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will permanently delete the review from "{t.userName}". This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDelete(t.id)} className={cn(buttonVariants({variant: "destructive"}))}>Delete Review</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         No reviews have been submitted yet.
                                     </TableCell>
                                 </TableRow>
