@@ -292,3 +292,22 @@ export async function sendNotification(input: SendNotificationInput): Promise<{ 
     return { success: false, message: `An unknown server error occurred: ${error.message}` };
   }
 }
+
+export async function saveRazorpayKeys(keys: { keyId: string; keySecret: string }): Promise<{success: boolean; message: string}> {
+  try {
+    const adminDb = getAdminDb();
+    const contentDocRef = adminDb.doc(CONTENT_DOC_REF_PATH);
+    
+    // We only update the keys. If the document doesn't exist, we let it fail,
+    // as it should have been created on app startup.
+    await updateDoc(contentDocRef, {
+        razorpayKeyId: keys.keyId,
+        razorpayKeySecret: keys.keySecret
+    });
+
+    return { success: true, message: 'Razorpay keys saved successfully.' };
+  } catch (error: any) {
+    console.error("Error saving Razorpay keys:", error);
+    return { success: false, message: error.message || "An unexpected error occurred while saving." };
+  }
+}
