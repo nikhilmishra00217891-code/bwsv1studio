@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -38,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { PhoneNumberInput } from "../common/PhoneNumberInput";
 import type { MobileNumber } from "@/types";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const FACULTY_SECRET_KEY = "veremor1@*2#\"3£'";
 
@@ -55,6 +55,7 @@ export function LoginForm() {
   const [phoneNumber, setPhoneNumber] = useState<MobileNumber>({ countryCode: '+91', number: '' });
   const [otp, setOtp] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -366,6 +367,8 @@ export function LoginForm() {
 
   const showEmail = isFacultyMode || loginMethods.email;
   const showPhone = isFacultyMode || loginMethods.phone;
+  
+  const isSignupDisabled = isSignUp && !agreedToTerms;
 
   return (
     <>
@@ -407,9 +410,23 @@ export function LoginForm() {
                     />
                 </div>
             )}
+            {isSignUp && (
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
+                    <label
+                        htmlFor="terms"
+                        className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                        I agree to the 
+                        <Link href="/terms" className="underline hover:text-primary" target="_blank"> Terms of Service </Link> 
+                        and 
+                        <Link href="/privacy" className="underline hover:text-primary" target="_blank"> Privacy Policy</Link>.
+                    </label>
+                </div>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || isSignupDisabled}>
                 {isLoading ? <LoaderCircle className="animate-spin" />
                     : confirmationResult ? 'Verify OTP'
                     : authMethod === 'phone' ? 'Send OTP'
@@ -424,7 +441,7 @@ export function LoginForm() {
                         <span className="text-xs text-muted-foreground">OR</span>
                         <Separator className="flex-1"/>
                     </div>
-                     <Button type="button" variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+                     <Button type="button" variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isSignupDisabled}>
                         <svg
                             version="1.1"
                             xmlns="http://www.w3.org/2000/svg"
