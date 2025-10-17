@@ -49,11 +49,11 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { updateUserProfile } from '@/lib/data';
+import { updateUserProfile } from '@/lib/data/user';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
-import type { Task, FocusStats } from '@/types';
+import type { Task, FocusStats, RoomMember } from '@/types';
 import { updateMemberStatusInRoom } from '@/lib/data/rooms';
 
 // --- IndexedDB Helper Functions ---
