@@ -14,6 +14,12 @@ const defaultFeatureFlags = {
     games: true,
 };
 
+const defaultLoginMethods = {
+    google: true,
+    phone: true,
+    email: true,
+};
+
 // The document can now contain strings or arrays of strings or booleans
 export const getTextContent = async (): Promise<Record<string, any>> => {
     try {
@@ -22,7 +28,8 @@ export const getTextContent = async (): Promise<Record<string, any>> => {
             const data = docSnap.data();
             // Ensure featureFlags exist and have all keys
             const featureFlags = { ...defaultFeatureFlags, ...(data.featureFlags || {}) };
-            return { ...data, featureFlags };
+            const loginMethods = { ...defaultLoginMethods, ...(data.loginMethods || {}) };
+            return { ...data, featureFlags, loginMethods };
         }
         // If the doc doesn't exist, create it with empty defaults
         const initialData = { 
@@ -30,12 +37,16 @@ export const getTextContent = async (): Promise<Record<string, any>> => {
             knowledgeBaseUrls: [], 
             isMaintenanceMode: false,
             featureFlags: defaultFeatureFlags,
+            loginMethods: defaultLoginMethods,
         };
         await setDoc(CONTENT_DOC_REF, initialData);
         return initialData;
     } catch (error) {
         console.error("Error fetching text content:", error);
-        return { featureFlags: defaultFeatureFlags };
+        return { 
+            featureFlags: defaultFeatureFlags,
+            loginMethods: defaultLoginMethods,
+         };
     }
 }
 

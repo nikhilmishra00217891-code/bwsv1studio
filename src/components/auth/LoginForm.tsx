@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -40,6 +41,7 @@ import type { MobileNumber } from "@/types";
 const FACULTY_SECRET_KEY = "veremor1@*2#\"3£'";
 
 export function LoginForm() {
+  const { textContent } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -64,6 +66,8 @@ export function LoginForm() {
 
   const themeChangeCount = useRef(0);
   const lastThemeChangeTime = useRef(Date.now());
+
+  const loginMethods = (textContent.loginMethods as Record<string, boolean>) || { google: true, phone: true, email: true };
   
   useEffect(() => {
     // This effect tracks theme changes to unlock faculty mode
@@ -333,6 +337,9 @@ export function LoginForm() {
       </div>
   )
 
+  const showEmail = isFacultyMode || loginMethods.email;
+  const showPhone = isFacultyMode || loginMethods.phone;
+
   return (
     <>
       <Card className={cn("w-full max-w-md transition-all duration-500", isFacultyMode && "border-primary shadow-lg shadow-primary/20")}>
@@ -354,10 +361,12 @@ export function LoginForm() {
             )}
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-2 rounded-md bg-muted p-1">
-                <Button type="button" variant={authMethod === 'email' ? 'secondary' : 'ghost'} onClick={() => { setAuthMethod('email'); setConfirmationResult(null); }}>Email</Button>
-                <Button type="button" variant={authMethod === 'phone' ? 'secondary' : 'ghost'} onClick={() => { setAuthMethod('phone'); setConfirmationResult(null); }}>Phone</Button>
-            </div>
+            {(showEmail || showPhone) && (
+                <div className="grid grid-cols-2 gap-2 rounded-md bg-muted p-1">
+                    {showEmail && <Button type="button" variant={authMethod === 'email' ? 'secondary' : 'ghost'} onClick={() => { setAuthMethod('email'); setConfirmationResult(null); }}>Email</Button>}
+                    {showPhone && <Button type="button" variant={authMethod === 'phone' ? 'secondary' : 'ghost'} onClick={() => { setAuthMethod('phone'); setConfirmationResult(null); }}>Phone</Button>}
+                </div>
+            )}
              
              {confirmationResult ? renderOtpForm() : authMethod === 'email' ? renderEmailForm() : renderPhoneForm()}
              
@@ -381,7 +390,7 @@ export function LoginForm() {
                     : 'Login'}
             </Button>
 
-             {!isFacultyMode && (
+             {!isFacultyMode && loginMethods.google && (
                 <>
                     <div className="flex w-full items-center gap-4">
                         <Separator className="flex-1"/>
