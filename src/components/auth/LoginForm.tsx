@@ -94,12 +94,17 @@ export function LoginForm() {
   }, [theme, toast]);
 
    useEffect(() => {
-    if (authMethod === 'phone' && recaptchaContainerRef.current && !recaptchaVerifierRef.current) {
+    // Initialize reCAPTCHA verifier once on component mount
+    if (!recaptchaVerifierRef.current && recaptchaContainerRef.current) {
       recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
         'size': 'invisible',
       });
+      // Render the reCAPTCHA explicitly
+      recaptchaVerifierRef.current.render().catch((error) => {
+        console.error("reCAPTCHA render error:", error);
+      });
     }
-  }, [authMethod]);
+  }, []);
 
   const handleFirebaseAuthError = (error: any) => {
     let title = "An error occurred";
@@ -430,6 +435,8 @@ export function LoginForm() {
                     </label>
                 </div>
             )}
+            {/* This div is now inside the form but visually hidden */}
+            <div ref={recaptchaContainerRef} className="absolute -z-10 -bottom-20"></div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full" disabled={isLoading || isSignupDisabled}>
@@ -505,7 +512,6 @@ export function LoginForm() {
           </CardFooter>
         </form>
       </Card>
-      <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
     </>
   );
 }
