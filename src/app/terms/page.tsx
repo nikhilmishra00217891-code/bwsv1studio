@@ -13,7 +13,7 @@ export default function TermsPage() {
                 <div className="max-w-3xl mx-auto">
                     <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary mb-8 text-center">Terms of Service</h1>
                     <div className="prose dark:prose-invert max-w-none bg-card p-8 rounded-lg shadow-lg">
-                       <p className="whitespace-pre-wrap">{termsContent}</p>
+                       <p className="whitespace-pre-wrap break-words">{termsContent}</p>
                     </div>
                 </div>
             </div>

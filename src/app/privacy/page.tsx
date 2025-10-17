@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
             <div className="max-w-3xl mx-auto">
                 <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary mb-8 text-center">Privacy Policy</h1>
                 <div className="prose dark:prose-invert max-w-none bg-card p-8 rounded-lg shadow-lg">
-                    <p className="whitespace-pre-wrap">{privacyContent}</p>
+                    <p className="whitespace-pre-wrap break-words">{privacyContent}</p>
                 </div>
             </div>
         </div>
