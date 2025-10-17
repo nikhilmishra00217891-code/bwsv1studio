@@ -18,7 +18,6 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { useEditMode } from "./EditModeProvider";
 import { ScrollArea } from "../ui/scroll-area";
-import SmartSearch from "../home/SmartSearch";
 import { listenForUserPatra } from "@/lib/data/patra";
 import Image from "next/image";
 
@@ -199,7 +198,7 @@ export default function Header() {
         </div>
         
         <div className="flex-1 justify-center hidden lg:flex">
-             {(featureFlags.aiMentor ?? true) && <SmartSearch />}
+             
         </div>
         
         <div className="flex items-center gap-2 md:gap-4 ml-auto">
@@ -254,7 +253,7 @@ export default function Header() {
 
                 <ScrollArea className="flex-grow">
                     <div className="p-6 lg:hidden">
-                      {(featureFlags.aiMentor ?? true) && <SmartSearch />}
+                      
                     </div>
                     <nav className="flex flex-col gap-4 text-lg p-6">
                       {[...navLinksData, { href: "/dashboard", label: "Dashboard", icon: UserCircle, isProtected: true, flag: true }].filter(l => l.flag).map((link) => (
