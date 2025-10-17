@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { getCourses, updateCourse } from '@/lib/data';
+import { getCourses } from '@/lib/data';
+import { updateCourse } from '@/lib/data/courses';
 import type { Course } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
