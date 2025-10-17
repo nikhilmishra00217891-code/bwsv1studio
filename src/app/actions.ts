@@ -49,7 +49,6 @@ export async function askAiMentor(
 
 export async function submitFeedback(userId: string, feedback: string): Promise<{success: boolean, message: string}> {
   if (!process.env.DISCORD_WEBHOOK_URL) {
-    console.error("Discord webhook URL is not configured.");
     return { success: false, message: "Feedback system is not configured."};
   }
 
@@ -96,13 +95,11 @@ export async function submitFeedback(userId: string, feedback: string): Promise<
     });
 
     if (!response.ok) {
-      console.error('Discord API Error:', response.status, await response.text());
       throw new Error("Could not send feedback to Discord.");
     }
     
     return { success: true, message: "Feedback submitted successfully!" };
   } catch (error) {
-    console.error("Error submitting feedback:", error);
     return { success: false, message: "An unexpected error occurred while submitting your feedback." };
   }
 }
@@ -119,7 +116,6 @@ export async function suspendUser(userId: string, reason: string): Promise<{succ
     await userDocRef.update({ suspension: suspensionData });
     return { success: true, message: "User successfully suspended." };
   } catch (error: any) {
-    console.error("Error suspending user:", error);
     return { success: false, message: error.message || "An unexpected error occurred." };
   }
 }
@@ -136,7 +132,6 @@ export async function unsuspendUser(userId: string): Promise<{success: boolean, 
     await userDocRef.update({ suspension: suspensionData });
     return { success: true, message: "User successfully unsuspended." };
   } catch (error: any) {
-    console.error("Error unsuspending user:", error);
     return { success: false, message: error.message || "An unexpected error occurred." };
   }
 }
@@ -158,7 +153,6 @@ export async function addKnowledgeBaseUrl(url: string): Promise<{success: boolea
             await contentDocRef.set({ knowledgeBaseUrls: [url] });
             return { success: true, message: "URL added to knowledge base." };
         } else {
-            console.error("Error adding URL:", error);
             return { success: false, message: error.message || "An unexpected error occurred." };
         }
     }
@@ -173,7 +167,6 @@ export async function removeKnowledgeBaseUrl(url: string): Promise<{success: boo
         });
         return { success: true, message: "URL removed from knowledge base." };
     } catch (error: any) {
-        console.error("Error removing URL:", error);
         return { success: false, message: error.message || "An unexpected error occurred." };
     }
 }
@@ -208,7 +201,6 @@ export async function getUrlMetadata(url: string): Promise<{ url: string; title:
 
         return { url, title, description, image, siteName };
     } catch (error) {
-        console.error(`Failed to fetch metadata for ${url}:`, error);
         return null;
     }
 }
@@ -269,7 +261,6 @@ export async function sendNotification(input: SendNotificationInput): Promise<{ 
     if (failureCount > 0) {
       response.responses.forEach(resp => {
         if (!resp.success) {
-          console.error('FCM Error:', resp.error);
         }
       });
       return {
@@ -281,11 +272,10 @@ export async function sendNotification(input: SendNotificationInput): Promise<{ 
     return { success: true, message: `${successCount} notifications sent successfully!` };
 
   } catch (error: any) {
-    console.error('Critical Error in sendNotification:', error);
     if (error.code === 'messaging/authentication-error' || error.code === 'app/invalid-credential') {
       return { success: false, message: "Firebase Authentication Error: The service account key might be invalid or missing permissions. Please check your project settings." };
     }
-    if (error.message.includes("Billing account not configured")) {
+    if (error.message && error.message.includes("Billing account not configured")) {
         return { success: false, message: "Firebase Billing Error: Your project might need to be upgraded to the Blaze plan to use this feature."};
     }
     return { success: false, message: `An unknown server error occurred: ${error.message}` };
@@ -306,7 +296,8 @@ export async function saveRazorpayKeys(keys: { keyId: string; keySecret: string 
 
     return { success: true, message: 'Razorpay keys saved successfully.' };
   } catch (error: any) {
-    console.error("Error saving Razorpay keys:", error);
     return { success: false, message: error.message || "An unexpected error occurred while saving." };
   }
 }
+
+    

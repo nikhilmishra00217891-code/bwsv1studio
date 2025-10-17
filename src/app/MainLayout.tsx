@@ -81,7 +81,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     return (
         <>
-            <PushNotificationManager />
+            {(featureFlags.pushNotifications ?? true) && <PushNotificationManager />}
             <div className="flex min-h-screen flex-col">
                 <main className="flex-1">{children}</main>
                 {showFooter && (
@@ -118,3 +118,5 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </>
     )
 }
+
+    

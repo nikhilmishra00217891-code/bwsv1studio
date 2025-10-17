@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Wrench, LoaderCircle, KeyRound, Bot, Target, Swords, Users, Gamepad2, Compass } from "lucide-react";
+import { Wrench, LoaderCircle, KeyRound, Bot, Target, Swords, Users, Gamepad2, Compass, Bell } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { saveTextContent } from '@/lib/data/content';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ const featureFlagsConfig = [
     { id: 'warzone', label: 'Warzone (Quizzes)', icon: Swords },
     { id: 'parivartan', label: 'Parivartan Chamber', icon: Users },
     { id: 'games', label: 'BWS Games', icon: Gamepad2 },
+    { id: 'pushNotifications', label: 'Push Notifications', icon: Bell },
 ];
 
 export default function MaintenancePage() {
@@ -147,3 +148,5 @@ export default function MaintenancePage() {
         </div>
     );
 }
+
+    

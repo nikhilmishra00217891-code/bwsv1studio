@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox, UserCog, Wrench, TicketPercent, CreditCard, MessageSquareHeart, Image as ImageIcon, KeyRound, FileText, Blocks } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox, UserCog, Wrench, TicketPercent, CreditCard, MessageSquareHeart, Image as ImageIcon, KeyRound, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -311,3 +311,5 @@ export default function Header() {
     </header>
   );
 }
+
+    
