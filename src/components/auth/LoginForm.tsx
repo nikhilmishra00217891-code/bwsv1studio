@@ -94,11 +94,10 @@ export function LoginForm() {
   }, [theme, toast]);
 
    useEffect(() => {
-    if (recaptchaContainerRef.current && !recaptchaVerifierRef.current) {
-      const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+    if (authMethod === 'phone' && recaptchaContainerRef.current && !recaptchaVerifierRef.current) {
+      recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
         'size': 'invisible',
       });
-      recaptchaVerifierRef.current = verifier;
     }
   }, [authMethod]);
 
@@ -133,6 +132,10 @@ export function LoginForm() {
              title = 'Invalid Credentials';
              description = 'The email or password you entered is incorrect.';
              break;
+        case 'auth/unauthorized-domain':
+            title = 'Unauthorized Domain';
+            description = 'This domain is not authorized for Google Sign-In. Please contact support.';
+            break;
         default:
             description = error.message;
             break;
@@ -232,7 +235,10 @@ export function LoginForm() {
     }
 
   const handlePhoneSignIn = async () => {
-    if (!recaptchaVerifierRef.current) return;
+    if (!recaptchaVerifierRef.current) {
+        toast({ variant: 'destructive', title: "reCAPTCHA not initialized. Please refresh."});
+        return;
+    };
     
     setIsLoading(true);
     try {
