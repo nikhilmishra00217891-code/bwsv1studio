@@ -41,6 +41,8 @@ import {
   X,
   IndianRupee,
   LogIn,
+  ArrowRight,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -119,7 +121,6 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             description: `Your changes have been saved.`
         });
     } catch(error) {
-        console.error("Update error:", error);
         toast({
             variant: "destructive",
             title: "Update Failed",
@@ -268,24 +269,12 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
                   <p className="text-muted-foreground">Your Mentors</p>
               </div>
               <div className="flex gap-2">
-                  <DialogTrigger asChild>
-                      <Button variant="outline">Know Your Mentors</Button>
-                  </DialogTrigger>
+                  <Button asChild variant="outline">
+                      <Link href={`/courses/${course.id}/mentors`}>Know Your Mentors</Link>
+                  </Button>
                   <Button variant="outline" size="icon"><Heart /></Button>
               </div>
           </div>
-          <DialogContent>
-              <DialogHeader className="items-center text-center">
-                   <div className="relative w-24 h-24">
-                       <EditableImage contentId={`course_mentor_avatar_${course.id}`} src={textContent[`course_mentor_avatar_${course.id}`] || "https://i.postimg.cc/d1W1VcYF/aman-kumar.png"} alt="Mentor Avatar" fill className="rounded-full border-4 border-primary" data-ai-hint="mentor portrait" />
-                   </div>
-                  <DialogTitle className="text-2xl font-headline"><EditableText onSave={(contentId, value) => handleSaveCourse({ mentorName: value })} contentId={`course_mentor_${course.id}`} defaultValue={course.mentorName} /> & Team</DialogTitle>
-                  <DialogDescription>Your guides, friends, and mentors on this journey.</DialogDescription>
-              </DialogHeader>
-              <div className="py-4 text-center text-muted-foreground">
-                   <EditableText onSave={handleSaveText} multiline contentId={`course_mentor_bio_${course.id}`} defaultValue={textContent[`course_mentor_bio_${course.id}`] || "With over a decade of experience in making complex topics feel like a story, our mentors are here to ensure you not only crack your exams but also fall in love with the subject. We believe in the 'Parivaar' philosophy - teaching with the care of an elder brother."} />
-              </div>
-          </DialogContent>
       </Dialog>
   )
   

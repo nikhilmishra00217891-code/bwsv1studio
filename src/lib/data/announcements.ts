@@ -66,7 +66,6 @@ export const listenForAnnouncements = (callback: (announcements: Announcement[])
         const announcements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement));
         callback(announcements);
     }, (error) => {
-        console.error("Error listening for announcements:", error);
     });
 
     return unsubscribe;
@@ -133,7 +132,6 @@ export const listenForCourseAnnouncements = (courseId: string, callback: (announ
         const announcements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CourseAnnouncement));
         callback(announcements);
     }, (error) => {
-        console.error(`Error listening for announcements in course ${courseId}:`, error);
     });
 
     return unsubscribe;

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useRef, useEffect, type FormEvent } from "react";
@@ -58,8 +59,7 @@ export default function AiMentorWidget() {
       });
 
     } catch (error) {
-      console.error("AI Mentor Error:", error);
-      const errorMessage = "Sorry, an unexpected error occurred. Please check the browser console for details and try again later.";
+      const errorMessage = "Sorry, an unexpected error occurred. Please try again later.";
        setMessages((prevMessages) => {
          return [...prevMessages, { role: "assistant", content: errorMessage }];
       });
@@ -103,7 +103,7 @@ export default function AiMentorWidget() {
           </div>
             {message.role === "user" && (
             <Avatar className="w-8 h-8">
-                <AvatarImage src="https://placehold.co/100x100.png" />
+                <AvatarImage src="https://i.postimg.cc/6p7xNnB0/placeholder.png" />
               <AvatarFallback>You</AvatarFallback>
             </Avatar>
           )}

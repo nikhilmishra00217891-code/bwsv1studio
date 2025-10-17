@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -52,7 +53,7 @@ const EditThumbnailDialog = ({ course, onUpdate }: { course: Course; onUpdate: (
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="relative aspect-video w-full rounded-md border bg-muted overflow-hidden">
-                        <Image src={newUrl || 'https://placehold.co/600x400.png'} alt="Thumbnail preview" fill className="object-cover" />
+                        <Image src={newUrl || 'https://i.postimg.cc/6p7xNnB0/placeholder.png'} alt="Thumbnail preview" fill className="object-cover" />
                     </div>
                     <div>
                         <Label htmlFor="thumbnail-url">Image URL</Label>

@@ -45,7 +45,6 @@ export const listenForCourses = (isFaculty: boolean, callback: (courses: Course[
         const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Course);
         callback(courses);
     }, (error) => {
-        console.error("Error listening for courses:", error);
         callback([]);
     });
 
@@ -61,7 +60,7 @@ export const createCourse = async ({ title, category, grade, price }: { title: s
     price: price || 0,
     description: "A comprehensive introduction to the fundamental principles of this new course.",
     mentorName: "Prof. S. Verma",
-    thumbnail: "https://placehold.co/600x400.png?text=New+Course",
+    thumbnail: "https://i.postimg.cc/6p7xNnB0/placeholder.png",
     isActive: false,
     subjects: [],
     tags: ["New"],
@@ -487,7 +486,6 @@ export const updateLessonStatus = async (
         return { success: true, message: "Lesson status updated successfully." };
 
     } catch (error: any) {
-        console.error("Error updating lesson status: ", error);
         return { success: false, message: error.message || "An unknown error occurred." };
     }
 }
@@ -523,7 +521,6 @@ export const endLiveSession = async (
 
         return { success: true, message: "Session ended successfully." };
     } catch (error: any) {
-        console.error("Error ending session: ", error);
         return { success: false, message: error.message || "An unknown error occurred." };
     }
 };

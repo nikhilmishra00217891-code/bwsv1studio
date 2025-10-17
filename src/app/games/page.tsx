@@ -16,7 +16,7 @@ const games = [
         description: "Form words from falling letters. A fun test of vocabulary and speed.",
         href: "/games/word-fall",
         icon: Gamepad2,
-        thumbnail: "https://placehold.co/600x400.png"
+        thumbnail: "https://i.postimg.cc/tJ01zYvj/wordfall-game.jpg"
     }
 ];
 

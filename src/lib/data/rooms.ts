@@ -100,7 +100,6 @@ export const joinRoom = async (roomId: string, user: RoomMember): Promise<Room |
         });
         return updatedRoom;
     } catch(error) {
-        console.error("Error joining room:", error);
         throw error;
     }
 }
@@ -171,7 +170,6 @@ export const removeMemberFromRoom = async (roomId: string, memberIdToRemove: str
             }
         });
     } catch (error) {
-        console.error("Error removing member from room: ", error);
         throw error; // Re-throw so the client knows something went wrong
     }
 };
@@ -220,7 +218,6 @@ export const updateMemberStatusInRoom = async (roomId: string, memberId: string,
         }
       });
     } catch (error) {
-        console.error("Failed to update member status:", error);
     }
 }
 
@@ -245,7 +242,6 @@ export const submitAnswer = async (roomId: string, userId: string, questionIndex
             transaction.update(roomRef, { members: updatedMembers });
         });
     } catch(e) {
-        console.error("Error submitting answer: ", e);
     }
 }
 
@@ -281,7 +277,6 @@ export const finishQuizForMember = async (roomId: string, userId: string, score:
             });
         });
     } catch (error) {
-        console.error("Failed to finish quiz for member:", error);
         throw error;
     }
 };
@@ -332,7 +327,6 @@ export const startQuiz = async (roomId: string): Promise<void> => {
     } catch (error) {
         // If an error occurs, set the status back to 'waiting'
         await updateDoc(roomRef, { status: 'waiting' });
-        console.error("Error starting quiz:", error);
         throw error; // Re-throw to be handled by the client
     }
 }
@@ -375,7 +369,6 @@ export const listenForRoomUpdates = (
       callback(null); 
     }
   }, (error) => {
-    console.error("Error listening for room updates:", error);
     callback(null);
   });
   return unsubscribe;
@@ -408,7 +401,6 @@ export const listenForChatMessages = (roomId: string, callback: (messages: ChatM
         const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
         callback(messages);
     }, (error) => {
-        console.error("Error listening for chat messages:", error);
     });
 
     return unsubscribe;

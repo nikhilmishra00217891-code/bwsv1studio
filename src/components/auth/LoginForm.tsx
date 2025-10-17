@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -100,6 +101,49 @@ export function LoginForm() {
     }
   }, [authMethod]);
 
+  const handleFirebaseAuthError = (error: any) => {
+    let title = "An error occurred";
+    let description = "Please try again later.";
+
+    switch (error.code) {
+        case 'auth/user-not-found':
+            title = 'User Not Found';
+            description = 'No account exists with this email. Please sign up first.';
+            setIsSignUp(true);
+            break;
+        case 'auth/wrong-password':
+            title = 'Incorrect Password';
+            description = 'The password you entered is incorrect. Please try again.';
+            break;
+        case 'auth/email-already-in-use':
+            title = 'Email Already in Use';
+            description = 'An account already exists with this email. Please log in.';
+            setIsSignUp(false);
+            break;
+        case 'auth/invalid-email':
+            title = 'Invalid Email';
+            description = 'Please enter a valid email address.';
+            break;
+        case 'auth/weak-password':
+            title = 'Weak Password';
+            description = 'Your password should be at least 6 characters long.';
+            break;
+        case 'auth/invalid-credential':
+             title = 'Invalid Credentials';
+             description = 'The email or password you entered is incorrect.';
+             break;
+        default:
+            description = error.message;
+            break;
+    }
+
+    toast({
+        variant: "destructive",
+        title: title,
+        description: description,
+    });
+  }
+
 
   const handleStudentSignup = async () => {
     setIsLoading(true);
@@ -116,11 +160,7 @@ export function LoginForm() {
         toast({ title: "Account created!", description: "Welcome to the Parivaar!" });
         router.push("/onboarding");
     } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Sign Up Failed",
-            description: error.message,
-        });
+        handleFirebaseAuthError(error);
     } finally {
         setIsLoading(false);
     }
@@ -146,11 +186,7 @@ export function LoginForm() {
         toast({ title: "Faculty Account created!", description: "Welcome to the team!" });
         router.push(redirectUrl);
     } catch(error: any) {
-        toast({
-            variant: "destructive",
-            title: "Faculty Sign Up Failed",
-            description: error.message,
-        });
+        handleFirebaseAuthError(error);
     } finally {
         setIsLoading(false);
     }
@@ -163,11 +199,7 @@ export function LoginForm() {
         toast({ title: "Welcome back!" });
         router.push(redirectUrl);
       } catch (error: any) {
-         toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: error.message,
-        });
+         handleFirebaseAuthError(error);
       } finally {
         setIsLoading(false);
       }
@@ -192,11 +224,7 @@ export function LoginForm() {
             }
 
         } catch (error: any) {
-            toast({
-                variant: "destructive",
-                title: "Google Sign-In Failed",
-                description: error.message,
-            });
+            handleFirebaseAuthError(error);
         } finally {
             setIsLoading(false);
         }
@@ -212,8 +240,7 @@ export function LoginForm() {
         setConfirmationResult(confirmation);
         toast({ title: 'OTP Sent!', description: `We've sent a code to ${fullPhoneNumber}.` });
     } catch (error: any) {
-        console.error(error);
-        toast({ variant: 'destructive', title: 'Failed to Send OTP', description: error.message });
+        handleFirebaseAuthError(error);
     } finally {
         setIsLoading(false);
     }
@@ -248,7 +275,7 @@ export function LoginForm() {
          router.push(redirectUrl);
       }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Invalid OTP', description: error.message });
+      handleFirebaseAuthError(error);
     } finally {
       setIsLoading(false);
     }
