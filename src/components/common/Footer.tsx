@@ -54,8 +54,8 @@ export default function Footer() {
             <div>
               <h3 className="font-semibold text-foreground">Legal</h3>
               <nav className="mt-4 flex flex-col space-y-2">
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Terms of Service</Link>
-                <Link href="#" className="text-foreground/70 hover:text-primary transition-colors">Privacy Policy</Link>
+                <Link href="/terms" className="text-foreground/70 hover:text-primary transition-colors">Terms of Service</Link>
+                <Link href="/privacy" className="text-foreground/70 hover:text-primary transition-colors">Privacy Policy</Link>
               </nav>
             </div>
             <div>

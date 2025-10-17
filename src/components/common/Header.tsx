@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox, UserCog, Wrench, TicketPercent, CreditCard, MessageSquareHeart, Image as ImageIcon, KeyRound } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox, UserCog, Wrench, TicketPercent, CreditCard, MessageSquareHeart, Image as ImageIcon, KeyRound, FileText, Blocks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -267,7 +267,9 @@ export default function Header() {
                           <NavLink href="/admin/payments" label="Payment Settings" icon={CreditCard} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/reviews" label="Review Management" icon={MessageSquareHeart} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/ai-controls" label="AI Controls" icon={BrainCircuit} onSelect={handleLinkClick} isProtected />
-                           <NavLink href="/admin/login-controls" label="Login Controls" icon={KeyRound} onSelect={handleLinkClick} isProtected />
+                          <NavLink href="/admin/login-controls" label="Login Controls" icon={KeyRound} onSelect={handleLinkClick} isProtected />
+                          <NavLink href="/admin/contact-controls" label="Contact Controls" icon={Phone} onSelect={handleLinkClick} isProtected />
+                          <NavLink href="/admin/legal" label="Legal Pages" icon={FileText} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/thumbnails" label="Thumbnails" icon={ImageIcon} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/course-flow" label="Course Flow" icon={Workflow} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/live-sessions" label="Live Sessions" icon={Radio} onSelect={handleLinkClick} isProtected />

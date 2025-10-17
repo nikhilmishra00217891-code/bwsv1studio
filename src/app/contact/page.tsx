@@ -1,44 +1,42 @@
 
+"use client";
+
 import { Mail, MessageSquare, Instagram } from "lucide-react";
-import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-export const metadata: Metadata = {
-    title: "Contact Us - BiharWaleSirji",
-    description: "We're here to help. Reach out to us via WhatsApp, Email, or Instagram.",
-}
-
-const contactOptions = [
-    {
-        icon: MessageSquare,
-        title: "WhatsApp",
-        description: "Get instant support from our team. Best for quick questions.",
-        cta: "Chat Now",
-        link: "#", // Placeholder
-        handle: "+91 12345 67890"
-    },
-    {
-        icon: Mail,
-        title: "Email",
-        description: "For detailed inquiries or support requests, send us an email.",
-        cta: "Send Email",
-        link: "mailto:support@biharwalesirji.com",
-        handle: "support@biharwalesirji.com"
-    },
-    {
-        icon: Instagram,
-        title: "Instagram",
-        description: "Follow us for updates, tips, and behind-the-scenes content.",
-        cta: "Follow Us",
-        link: "https://instagram.com/biharwalesirji?igsh=MTNpOGc4eG00aGZ3",
-        handle: "@biharwalesirji"
-    }
-]
-
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function ContactPage() {
+    const { textContent } = useAuth();
+    
+    const contactOptions = [
+        {
+            icon: MessageSquare,
+            title: "WhatsApp",
+            description: "Get instant support from our team. Best for quick questions.",
+            cta: "Chat Now",
+            link: `https://wa.me/${(textContent.contact_whatsapp as string || '').replace(/\D/g, '')}`,
+            handle: (textContent.contact_whatsapp as string) || "+91 12345 67890"
+        },
+        {
+            icon: Mail,
+            title: "Email",
+            description: "For detailed inquiries or support requests, send us an email.",
+            cta: "Send Email",
+            link: `mailto:${textContent.contact_email || 'support@biharwalesirji.com'}`,
+            handle: (textContent.contact_email as string) || "support@biharwalesirji.com"
+        },
+        {
+            icon: Instagram,
+            title: "Instagram",
+            description: "Follow us for updates, tips, and behind-the-scenes content.",
+            cta: "Follow Us",
+            link: `https://instagram.com/${(textContent.contact_instagram as string || 'biharwalesirji').replace('@', '')}`,
+            handle: (textContent.contact_instagram as string) || "@biharwalesirji"
+        }
+    ]
+
   return (
     <div className="bg-card/50 py-20 md:py-28 animate-fade-in">
       <div className="container mx-auto px-6">
