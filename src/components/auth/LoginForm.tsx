@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -37,6 +36,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { PhoneNumberInput } from "../common/PhoneNumberInput";
 import type { MobileNumber } from "@/types";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const FACULTY_SECRET_KEY = "veremor1@*2#\"3£'";
 
