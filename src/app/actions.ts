@@ -267,7 +267,6 @@ export async function sendNotification(input: SendNotificationInput): Promise<{ 
     const failureCount = response.failureCount;
 
     if (failureCount > 0) {
-      console.error(`Failed to send ${failureCount} notifications.`);
       response.responses.forEach(resp => {
         if (!resp.success) {
           console.error('FCM Error:', resp.error);
