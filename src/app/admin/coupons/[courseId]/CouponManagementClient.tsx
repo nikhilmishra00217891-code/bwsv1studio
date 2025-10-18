@@ -38,7 +38,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PlusCircle, LoaderCircle, ArrowLeft, TicketPercent, Trash2 } from 'lucide-react';
-import { createCoupon, deleteCoupon, updateCoupon, listenForCoupons } from '@/lib/data/coupons';
+import { createCoupon, deleteCoupon, updateCoupon, listenForCoupons, getCouponsForCourse } from '@/lib/data/coupons';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -124,15 +124,22 @@ const CreateCouponDialog = ({ courseId, onCouponCreated }: { courseId: string, o
 };
 
 
-export default function CouponManagementClient({ initialCourse, initialCoupons }: { initialCourse: Course, initialCoupons: Coupon[] }) {
+export default function CouponManagementClient({ initialCourse }: { initialCourse: Course }) {
     const { toast } = useToast();
-    const [coupons, setCoupons] = useState<Coupon[]>(initialCoupons);
+    const [coupons, setCoupons] = useState<Coupon[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = listenForCoupons(initialCourse.id, (updatedCoupons) => {
-            setCoupons(updatedCoupons);
+        setIsLoading(true);
+        getCouponsForCourse(initialCourse.id).then(initialCoupons => {
+            setCoupons(initialCoupons);
+            setIsLoading(false);
+
+            const unsubscribe = listenForCoupons(initialCourse.id, (updatedCoupons) => {
+                setCoupons(updatedCoupons);
+            });
+            return () => unsubscribe();
         });
-        return () => unsubscribe();
     }, [initialCourse.id]);
 
     const handleToggleActive = async (coupon: Coupon, isActive: boolean) => {
@@ -199,61 +206,67 @@ export default function CouponManagementClient({ initialCourse, initialCoupons }
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Discount</TableHead>
-                                <TableHead>Created</TableHead>
-                                <TableHead>Times Used</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {coupons.length > 0 ? coupons.map(coupon => (
-                                <TableRow key={coupon.id} className={cn(!coupon.isActive && 'bg-muted/50')}>
-                                    <TableCell className="font-mono font-semibold">{coupon.code}</TableCell>
-                                    <TableCell>{coupon.discountPercentage}%</TableCell>
-                                    <TableCell>{format(getCouponDate(coupon), 'PPP')}</TableCell>
-                                    <TableCell>{coupon.timesUsed}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={coupon.isActive ? 'default' : 'secondary'} className={cn(coupon.isActive && 'bg-green-600')}>{coupon.isActive ? 'Active' : 'Inactive'}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right space-x-2">
-                                        <Switch 
-                                            checked={coupon.isActive}
-                                            onCheckedChange={(checked) => handleToggleActive(coupon, checked)}
-                                            aria-label="Toggle coupon status"
-                                        />
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="w-4 h-4 text-destructive"/></Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This will permanently delete the coupon "{coupon.code}". This action cannot be undone.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(coupon)}>Delete</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-48">
+                            <LoaderCircle className="animate-spin w-8 h-8 text-primary" />
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
-                                        No coupons have been created for this course yet.
-                                    </TableCell>
+                                    <TableHead>Code</TableHead>
+                                    <TableHead>Discount</TableHead>
+                                    <TableHead>Created</TableHead>
+                                    <TableHead>Times Used</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {coupons.length > 0 ? coupons.map(coupon => (
+                                    <TableRow key={coupon.id} className={cn(!coupon.isActive && 'bg-muted/50')}>
+                                        <TableCell className="font-mono font-semibold">{coupon.code}</TableCell>
+                                        <TableCell>{coupon.discountPercentage}%</TableCell>
+                                        <TableCell>{format(getCouponDate(coupon), 'PPP')}</TableCell>
+                                        <TableCell>{coupon.timesUsed}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={coupon.isActive ? 'default' : 'secondary'} className={cn(coupon.isActive && 'bg-green-600')}>{coupon.isActive ? 'Active' : 'Inactive'}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right space-x-2">
+                                            <Switch 
+                                                checked={coupon.isActive}
+                                                onCheckedChange={(checked) => handleToggleActive(coupon, checked)}
+                                                aria-label="Toggle coupon status"
+                                            />
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This will permanently delete the coupon "{coupon.code}". This action cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDelete(coupon)}>Delete</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </TableCell>
+                                    </TableRow>
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center">
+                                            No coupons have been created for this course yet.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
         </div>

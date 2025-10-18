@@ -13,8 +13,6 @@ export default async function ManageCourseCouponsPage({ params }: { params: { co
         notFound();
     }
 
-    // We fetch initial coupons here, and the data function now serializes the timestamps.
-    const initialCoupons: Coupon[] = await getCouponsForCourse(params.courseId);
-
-    return <CouponManagementClient initialCourse={course} initialCoupons={initialCoupons} />;
+    // The client component will now fetch the initial coupons.
+    return <CouponManagementClient initialCourse={course} />;
 }
