@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useTheme } from "next-themes";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { messaging } from "@/lib/firebase";
 import { getToken } from "firebase/messaging";
 import { savePushToken, removePushToken } from "@/lib/data/user";
