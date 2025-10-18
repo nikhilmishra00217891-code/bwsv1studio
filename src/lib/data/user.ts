@@ -70,7 +70,31 @@ export const removePushToken = async (userId: string, token: string): Promise<vo
     });
 };
 
+// Firestore does not allow `undefined` values. This function recursively
+// cleans the profile data, converting `undefined` to `null`.
+const cleanDataForFirestore = (data: any): any => {
+    if (data === null || typeof data !== 'object') {
+        return data;
+    }
+    
+    if (Array.isArray(data)) {
+        return data.map(cleanDataForFirestore);
+    }
+    
+    const cleaned: { [key: string]: any } = {};
+    for (const key of Object.keys(data)) {
+        const value = data[key];
+        if (value !== undefined) {
+            cleaned[key] = cleanDataForFirestore(value);
+        } else {
+            cleaned[key] = null; // Convert undefined to null
+        }
+    }
+    return cleaned;
+}
+
 export const updateUserProfile = async (userId: string, profileData: Partial<UserProfile>) => {
     const userDocRef = doc(db, "users", userId);
-    await updateDoc(userDocRef, profileData);
+    const cleanedData = cleanDataForFirestore(profileData);
+    await updateDoc(userDocRef, cleanedData);
 }
