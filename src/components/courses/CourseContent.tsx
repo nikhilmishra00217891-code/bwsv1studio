@@ -412,13 +412,13 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
     const pinnedMessages = messages.filter(m => m.isPinned).sort((a,b) => (b.pinnedAt?.toMillis() || 0) - (a.pinnedAt?.toMillis() || 0));
 
     return (
-        <Card className="mt-8 h-full flex flex-col">
-            <CardContent className="p-0 flex flex-col h-full min-h-0">
+        <Card className="flex flex-col h-full">
+            <CardContent className="p-0 flex flex-col flex-1 min-h-0">
                 <div className="flex items-center gap-2 border-b p-4 shrink-0">
                     <Sparkles className="w-5 h-5 text-primary" />
                     <h3 className="font-bold text-lg">Discussion</h3>
                 </div>
-                 <div className="flex-grow flex flex-col min-h-0 relative">
+                 <div className="flex-1 flex flex-col min-h-0">
                     {pinnedMessages.length > 0 && (
                         <div className="p-2 border-b bg-muted/50 shrink-0">
                             {pinnedMessages.map(msg => renderMessage(msg))}
@@ -591,6 +591,27 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    const [leftPanelHeight, setLeftPanelHeight] = useState<number | undefined>(undefined);
+    const leftPanelRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const observer = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                setLeftPanelHeight(entry.contentRect.height);
+            }
+        });
+
+        if (leftPanelRef.current) {
+            observer.observe(leftPanelRef.current);
+        }
+
+        return () => {
+            if (leftPanelRef.current) {
+                observer.unobserve(leftPanelRef.current);
+            }
+        };
+    }, []);
+
     const isCompleted = useMemo(() => 
         userProfile?.progress?.[course.id]?.completedLessons?.includes(lesson.id) || false,
     [userProfile, course.id, lesson.id]);
@@ -666,7 +687,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
 
     return (
         <div className="grid lg:grid-cols-3 gap-8 p-4 md:p-8 max-w-full">
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2" ref={leftPanelRef}>
                 <div className="aspect-video bg-card rounded-lg overflow-hidden border shadow-lg relative">
                     {videoId ? (
                         <iframe
@@ -767,7 +788,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-1 min-h-0">
+            <div className="lg:col-span-1" style={{ height: leftPanelHeight ? `${leftPanelHeight}px` : 'auto' }}>
                 <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} isFaculty={isFaculty} />
             </div>
         </div>
