@@ -25,7 +25,7 @@ import { Label } from "../ui/label";
 import { getUrlMetadata } from "@/app/actions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Dialog, DialogContent as DialogPrimitiveContent, DialogHeader, DialogTitle as DialogPrimitiveTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter as DialogPrimitiveFooter } from "../ui/dialog";
+import { Dialog, DialogContent as DialogPrimitiveContent, DialogHeader as DialogPrimitiveHeader, DialogTitle as DialogPrimitiveTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter as DialogPrimitiveFooter } from "../ui/dialog";
 import { motion } from "framer-motion";
 
 interface CourseContentProps {
@@ -83,47 +83,49 @@ const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean,
     };
 
     return (
-        <DialogPrimitiveContent>
-            <DialogPrimitiveHeader>
-                <DialogPrimitiveTitle>Create a New Poll</DialogPrimitiveTitle>
-                <DialogPrimitiveDescription>Ask a question and let the chamber vote.</DialogPrimitiveDescription>
-            </DialogPrimitiveHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <Label htmlFor="poll-question">Poll Question</Label>
-                    <Input id="poll-question" value={question} onChange={(e) => setQuestion(e.target.value)} required />
-                </div>
-                <div>
-                    <Label>Options</Label>
-                    <div className="space-y-2">
-                        {options.map((option, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                                <Input
-                                    value={option}
-                                    onChange={(e) => handleOptionChange(index, e.target.value)}
-                                    placeholder={`Option ${index + 1}`}
-                                    required
-                                />
-                                {options.length > 2 && (
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(index)} className="text-destructive">
-                                        <XCircle className="w-4 h-4" />
-                                    </Button>
-                                )}
-                            </div>
-                        ))}
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogPrimitiveContent>
+                <DialogPrimitiveHeader>
+                    <DialogPrimitiveTitle>Create a New Poll</DialogPrimitiveTitle>
+                    <DialogPrimitiveDescription>Ask a question and let the chamber vote.</DialogPrimitiveDescription>
+                </DialogPrimitiveHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <Label htmlFor="poll-question">Poll Question</Label>
+                        <Input id="poll-question" value={question} onChange={(e) => setQuestion(e.target.value)} required />
                     </div>
-                    {options.length < 5 && (
-                        <Button type="button" variant="outline" size="sm" onClick={addOption} className="mt-2">
-                            <Plus className="w-4 h-4 mr-2" /> Add Option
-                        </Button>
-                    )}
-                </div>
-                <DialogPrimitiveFooter>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button type="submit" disabled={isLoading}>{isLoading ? <LoaderCircle className="animate-spin" /> : "Create Poll"}</Button>
-                </DialogPrimitiveFooter>
-            </form>
-        </DialogPrimitiveContent>
+                    <div>
+                        <Label>Options</Label>
+                        <div className="space-y-2">
+                            {options.map((option, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        value={option}
+                                        onChange={(e) => handleOptionChange(index, e.target.value)}
+                                        placeholder={`Option ${index + 1}`}
+                                        required
+                                    />
+                                    {options.length > 2 && (
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(index)} className="text-destructive">
+                                            <XCircle className="w-4 h-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        {options.length < 5 && (
+                            <Button type="button" variant="outline" size="sm" onClick={addOption} className="mt-2">
+                                <Plus className="w-4 h-4 mr-2" /> Add Option
+                            </Button>
+                        )}
+                    </div>
+                    <DialogPrimitiveFooter>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button type="submit" disabled={isLoading}>{isLoading ? <LoaderCircle className="animate-spin" /> : "Create Poll"}</Button>
+                    </DialogPrimitiveFooter>
+                </form>
+            </DialogPrimitiveContent>
+        </Dialog>
     );
 };
 
@@ -303,48 +305,46 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
     }
 
     return (
-        <Dialog open={isCreatePollOpen} onOpenChange={setIsCreatePollOpen}>
-            <Card className="mt-8 flex flex-col h-[70vh]">
-                <CardContent className="p-4 flex-grow flex flex-col">
-                    <div className="flex items-center gap-2 border-b pb-2 mb-4">
-                        <Sparkles className="w-5 h-5 text-primary" />
-                        <h3 className="font-bold text-lg">Discussion</h3>
+        <Card className="mt-8 flex flex-col h-[70vh]">
+            <CardContent className="p-4 flex-grow flex flex-col">
+                <div className="flex items-center gap-2 border-b pb-2 mb-4">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-lg">Discussion</h3>
+                </div>
+                <ScrollArea className="flex-grow pr-4" ref={scrollAreaRef}>
+                    <div className="space-y-4">
+                        {messages.map(renderMessage)}
                     </div>
-                    <ScrollArea className="flex-grow pr-4" ref={scrollAreaRef}>
-                        <div className="space-y-4">
-                            {messages.map(renderMessage)}
-                        </div>
-                    </ScrollArea>
-                    <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t relative">
-                        {isFaculty && (
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button size="icon" variant="ghost" className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8">
-                                        <Paperclip className="w-4 h-4"/>
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-1">
-                                    <Button variant="ghost" onClick={() => setIsCreatePollOpen(true)} className="w-full justify-start">
-                                        <BarChart3 className="mr-2 h-4 w-4"/> Poll
-                                    </Button>
-                                </PopoverContent>
-                            </Popover>
-                        )}
-                        <Input 
-                            placeholder={canSendMessage ? "Say something..." : "Please wait..."}
-                            value={newMessage}
-                            onChange={e => setNewMessage(e.target.value)}
-                            disabled={isSending || !canSendMessage}
-                            className={cn(isFaculty && "pl-10")}
-                        />
-                        <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()}>
-                            {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
+                </ScrollArea>
+                <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t relative">
+                    {isFaculty && (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button size="icon" variant="ghost" className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8">
+                                    <Paperclip className="w-4 h-4"/>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-1">
+                                <Button variant="ghost" onClick={() => setIsCreatePollOpen(true)} className="w-full justify-start">
+                                    <BarChart3 className="mr-2 h-4 w-4"/> Poll
+                                </Button>
+                            </PopoverContent>
+                        </Popover>
+                    )}
+                    <Input 
+                        placeholder={canSendMessage ? "Say something..." : "Please wait..."}
+                        value={newMessage}
+                        onChange={e => setNewMessage(e.target.value)}
+                        disabled={isSending || !canSendMessage}
+                        className={cn(isFaculty && "pl-10")}
+                    />
+                    <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()}>
+                        {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
+                    </Button>
+                </form>
+            </CardContent>
             <CreatePollDialog isOpen={isCreatePollOpen} onOpenChange={setIsCreatePollOpen} onSubmit={handleSendPoll} />
-        </Dialog>
+        </Card>
     )
 }
 
