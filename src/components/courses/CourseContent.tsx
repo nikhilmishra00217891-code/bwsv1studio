@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
-import { listenForLiveChatMessages, toggleLessonCompletion, updateLesson, voteOnPoll, closePoll, setCorrectPollAnswer, toggleLiveChatPin } from "@/lib/data/courses";
+import { listenForLiveChatMessages, toggleLessonCompletion, updateLesson, voteOnPoll, closePoll, setCorrectPollAnswer, toggleLiveChatPin, deleteLiveChatMessage } from "@/lib/data/courses";
 import { sendLiveChatMessage } from "@/lib/data/courses";
 import { useEffect, useRef, useState, FormEvent, useCallback, useMemo } from "react";
 import { useAuth } from "../auth/AuthProvider";
@@ -46,14 +46,18 @@ interface CourseContentProps {
 const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onSubmit: (poll: Poll) => void }) => {
     const [question, setQuestion] = useState('');
     const [options, setOptions] = useState<string[]>(['', '']);
-    const [duration, setDuration] = useState<number>(0); // 0 for no timer
+    const [pollType, setPollType] = useState<Poll['type']>('single-choice');
+    const [duration, setDuration] = useState<number>(0);
+    const [autoDeleteSeconds, setAutoDeleteSeconds] = useState<number>(0);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (!isOpen) {
             setQuestion('');
             setOptions(['', '']);
+            setPollType('single-choice');
             setDuration(0);
+            setAutoDeleteSeconds(0);
         }
     }, [isOpen]);
 
@@ -76,16 +80,25 @@ const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean,
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!question.trim() || options.some(opt => !opt.trim())) {
+        
+        let pollOptions = options;
+        if (pollType === 'thumbs') {
+            pollOptions = ['👍', '👎'];
+        }
+        
+        if (!question.trim() || (pollType !== 'thumbs' && pollOptions.some(opt => !opt.trim()))) {
             return;
         }
+
         setIsLoading(true);
         const poll: Poll = {
             question,
-            options: options.filter(opt => opt.trim() !== '').map(opt => ({ text: opt, voterIds: [] })),
+            type: pollType,
+            options: pollOptions.map(opt => ({ text: opt, voterIds: [] })),
             status: 'open',
             duration: duration,
             endsAt: duration > 0 ? Timestamp.fromDate(new Date(Date.now() + duration * 1000)) : null,
+            autoDeleteSeconds: autoDeleteSeconds > 0 ? autoDeleteSeconds : undefined,
         };
         onSubmit(poll);
         setIsLoading(false);
@@ -93,54 +106,78 @@ const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean,
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>Create a New Poll</DialogTitle>
-                    <DialogDescription>Ask a question and let the chamber vote.</DialogDescription>
+                    <DialogDescription>Engage with your students in real-time.</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <Label htmlFor="poll-type">Poll Type</Label>
+                        <Select value={pollType} onValueChange={(v) => setPollType(v as Poll['type'])}>
+                            <SelectTrigger id="poll-type"><SelectValue placeholder="Select type..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="single-choice">Single Choice</SelectItem>
+                                <SelectItem value="multi-choice">Multiple Choice</SelectItem>
+                                <SelectItem value="thumbs">Thumbs Up / Down</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div>
                         <Label htmlFor="poll-question">Poll Question</Label>
                         <Input id="poll-question" value={question} onChange={(e) => setQuestion(e.target.value)} required />
                     </div>
-                    <div>
-                        <Label>Options</Label>
-                        <div className="space-y-2">
-                            {options.map((option, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                    <Input
-                                        value={option}
-                                        onChange={(e) => handleOptionChange(index, e.target.value)}
-                                        placeholder={`Option ${index + 1}`}
-                                        required
-                                    />
-                                    {options.length > 2 && (
-                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(index)} className="text-destructive">
-                                            <XCircle className="w-4 h-4" />
-                                        </Button>
-                                    )}
-                                </div>
-                            ))}
+                    {pollType !== 'thumbs' && (
+                        <div>
+                            <Label>Options</Label>
+                            <div className="space-y-2">
+                                {options.map((option, index) => (
+                                    <div key={index} className="flex items-center gap-2">
+                                        <Input
+                                            value={option}
+                                            onChange={(e) => handleOptionChange(index, e.target.value)}
+                                            placeholder={`Option ${index + 1}`}
+                                            required
+                                        />
+                                        {options.length > 2 && (
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(index)} className="text-destructive">
+                                                <XCircle className="w-4 h-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            {options.length < 5 && (
+                                <Button type="button" variant="outline" size="sm" onClick={addOption} className="mt-2">
+                                    <Plus className="w-4 h-4 mr-2" /> Add Option
+                                </Button>
+                            )}
                         </div>
-                        {options.length < 5 && (
-                            <Button type="button" variant="outline" size="sm" onClick={addOption} className="mt-2">
-                                <Plus className="w-4 h-4 mr-2" /> Add Option
-                            </Button>
-                        )}
-                    </div>
-                     <div>
-                        <Label htmlFor="poll-duration">Timer</Label>
-                         <Select onValueChange={(value) => setDuration(Number(value))} defaultValue="0">
-                            <SelectTrigger id="poll-duration">
-                                <SelectValue placeholder="Set a timer..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="0">No Timer</SelectItem>
-                                <SelectItem value="30">30 seconds</SelectItem>
-                                <SelectItem value="60">1 minute</SelectItem>
-                                <SelectItem value="300">5 minutes</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    )}
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="poll-duration">Timer</Label>
+                            <Select onValueChange={(value) => setDuration(Number(value))} defaultValue="0">
+                                <SelectTrigger id="poll-duration"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="0">No Timer</SelectItem>
+                                    <SelectItem value="30">30 seconds</SelectItem>
+                                    <SelectItem value="60">1 minute</SelectItem>
+                                    <SelectItem value="300">5 minutes</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                             <Label htmlFor="poll-autodelete">Auto-Delete</Label>
+                             <Select onValueChange={(value) => setAutoDeleteSeconds(Number(value))} defaultValue="0">
+                                <SelectTrigger id="poll-autodelete"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="0">Don't Auto-Delete</SelectItem>
+                                    <SelectItem value="10">10s After Answer</SelectItem>
+                                    <SelectItem value="15">15s After Answer</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -287,10 +324,21 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
             toast({ variant: 'destructive', title: 'Action failed', description: error.message });
         }
     }
+
+    const handleDeleteMessage = async (messageId: string) => {
+        if (!isFaculty) return;
+        try {
+            await deleteLiveChatMessage(course.id, subject.id, chapter.id, lesson.id, messageId);
+            toast({title: "Message deleted."});
+        } catch (error: any) {
+            toast({variant: 'destructive', title: 'Could not delete message.'});
+        }
+    }
     
     const PollMessage = ({ msg, isPinnedView = false }: { msg: LiveChatMessage, isPinnedView?: boolean }) => {
         const poll = msg.poll;
         const [timeLeft, setTimeLeft] = useState<number | null>(null);
+        const [isDeleted, setIsDeleted] = useState(false);
 
         useEffect(() => {
             if (poll?.status === 'closed' || !poll?.endsAt) {
@@ -312,26 +360,47 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
             
             return () => clearInterval(interval);
         }, [poll, msg.id]);
+
+         useEffect(() => {
+            if (poll?.correctOptionIndex !== undefined && poll.autoDeleteSeconds) {
+                const timer = setTimeout(() => {
+                    setIsDeleted(true);
+                    if (isFaculty) {
+                        deleteLiveChatMessage(course.id, subject.id, chapter.id, lesson.id, msg.id);
+                    }
+                }, poll.autoDeleteSeconds * 1000);
+                return () => clearTimeout(timer);
+            }
+        }, [poll?.correctOptionIndex, poll?.autoDeleteSeconds, msg.id]);
         
-        if (!poll) return null;
+        if (!poll || isDeleted) return null;
         
         const totalVotes = poll.options.reduce((acc, opt) => acc + (opt.voterIds?.length || 0), 0);
-        const userVoteIndex = poll.options.findIndex(opt => opt.voterIds?.includes(user?.uid || ''));
+        const userVotes = poll.options.map((opt, index) => opt.voterIds?.includes(user?.uid || '') ? index : -1).filter(i => i !== -1);
         const isPollOpen = poll.status === 'open' && timeLeft !== 0;
 
-        const didUserVoteCorrectly = userVoteIndex !== -1 && userVoteIndex === poll.correctOptionIndex;
+        const didUserVoteCorrectly = poll.correctOptionIndex !== undefined && userVotes.includes(poll.correctOptionIndex);
 
         return (
              <div className="text-sm p-3 my-2 bg-card rounded-lg border relative group">
                  {isFaculty && !isPinnedView && (
-                     <button onClick={() => handlePinToggle(msg.id)} className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                         {msg.isPinned ? <PinOff className="w-4 h-4"/> : <Pin className="w-4 h-4"/>}
-                    </button>
-                 )}
-                 {isFaculty && isPinnedView && (
-                     <button onClick={() => handlePinToggle(msg.id)} className="absolute top-2 right-2 p-1 text-primary hover:text-primary/70">
-                         <PinOff className="w-4 h-4"/>
-                    </button>
+                    <div className="absolute top-2 right-2 flex items-center">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6"><Trash2 className="w-4 h-4 text-destructive"/></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Delete this poll?</AlertDialogTitle></AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteMessage(msg.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                        <button onClick={() => handlePinToggle(msg.id)} className="p-1 text-muted-foreground hover:text-primary">
+                            {msg.isPinned ? <PinOff className="w-4 h-4"/> : <Pin className="w-4 h-4"/>}
+                        </button>
+                    </div>
                  )}
                 <div className="flex justify-between items-center mb-2">
                     <p className="font-bold pr-8">{poll.question}</p>
@@ -346,16 +415,16 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                     {poll.options.map((option, index) => {
                         const voteCount = option.voterIds?.length || 0;
                         const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
-                        const hasVotedForThis = userVoteIndex === index;
+                        const hasVotedForThis = userVotes.includes(index);
                         const isCorrectAnswer = poll.correctOptionIndex === index;
 
                         return (
                             <div key={index}>
                                 <div
-                                    onClick={() => isPollOpen && userVoteIndex === -1 && handleVote(msg.id, index)}
+                                    onClick={() => isPollOpen && handleVote(msg.id, index)}
                                     className={cn(
                                         "w-full text-left p-2 rounded-md border-2 relative overflow-hidden transition-all",
-                                        (isPollOpen && userVoteIndex === -1) && "cursor-pointer hover:border-primary/50",
+                                        isPollOpen && "cursor-pointer hover:border-primary/50",
                                         hasVotedForThis && "border-primary",
                                         !isPollOpen && isCorrectAnswer && "border-green-500 bg-green-500/10"
                                     )}
@@ -387,7 +456,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                     })}
                 </div>
                  <p className="text-xs text-muted-foreground mt-2 text-right">{totalVotes} vote(s)</p>
-                  {!isPollOpen && didUserVoteCorrectly && (
+                  {!isPollOpen && poll.correctOptionIndex !== undefined && didUserVoteCorrectly && (
                      <div className="mt-2 text-center text-sm font-semibold text-green-600 bg-green-100/50 p-2 rounded-md flex items-center justify-center gap-2">
                         <PartyPopper className="w-4 h-4"/> You chose the correct answer!
                     </div>
@@ -413,9 +482,23 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                     <p className="break-words whitespace-pre-wrap max-w-md">{msg.text}</p>
                 </div>
                 {isFaculty && (
-                     <button onClick={() => handlePinToggle(msg.id)} className="absolute top-0 right-0 p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                         {msg.isPinned ? <PinOff className="w-4 h-4"/> : <Pin className="w-4 h-4"/>}
-                    </button>
+                     <div className="absolute top-0 right-0 p-1 flex items-center bg-card rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handlePinToggle(msg.id)} className="p-1 text-muted-foreground hover:text-primary">
+                            {msg.isPinned ? <PinOff className="w-4 h-4"/> : <Pin className="w-4 h-4"/>}
+                        </button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <button className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4"/></button>
+                            </AlertDialogTrigger>
+                             <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Delete this message?</AlertDialogTitle></AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteMessage(msg.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                     </div>
                  )}
             </div>
         )
@@ -433,7 +516,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                  <div className="flex-1 flex flex-col min-h-0 relative">
                      {pinnedMessages.length > 0 && (
                         <div className="p-2 border-b bg-muted/50 shrink-0">
-                            {pinnedMessages.map(msg => renderMessage(msg))}
+                            {pinnedMessages.map(msg => <PollMessage key={msg.id} msg={msg} isPinnedView />)}
                         </div>
                     )}
                     <ScrollArea className="flex-grow px-4" ref={scrollAreaRef}>
@@ -496,7 +579,7 @@ const LinkPreview = ({ metadata, onRemove, isFaculty }: { metadata: UrlMetadata,
                     )}
                     <div className="p-3 flex flex-col justify-center overflow-hidden flex-grow">
                         <p className="text-xs text-muted-foreground truncate">{metadata.siteName}</p>
-                        <p className="font-semibold truncate">{metadata.title}</p>
+                        <p className="font-semibold break-words">{metadata.title}</p>
                         <p className="text-xs text-muted-foreground line-clamp-2 break-words">{metadata.description}</p>
                     </div>
                 </Card>
