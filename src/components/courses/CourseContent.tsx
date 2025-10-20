@@ -333,18 +333,16 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                         const isCorrectAnswer = poll.correctOptionIndex === index;
 
                         return (
-                            <button 
-                                key={index} 
-                                onClick={() => handleVote(msg.id, index)} 
-                                disabled={!isPollOpen || userVoteIndex !== -1}
-                                className="w-full text-left"
-                            >
-                                <div className={cn(
-                                    "p-2 rounded-md border-2 relative overflow-hidden transition-all",
-                                    !isPollOpen || userVoteIndex !== -1 ? "cursor-default" : "hover:border-primary/50",
-                                     hasVotedForThis && "border-primary",
-                                     !isPollOpen && isCorrectAnswer && "border-green-500 bg-green-500/10"
-                                )}>
+                            <div key={index}>
+                                <div
+                                    onClick={() => isPollOpen && userVoteIndex === -1 && handleVote(msg.id, index)}
+                                    className={cn(
+                                        "w-full text-left p-2 rounded-md border-2 relative overflow-hidden transition-all",
+                                        (isPollOpen && userVoteIndex === -1) && "cursor-pointer hover:border-primary/50",
+                                        hasVotedForThis && "border-primary",
+                                        !isPollOpen && isCorrectAnswer && "border-green-500 bg-green-500/10"
+                                    )}
+                                >
                                     <motion.div
                                         className={cn(
                                             "absolute top-0 left-0 h-full -z-10",
@@ -369,7 +367,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                                         {isCorrectAnswer ? "Correct Answer" : "Set as Correct"}
                                     </Button>
                                 )}
-                            </button>
+                            </div>
                         )
                     })}
                 </div>
