@@ -1,3 +1,4 @@
+
 "use client"; // This file now contains client-side and server-side logic, mark it for client.
 
 import { db } from "@/lib/firebase/client"; // Use client-side db for client-callable functions
@@ -590,3 +591,17 @@ export const voteOnPoll = async (courseId: string, subjectId: string, chapterId:
         transaction.update(messageRef, { poll: pollData });
     });
 }
+
+export const closePoll = async (courseId: string, subjectId: string, chapterId: string, lessonId: string, messageId: string) => {
+    const messageRef = doc(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`, messageId);
+    
+     await runTransaction(db, async (transaction) => {
+        const messageDoc = await transaction.get(messageRef);
+        if (!messageDoc.exists()) return;
+
+        const pollData = messageDoc.data()?.poll as Poll | undefined;
+        if (pollData && pollData.status !== 'closed') {
+            transaction.update(messageRef, { 'poll.status': 'closed' });
+        }
+    });
+};

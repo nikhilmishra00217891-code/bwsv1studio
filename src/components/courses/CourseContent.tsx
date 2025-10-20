@@ -3,14 +3,14 @@
 
 import type { Course, Lesson, Subject, Chapter, LiveChatMessage, UrlMetadata, Poll } from "@/types";
 import { Button } from "../ui/button";
-import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock, Edit, Trash2, Link as LinkIcon, XCircle, Paperclip, BarChart3, Plus } from 'lucide-react';
+import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock, Edit, Trash2, Link as LinkIcon, XCircle, Paperclip, BarChart3, Plus, TimerIcon } from 'lucide-react';
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
-import { listenForLiveChatMessages, toggleLessonCompletion, updateLesson, voteOnPoll } from "@/lib/data/courses";
+import { listenForLiveChatMessages, toggleLessonCompletion, updateLesson, voteOnPoll, closePoll } from "@/lib/data/courses";
 import { sendLiveChatMessage } from "@/lib/data/courses";
 import { useEffect, useRef, useState, FormEvent, useCallback, useMemo } from "react";
 import { useAuth } from "../auth/AuthProvider";
@@ -25,8 +25,11 @@ import { Label } from "../ui/label";
 import { getUrlMetadata } from "@/app/actions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Dialog, DialogContent as DialogPrimitiveContent, DialogHeader as DialogPrimitiveHeader, DialogTitle as DialogPrimitiveTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter as DialogPrimitiveFooter } from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../ui/dialog";
 import { motion } from "framer-motion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Timestamp } from "firebase/firestore";
+
 
 interface CourseContentProps {
     course: Course;
@@ -37,17 +40,20 @@ interface CourseContentProps {
     onChapterSelect: (chapter: Chapter) => void;
     onLessonClick: (lesson: Lesson) => void;
     isFaculty: boolean;
+    onSendPoll?: (poll: Poll) => void; // Keep this for potential direct use
 }
 
 const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onSubmit: (poll: Poll) => void }) => {
     const [question, setQuestion] = useState('');
     const [options, setOptions] = useState<string[]>(['', '']);
+    const [duration, setDuration] = useState<number>(0); // 0 for no timer
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (!isOpen) {
             setQuestion('');
             setOptions(['', '']);
+            setDuration(0);
         }
     }, [isOpen]);
 
@@ -77,6 +83,9 @@ const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean,
         const poll: Poll = {
             question,
             options: options.filter(opt => opt.trim() !== '').map(opt => ({ text: opt, voterIds: [] })),
+            status: 'open',
+            duration: duration,
+            endsAt: duration > 0 ? Timestamp.fromDate(new Date(Date.now() + duration * 1000)) : null,
         };
         onSubmit(poll);
         setIsLoading(false);
@@ -84,11 +93,11 @@ const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean,
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogPrimitiveContent>
-                <DialogPrimitiveHeader>
-                    <DialogPrimitiveTitle>Create a New Poll</DialogPrimitiveTitle>
-                    <DialogPrimitiveDescription>Ask a question and let the chamber vote.</DialogPrimitiveDescription>
-                </DialogPrimitiveHeader>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create a New Poll</DialogTitle>
+                    <DialogDescription>Ask a question and let the chamber vote.</DialogDescription>
+                </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <Label htmlFor="poll-question">Poll Question</Label>
@@ -119,12 +128,26 @@ const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean,
                             </Button>
                         )}
                     </div>
-                    <DialogPrimitiveFooter>
+                     <div>
+                        <Label htmlFor="poll-duration">Timer</Label>
+                         <Select onValueChange={(value) => setDuration(Number(value))} defaultValue="0">
+                            <SelectTrigger id="poll-duration">
+                                <SelectValue placeholder="Set a timer..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="0">No Timer</SelectItem>
+                                <SelectItem value="30">30 seconds</SelectItem>
+                                <SelectItem value="60">1 minute</SelectItem>
+                                <SelectItem value="300">5 minutes</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                         <Button type="submit" disabled={isLoading}>{isLoading ? <LoaderCircle className="animate-spin" /> : "Create Poll"}</Button>
-                    </DialogPrimitiveFooter>
+                    </DialogFooter>
                 </form>
-            </DialogPrimitiveContent>
+            </DialogContent>
         </Dialog>
     );
 };
@@ -236,36 +259,76 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
     
     const PollMessage = ({ msg }: { msg: LiveChatMessage }) => {
         const poll = msg.poll;
+        const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+        useEffect(() => {
+            if (poll?.status === 'closed' || !poll?.endsAt) {
+                setTimeLeft(0);
+                return;
+            }
+
+            const interval = setInterval(() => {
+                const endsAtMs = (poll.endsAt as Timestamp).toMillis();
+                const nowMs = Date.now();
+                const newTimeLeft = Math.max(0, Math.round((endsAtMs - nowMs) / 1000));
+                setTimeLeft(newTimeLeft);
+
+                if (newTimeLeft === 0) {
+                    clearInterval(interval);
+                    closePoll(course.id, subject.id, chapter.id, lesson.id, msg.id);
+                }
+            }, 1000);
+            
+            return () => clearInterval(interval);
+        }, [poll, msg.id]);
+        
         if (!poll) return null;
         
         const totalVotes = poll.options.reduce((acc, opt) => acc + (opt.voterIds?.length || 0), 0);
         const userVoteIndex = poll.options.findIndex(opt => opt.voterIds?.includes(user?.uid || ''));
+        const isPollOpen = poll.status === 'open' && timeLeft !== 0;
 
         return (
              <div className="text-sm p-3 my-2 bg-card rounded-lg border">
-                <p className="font-bold mb-2">{poll.question}</p>
+                <div className="flex justify-between items-center mb-2">
+                    <p className="font-bold">{poll.question}</p>
+                    {poll.duration && (
+                        <Badge variant={isPollOpen ? "default" : "secondary"} className="flex items-center gap-1">
+                            <TimerIcon className="w-3 h-3"/>
+                            {isPollOpen && timeLeft !== null ? `${timeLeft}s` : "Finished"}
+                        </Badge>
+                    )}
+                </div>
                 <div className="space-y-2">
                     {poll.options.map((option, index) => {
                         const voteCount = option.voterIds?.length || 0;
                         const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
+                        const hasVotedForThis = userVoteIndex === index;
 
                         return (
                             <button 
                                 key={index} 
                                 onClick={() => handleVote(msg.id, index)} 
-                                disabled={userVoteIndex !== -1}
+                                disabled={!isPollOpen || userVoteIndex !== -1}
                                 className="w-full text-left"
                             >
-                                <div className="p-2 rounded-md border relative overflow-hidden">
-                                     <motion.div
-                                        className="absolute top-0 left-0 h-full bg-primary/20 -z-10"
+                                <div className={cn(
+                                    "p-2 rounded-md border-2 relative overflow-hidden transition-all",
+                                    !isPollOpen || userVoteIndex !== -1 ? "cursor-default" : "hover:border-primary/50",
+                                    hasVotedForThis ? "border-primary bg-primary/10" : "border-border"
+                                )}>
+                                    <motion.div
+                                        className={cn(
+                                            "absolute top-0 left-0 h-full -z-10",
+                                            hasVotedForThis ? "bg-primary/20" : "bg-muted"
+                                        )}
                                         initial={{ width: 0 }}
-                                        animate={{ width: `${percentage}%` }}
+                                        animate={{ width: isPollOpen ? '0%' : `${percentage}%` }}
                                         transition={{ ease: "easeInOut", duration: 0.5 }}
                                     />
                                     <div className="flex justify-between items-center z-10 relative">
                                         <span className={cn(userVoteIndex === index && "font-bold")}>{option.text}</span>
-                                        {userVoteIndex !== -1 && <span className="text-xs font-mono">{percentage.toFixed(0)}%</span>}
+                                        {!isPollOpen && <span className="text-xs font-mono">{percentage.toFixed(0)}%</span>}
                                     </div>
                                 </div>
                             </button>

@@ -1,3 +1,4 @@
+
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -27,6 +28,9 @@ export interface PollOption {
 export interface Poll {
     question: string;
     options: PollOption[];
+    status: 'open' | 'closed';
+    duration?: number; // in seconds
+    endsAt?: Timestamp | null;
 }
 
 
