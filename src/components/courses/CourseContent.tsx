@@ -3,14 +3,14 @@
 
 import type { Course, Lesson, Subject, Chapter, LiveChatMessage, UrlMetadata, Poll } from "@/types";
 import { Button } from "../ui/button";
-import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock, Edit, Trash2, Link as LinkIcon, XCircle, Paperclip, BarChart3, Plus, TimerIcon } from 'lucide-react';
+import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock, Edit, Trash2, Link as LinkIcon, XCircle, Paperclip, BarChart3, Plus, TimerIcon, Pin, PinOff, PartyPopper } from 'lucide-react';
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
-import { listenForLiveChatMessages, toggleLessonCompletion, updateLesson, voteOnPoll, closePoll } from "@/lib/data/courses";
+import { listenForLiveChatMessages, toggleLessonCompletion, updateLesson, voteOnPoll, closePoll, setCorrectPollAnswer, toggleLiveChatPin } from "@/lib/data/courses";
 import { sendLiveChatMessage } from "@/lib/data/courses";
 import { useEffect, useRef, useState, FormEvent, useCallback, useMemo } from "react";
 import { useAuth } from "../auth/AuthProvider";
@@ -256,6 +256,25 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
              toast({ variant: 'destructive', title: 'Vote Failed', description: error.message });
         }
     }
+
+    const handleSetCorrect = async (messageId: string, optionIndex: number) => {
+        if (!isFaculty) return;
+        try {
+            await setCorrectPollAnswer(course.id, subject.id, chapter.id, lesson.id, messageId, optionIndex);
+            toast({ title: "Correct answer set!" });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Failed to set answer', description: error.message });
+        }
+    }
+    
+    const handlePinToggle = async (messageId: string) => {
+        if (!isFaculty) return;
+        try {
+            await toggleLiveChatPin(course.id, subject.id, chapter.id, lesson.id, messageId);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Action failed', description: error.message });
+        }
+    }
     
     const PollMessage = ({ msg }: { msg: LiveChatMessage }) => {
         const poll = msg.poll;
@@ -273,7 +292,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                 const newTimeLeft = Math.max(0, Math.round((endsAtMs - nowMs) / 1000));
                 setTimeLeft(newTimeLeft);
 
-                if (newTimeLeft === 0) {
+                if (newTimeLeft === 0 && poll.status === 'open') {
                     clearInterval(interval);
                     closePoll(course.id, subject.id, chapter.id, lesson.id, msg.id);
                 }
@@ -288,8 +307,15 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
         const userVoteIndex = poll.options.findIndex(opt => opt.voterIds?.includes(user?.uid || ''));
         const isPollOpen = poll.status === 'open' && timeLeft !== 0;
 
+        const didUserVoteCorrectly = userVoteIndex !== -1 && userVoteIndex === poll.correctOptionIndex;
+
         return (
-             <div className="text-sm p-3 my-2 bg-card rounded-lg border">
+             <div className="text-sm p-3 my-2 bg-card rounded-lg border relative group">
+                 {isFaculty && (
+                     <button onClick={() => handlePinToggle(msg.id)} className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                         {msg.isPinned ? <PinOff className="w-4 h-4"/> : <Pin className="w-4 h-4"/>}
+                    </button>
+                 )}
                 <div className="flex justify-between items-center mb-2">
                     <p className="font-bold">{poll.question}</p>
                     {poll.duration && (
@@ -304,6 +330,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                         const voteCount = option.voterIds?.length || 0;
                         const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
                         const hasVotedForThis = userVoteIndex === index;
+                        const isCorrectAnswer = poll.correctOptionIndex === index;
 
                         return (
                             <button 
@@ -315,44 +342,73 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                                 <div className={cn(
                                     "p-2 rounded-md border-2 relative overflow-hidden transition-all",
                                     !isPollOpen || userVoteIndex !== -1 ? "cursor-default" : "hover:border-primary/50",
-                                    hasVotedForThis ? "border-primary bg-primary/10" : "border-border"
+                                     hasVotedForThis && "border-primary",
+                                     !isPollOpen && isCorrectAnswer && "border-green-500 bg-green-500/10"
                                 )}>
                                     <motion.div
                                         className={cn(
                                             "absolute top-0 left-0 h-full -z-10",
-                                            hasVotedForThis ? "bg-primary/20" : "bg-muted"
+                                            hasVotedForThis && !isPollOpen && !isCorrectAnswer ? "bg-red-500/10" : "bg-primary/10"
                                         )}
                                         initial={{ width: 0 }}
                                         animate={{ width: isPollOpen ? '0%' : `${percentage}%` }}
                                         transition={{ ease: "easeInOut", duration: 0.5 }}
                                     />
                                     <div className="flex justify-between items-center z-10 relative">
-                                        <span className={cn(userVoteIndex === index && "font-bold")}>{option.text}</span>
+                                        <span className={cn("font-semibold", hasVotedForThis && "text-primary")}>{option.text}</span>
                                         {!isPollOpen && <span className="text-xs font-mono">{percentage.toFixed(0)}%</span>}
                                     </div>
                                 </div>
+                                {isFaculty && !isPollOpen && (
+                                     <Button 
+                                        size="sm" 
+                                        variant={isCorrectAnswer ? "secondary" : "outline"} 
+                                        className="mt-1 text-xs h-7"
+                                        onClick={(e) => { e.stopPropagation(); handleSetCorrect(msg.id, index); }}
+                                    >
+                                        {isCorrectAnswer ? "Correct Answer" : "Set as Correct"}
+                                    </Button>
+                                )}
                             </button>
                         )
                     })}
                 </div>
                  <p className="text-xs text-muted-foreground mt-2 text-right">{totalVotes} vote(s)</p>
+                  {!isPollOpen && didUserVoteCorrectly && (
+                     <div className="mt-2 text-center text-sm font-semibold text-green-600 bg-green-100 p-2 rounded-md flex items-center justify-center gap-2">
+                        <PartyPopper className="w-4 h-4"/> You chose the correct answer!
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    const PinnedMessagesBar = ({ messages }: { messages: LiveChatMessage[] }) => {
+        if (messages.length === 0) return null;
+        return (
+            <div className="bg-muted/50 border-b p-2">
+                {messages.map(msg => (
+                    <div key={msg.id} className="flex items-center gap-2 text-xs">
+                        <Pin className="w-4 h-4 text-primary shrink-0"/>
+                        <span className="font-semibold text-primary/80 truncate">{msg.senderName}:</span>
+                        <span className="text-muted-foreground truncate">{msg.poll?.question || msg.text}</span>
+                         {isFaculty && (
+                            <button onClick={() => handlePinToggle(msg.id)} className="ml-auto p-1 text-muted-foreground hover:text-destructive">
+                                <PinOff className="w-4 h-4"/>
+                            </button>
+                        )}
+                    </div>
+                ))}
             </div>
         )
     }
 
     const renderMessage = (msg: LiveChatMessage) => {
         if (msg.messageType === 'poll') {
-            return (
-                 <div key={msg.id}>
-                    <p className="text-xs text-muted-foreground text-center my-2 font-semibold">
-                        {msg.senderName} started a poll
-                    </p>
-                    <PollMessage msg={msg} />
-                </div>
-            )
+            return <PollMessage key={msg.id} msg={msg} />
         }
         return (
-             <div key={msg.id} className="flex items-start gap-2 text-sm">
+             <div key={msg.id} className="flex items-start gap-2 text-sm relative group">
                 <Avatar className="w-6 h-6">
                     <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
                 </Avatar>
@@ -363,48 +419,60 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                     </div>
                     <p>{msg.text}</p>
                 </div>
+                {isFaculty && (
+                     <button onClick={() => handlePinToggle(msg.id)} className="absolute top-0 right-0 p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                         {msg.isPinned ? <PinOff className="w-4 h-4"/> : <Pin className="w-4 h-4"/>}
+                    </button>
+                 )}
             </div>
         )
     }
+    
+    const pinnedMessages = messages.filter(m => m.isPinned).sort((a,b) => (b.pinnedAt?.toMillis() || 0) - (a.pinnedAt?.toMillis() || 0));
 
     return (
-        <Card className="mt-8 flex flex-col h-[70vh]">
-            <CardContent className="p-4 flex-grow flex flex-col">
-                <div className="flex items-center gap-2 border-b pb-2 mb-4">
+        <Card className="mt-8 flex flex-col h-[80vh]">
+            <CardContent className="p-0 flex-grow flex flex-col">
+                <div className="flex items-center gap-2 border-b pb-2 mb-4 p-4">
                     <Sparkles className="w-5 h-5 text-primary" />
                     <h3 className="font-bold text-lg">Discussion</h3>
                 </div>
-                <ScrollArea className="flex-grow pr-4" ref={scrollAreaRef}>
-                    <div className="space-y-4">
-                        {messages.map(renderMessage)}
-                    </div>
-                </ScrollArea>
-                <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t relative">
-                    {isFaculty && (
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button size="icon" variant="ghost" className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8">
-                                    <Paperclip className="w-4 h-4"/>
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-1">
-                                <Button variant="ghost" onClick={() => setIsCreatePollOpen(true)} className="w-full justify-start">
-                                    <BarChart3 className="mr-2 h-4 w-4"/> Poll
-                                </Button>
-                            </PopoverContent>
-                        </Popover>
-                    )}
-                    <Input 
-                        placeholder={canSendMessage ? "Say something..." : "Please wait..."}
-                        value={newMessage}
-                        onChange={e => setNewMessage(e.target.value)}
-                        disabled={isSending || !canSendMessage}
-                        className={cn(isFaculty && "pl-10")}
-                    />
-                    <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()}>
-                        {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
-                    </Button>
-                </form>
+                <div className="relative flex-grow flex flex-col">
+                     <PinnedMessagesBar messages={pinnedMessages} />
+                    <ScrollArea className="flex-grow px-4" ref={scrollAreaRef}>
+                        <div className="space-y-4">
+                            {messages.map(renderMessage)}
+                        </div>
+                    </ScrollArea>
+                </div>
+                <div className="p-4 border-t">
+                    <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t relative">
+                        {isFaculty && (
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8">
+                                        <Paperclip className="w-4 h-4"/>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-1">
+                                    <Button variant="ghost" onClick={() => setIsCreatePollOpen(true)} className="w-full justify-start">
+                                        <BarChart3 className="mr-2 h-4 w-4"/> Poll
+                                    </Button>
+                                </PopoverContent>
+                            </Popover>
+                        )}
+                        <Input 
+                            placeholder={canSendMessage ? "Say something..." : "Please wait..."}
+                            value={newMessage}
+                            onChange={e => setNewMessage(e.target.value)}
+                            disabled={isSending || !canSendMessage}
+                            className={cn(isFaculty && "pl-10")}
+                        />
+                        <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()}>
+                            {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
+                        </Button>
+                    </form>
+                </div>
             </CardContent>
             <CreatePollDialog isOpen={isCreatePollOpen} onOpenChange={setIsCreatePollOpen} onSubmit={handleSendPoll} />
         </Card>

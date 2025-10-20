@@ -332,10 +332,17 @@ export const sendLiveChatMessage = async (
     message: Partial<LiveChatMessage>
 ) => {
     const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
-    await addDoc(chatColRef, {
+    const finalMessage = {
         ...message,
         timestamp: serverTimestamp()
-    });
+    };
+
+    if (message.messageType === 'poll') {
+        finalMessage.isPinned = true;
+        finalMessage.pinnedAt = serverTimestamp();
+    }
+
+    await addDoc(chatColRef, finalMessage);
 };
 
 const findAndModifyMaterial = (
@@ -579,8 +586,15 @@ export const voteOnPoll = async (courseId: string, subjectId: string, chapterId:
         
         const hasVoted = pollData.options.some(opt => opt.voterIds.includes(userId));
         if (hasVoted) {
-            throw new Error("You have already voted on this poll.");
+            // Allow changing vote
+            pollData.options.forEach(opt => {
+                const userIndex = opt.voterIds.indexOf(userId);
+                if (userIndex > -1) {
+                    opt.voterIds.splice(userIndex, 1);
+                }
+            });
         }
+
 
         if (optionIndex < 0 || optionIndex >= pollData.options.length) {
             throw new Error("Invalid option selected.");
@@ -603,5 +617,32 @@ export const closePoll = async (courseId: string, subjectId: string, chapterId: 
         if (pollData && pollData.status !== 'closed') {
             transaction.update(messageRef, { 'poll.status': 'closed' });
         }
+    });
+};
+
+export const setCorrectPollAnswer = async (courseId: string, subjectId: string, chapterId: string, lessonId: string, messageId: string, correctOptionIndex: number) => {
+    const messageRef = doc(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`, messageId);
+    await updateDoc(messageRef, {
+        'poll.correctOptionIndex': correctOptionIndex
+    });
+};
+
+
+export const toggleLiveChatPin = async (
+  courseId: string, subjectId: string, chapterId: string, lessonId: string,
+  messageId: string
+) => {
+    const messageRef = doc(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`, messageId);
+    const messageSnap = await getDoc(messageRef);
+
+    if (!messageSnap.exists()) {
+        throw new Error("Message not found.");
+    }
+    
+    const isCurrentlyPinned = messageSnap.data().isPinned || false;
+    
+    await updateDoc(messageRef, {
+        isPinned: !isCurrentlyPinned,
+        pinnedAt: !isCurrentlyPinned ? serverTimestamp() : null
     });
 };

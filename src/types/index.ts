@@ -10,6 +10,8 @@ export interface LiveChatMessage {
   timestamp: Timestamp;
   messageType: 'text' | 'poll';
   poll?: Poll;
+  isPinned?: boolean;
+  pinnedAt?: Timestamp | null;
 }
 
 export interface UrlMetadata {
@@ -31,6 +33,7 @@ export interface Poll {
     status: 'open' | 'closed';
     duration?: number; // in seconds
     endsAt?: Timestamp | null;
+    correctOptionIndex?: number | null;
 }
 
 
