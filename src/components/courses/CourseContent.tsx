@@ -1,10 +1,8 @@
-
-
 "use client";
 
-import type { Course, Lesson, Subject, Chapter, LiveChatMessage, UrlMetadata } from "@/types";
+import type { Course, Lesson, Subject, Chapter, LiveChatMessage, UrlMetadata, Poll } from "@/types";
 import { Button } from "../ui/button";
-import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock, Edit, Trash2, Link as LinkIcon, XCircle } from 'lucide-react';
+import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock, Edit, Trash2, Link as LinkIcon, XCircle, Paperclip, BarChart3 } from 'lucide-react';
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -25,6 +23,7 @@ import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
 import { getUrlMetadata } from "@/app/actions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 interface CourseContentProps {
     course: Course;
@@ -34,6 +33,8 @@ interface CourseContentProps {
     onSubjectSelect: (subject: Subject) => void;
     onChapterSelect: (chapter: Chapter) => void;
     onLessonClick: (lesson: Lesson) => void;
+    isFaculty: boolean;
+    onSendPoll: () => void;
 }
 
 const extractYouTubeVideoId = (url: string): string | null => {
@@ -58,7 +59,7 @@ const extractYouTubeVideoId = (url: string): string | null => {
     return videoId;
 }
 
-const LiveChat = ({ course, subject, chapter, lesson }: { course: Course; subject: Subject; chapter: Chapter; lesson: Lesson; }) => {
+const LiveChat = ({ course, subject, chapter, lesson, isFaculty, onSendPoll }: { course: Course; subject: Subject; chapter: Chapter; lesson: Lesson; isFaculty: boolean; onSendPoll: () => void; }) => {
     const { user } = useAuth();
     const { toast } = useToast();
     const [messages, setMessages] = useState<LiveChatMessage[]>([]);
@@ -95,7 +96,8 @@ const LiveChat = ({ course, subject, chapter, lesson }: { course: Course; subjec
                 {
                     senderId: user.uid,
                     senderName: user.displayName || "Student",
-                    text: newMessage.trim()
+                    text: newMessage.trim(),
+                    messageType: 'text'
                 }
             );
             setNewMessage('');
@@ -107,6 +109,30 @@ const LiveChat = ({ course, subject, chapter, lesson }: { course: Course; subjec
             setTimeout(() => setCanSendMessage(true), 10000); // 10-second cooldown
         }
     };
+    
+    const renderMessage = (msg: LiveChatMessage) => {
+        if (msg.messageType === 'poll') {
+            return (
+                <div key={msg.id} className="text-center p-2 my-2 bg-muted rounded-md text-sm text-muted-foreground italic">
+                    {msg.senderName} started a poll: "{msg.poll?.question}"
+                </div>
+            )
+        }
+        return (
+             <div key={msg.id} className="flex items-start gap-2 text-sm">
+                <Avatar className="w-6 h-6">
+                    <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <div className="flex items-baseline gap-2">
+                        <p className="font-bold text-primary/90">{msg.senderName}</p>
+                        <p className="text-xs text-muted-foreground">{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}</p>
+                    </div>
+                    <p>{msg.text}</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <Card className="mt-8 flex flex-col h-[70vh]">
@@ -117,28 +143,30 @@ const LiveChat = ({ course, subject, chapter, lesson }: { course: Course; subjec
                 </div>
                 <ScrollArea className="flex-grow pr-4" ref={scrollAreaRef}>
                     <div className="space-y-4">
-                        {messages.map(msg => (
-                            <div key={msg.id} className="flex items-start gap-2 text-sm">
-                                <Avatar className="w-6 h-6">
-                                    <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <div className="flex items-baseline gap-2">
-                                        <p className="font-bold text-primary/90">{msg.senderName}</p>
-                                        <p className="text-xs text-muted-foreground">{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}</p>
-                                    </div>
-                                    <p>{msg.text}</p>
-                                </div>
-                            </div>
-                        ))}
+                        {messages.map(renderMessage)}
                     </div>
                 </ScrollArea>
-                <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t">
+                <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t relative">
+                    {isFaculty && (
+                         <Popover>
+                            <PopoverTrigger asChild>
+                                <Button size="icon" variant="ghost" className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8">
+                                    <Paperclip className="w-4 h-4"/>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-1">
+                                <Button variant="ghost" onClick={onSendPoll} className="w-full justify-start">
+                                    <BarChart3 className="mr-2 h-4 w-4"/> Poll
+                                </Button>
+                            </PopoverContent>
+                        </Popover>
+                    )}
                     <Input 
                         placeholder={canSendMessage ? "Say something..." : "Please wait..."}
                         value={newMessage}
                         onChange={e => setNewMessage(e.target.value)}
                         disabled={isSending || !canSendMessage}
+                        className={cn(isFaculty && "pl-10")}
                     />
                     <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()}>
                         {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
@@ -437,13 +465,13 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                             ) : (
                                 <div>
                                     {notes && <p className="whitespace-pre-wrap">{notes}</p>}
-                                    {attachment && <LinkPreview metadata={attachment} />}
+                                    {attachment && <LinkPreview metadata={attachment} isFaculty={false} />}
                                 </div>
                             )
                         ) : (
                              <div className="prose prose-sm dark:prose-invert max-w-none">
                                 {notes && <p className="whitespace-pre-wrap">{notes}</p>}
-                                {attachment && <LinkPreview metadata={attachment} />}
+                                {attachment && <LinkPreview metadata={attachment} isFaculty={false}/>}
                                 {(!notes && !attachment) && (
                                     <p className="text-muted-foreground italic">No notes available for this lesson yet.</p>
                                 )}
@@ -453,7 +481,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                 </Card>
             </div>
             <div className="lg:col-span-1">
-                <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} />
+                <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} isFaculty={isFaculty} onSendPoll={() => {}} />
             </div>
         </div>
     )
@@ -541,7 +569,7 @@ const LessonListView = ({ chapter, onLessonClick, courseId }: { chapter: Chapter
     )
 }
 
-export function CourseContent({ course, selectedSubject, selectedChapter, selectedLesson, onSubjectSelect, onChapterSelect, onLessonClick }: CourseContentProps) {
+export function CourseContent({ course, selectedSubject, selectedChapter, selectedLesson, onSubjectSelect, onChapterSelect, onLessonClick, isFaculty, onSendPoll }: CourseContentProps) {
 
     if (selectedLesson && selectedSubject && selectedChapter) {
         return <LectureView course={course} subject={selectedSubject} chapter={selectedChapter} lesson={selectedLesson} />;

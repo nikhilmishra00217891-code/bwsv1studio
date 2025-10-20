@@ -1,5 +1,3 @@
-
-
 "use client"; // This file now contains client-side and server-side logic, mark it for client.
 
 import { db } from "@/lib/firebase/client"; // Use client-side db for client-callable functions
@@ -45,6 +43,7 @@ export const listenForCourses = (isFaculty: boolean, callback: (courses: Course[
         const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Course);
         callback(courses);
     }, (error) => {
+        console.error("Error listening for courses: ", error);
         callback([]);
     });
 
@@ -86,7 +85,22 @@ export const getCourseById = async (id: string): Promise<Course | null> => {
     const docSnap = await getDoc(courseDocRef);
 
     if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Course;
+        const data = docSnap.data();
+        const course = { id: docSnap.id, ...data } as Course;
+        
+        // Ensure timestamps are converted, especially for nested properties like scheduledTime
+        if (course.subjects) {
+            course.subjects.forEach(subject => {
+                subject.chapters.forEach(chapter => {
+                    chapter.lessons.forEach(lesson => {
+                        if (lesson.scheduledTime instanceof Timestamp) {
+                            lesson.scheduledTime = lesson.scheduledTime.toDate().toISOString();
+                        }
+                    });
+                });
+            });
+        }
+        return course;
     } else {
         return null;
     }
@@ -313,7 +327,7 @@ export const deleteLesson = async (courseId: string, subjectId: string, chapterI
 
 export const sendLiveChatMessage = async (
     courseId: string, subjectId: string, chapterId: string, lessonId: string,
-    message: Omit<LiveChatMessage, 'id' | 'timestamp'>
+    message: Partial<LiveChatMessage>
 ) => {
     const chatColRef = collection(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`);
     await addDoc(chatColRef, {

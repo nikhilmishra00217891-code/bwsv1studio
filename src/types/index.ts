@@ -7,6 +7,8 @@ export interface LiveChatMessage {
   senderName: string;
   text: string;
   timestamp: Timestamp;
+  messageType: 'text' | 'poll';
+  poll?: Poll;
 }
 
 export interface UrlMetadata {
@@ -109,7 +111,7 @@ export interface Course {
   description: string;
   tags?: string[];
   // lessons is deprecated but kept for safety, use subjects instead
-  lessons: Lesson[]; 
+  lessons?: Lesson[]; 
   subjects: Subject[];
   isActive: boolean;
   youtubeLink?: string;

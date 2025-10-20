@@ -5,7 +5,7 @@ import type { Course, Subject, Chapter, Lesson, LiveChatMessage, UrlMetadata, Po
 import { CourseSidebar } from '@/components/courses/CourseSidebar';
 import { CourseContent } from '@/components/courses/CourseContent';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Library, Menu, Palette, Paperclip, BarChart3, Plus } from 'lucide-react';
+import { ArrowLeft, Library, Menu, Paperclip, BarChart3, Plus } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -51,6 +51,9 @@ const CreatePollDialog = ({ isOpen, onOpenChange, onSubmit }: { isOpen: boolean,
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!question.trim() || options.some(opt => !opt.trim())) {
+            return;
+        }
         setIsLoading(true);
         const poll: Poll = {
             question,
@@ -139,15 +142,6 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         setSelectedLesson(null);
     }
     
-    const handleBackToChapters = () => {
-        setSelectedLesson(null);
-    }
-
-    const handleBackToSubjects = () => {
-        setSelectedChapter(null);
-        setSelectedLesson(null);
-    }
-    
     const handleSendPoll = async (poll: Poll) => {
         if (!user || !selectedChapter || !selectedLesson || !selectedSubject) return;
 
@@ -158,6 +152,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                     senderId: user.uid,
                     senderName: userProfile?.displayName || "Faculty",
                     text: '',
+                    messageType: 'poll',
                     poll: poll
                 }
             );
@@ -184,7 +179,7 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 onChapterSelect={handleChapterSelect}
                 onLessonClick={handleLessonClick}
                 isFaculty={isFaculty}
-                onSendPoll={handleSendPoll}
+                onSendPoll={() => setIsCreatePollOpen(true)}
             />
         );
     };
