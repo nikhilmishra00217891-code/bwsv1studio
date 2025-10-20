@@ -393,12 +393,12 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                 <Avatar className="w-6 h-6">
                     <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="flex-grow min-w-0">
                     <div className="flex items-baseline gap-2">
                         <p className="font-bold text-primary/90">{msg.senderName}</p>
                         <p className="text-xs text-muted-foreground">{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}</p>
                     </div>
-                    <p>{msg.text}</p>
+                    <p className="break-words">{msg.text}</p>
                 </div>
                 {isFaculty && (
                      <button onClick={() => handlePinToggle(msg.id)} className="absolute top-0 right-0 p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
@@ -412,13 +412,13 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
     const pinnedMessages = messages.filter(m => m.isPinned).sort((a,b) => (b.pinnedAt?.toMillis() || 0) - (a.pinnedAt?.toMillis() || 0));
 
     return (
-        <Card className="flex flex-col h-full">
+        <Card className="flex flex-col h-full min-h-0">
             <CardContent className="p-0 flex flex-col flex-1 min-h-0">
                 <div className="flex items-center gap-2 border-b p-4 shrink-0">
                     <Sparkles className="w-5 h-5 text-primary" />
                     <h3 className="font-bold text-lg">Discussion</h3>
                 </div>
-                 <div className="flex-1 flex flex-col min-h-0">
+                 <div className="flex-1 flex flex-col min-h-0 relative">
                     {pinnedMessages.length > 0 && (
                         <div className="p-2 border-b bg-muted/50 shrink-0">
                             {pinnedMessages.map(msg => renderMessage(msg))}
@@ -477,7 +477,7 @@ const LinkPreview = ({ metadata, onRemove, isFaculty }: { metadata: UrlMetadata,
                     <div className="p-3 flex flex-col justify-center overflow-hidden flex-grow">
                         <p className="text-xs text-muted-foreground truncate">{metadata.siteName}</p>
                         <p className="font-semibold truncate">{metadata.title}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{metadata.description}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2 break-words">{metadata.description}</p>
                     </div>
                 </Card>
             </a>
@@ -591,27 +591,6 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    const [leftPanelHeight, setLeftPanelHeight] = useState<number | undefined>(undefined);
-    const leftPanelRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const observer = new ResizeObserver(entries => {
-            for (let entry of entries) {
-                setLeftPanelHeight(entry.contentRect.height);
-            }
-        });
-
-        if (leftPanelRef.current) {
-            observer.observe(leftPanelRef.current);
-        }
-
-        return () => {
-            if (leftPanelRef.current) {
-                observer.unobserve(leftPanelRef.current);
-            }
-        };
-    }, []);
-
     const isCompleted = useMemo(() => 
         userProfile?.progress?.[course.id]?.completedLessons?.includes(lesson.id) || false,
     [userProfile, course.id, lesson.id]);
@@ -687,7 +666,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
 
     return (
         <div className="grid lg:grid-cols-3 gap-8 p-4 md:p-8 max-w-full">
-            <div className="lg:col-span-2" ref={leftPanelRef}>
+            <div className="lg:col-span-2 min-w-0">
                 <div className="aspect-video bg-card rounded-lg overflow-hidden border shadow-lg relative">
                     {videoId ? (
                         <iframe
@@ -772,13 +751,13 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                                 </div>
                             ) : (
                                 <div>
-                                    {notes && <p className="whitespace-pre-wrap">{notes}</p>}
+                                    {notes && <p className="whitespace-pre-wrap break-words">{notes}</p>}
                                     {attachment && <LinkPreview metadata={attachment} isFaculty={false} />}
                                 </div>
                             )
                         ) : (
                              <div className="prose prose-sm dark:prose-invert max-w-none">
-                                {notes && <p className="whitespace-pre-wrap">{notes}</p>}
+                                {notes && <p className="whitespace-pre-wrap break-words">{notes}</p>}
                                 {attachment && <LinkPreview metadata={attachment} isFaculty={false}/>}
                                 {(!notes && !attachment) && (
                                     <p className="text-muted-foreground italic">No notes available for this lesson yet.</p>
@@ -788,7 +767,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-1" style={{ height: leftPanelHeight ? `${leftPanelHeight}px` : 'auto' }}>
+            <div className="lg:col-span-1 min-w-0">
                 <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} isFaculty={isFaculty} />
             </div>
         </div>
@@ -893,3 +872,5 @@ export function CourseContent({ course, selectedSubject, selectedChapter, select
 
     return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;
 }
+
+    
