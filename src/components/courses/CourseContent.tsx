@@ -412,16 +412,16 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
     const pinnedMessages = messages.filter(m => m.isPinned).sort((a,b) => (b.pinnedAt?.toMillis() || 0) - (a.pinnedAt?.toMillis() || 0));
 
     return (
-        <Card className="mt-8">
-            <CardContent className="p-0 flex flex-col h-full">
-                <div className="flex items-center gap-2 border-b p-4">
+        <Card className="mt-8 h-full flex flex-col">
+            <CardContent className="p-0 flex flex-col h-full min-h-0">
+                <div className="flex items-center gap-2 border-b p-4 shrink-0">
                     <Sparkles className="w-5 h-5 text-primary" />
                     <h3 className="font-bold text-lg">Discussion</h3>
                 </div>
-                 <div className="flex-grow flex flex-col min-h-0">
+                 <div className="flex-grow flex flex-col min-h-0 relative">
                     {pinnedMessages.length > 0 && (
-                        <div className="p-2 border-b bg-muted/50">
-                            {pinnedMessages.map(msg => <PollMessage key={msg.id} msg={msg} isPinnedView />)}
+                        <div className="p-2 border-b bg-muted/50 shrink-0">
+                            {pinnedMessages.map(msg => renderMessage(msg))}
                         </div>
                     )}
                     <ScrollArea className="flex-grow px-4" ref={scrollAreaRef}>
@@ -429,8 +429,8 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                             {messages.filter(m => !m.isPinned).map(renderMessage)}
                         </div>
                     </ScrollArea>
-                    <div className="p-4 border-t">
-                        <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t relative">
+                    <div className="p-4 border-t shrink-0">
+                        <form onSubmit={handleSendMessage} className="relative">
                             {isFaculty && (
                                 <Popover>
                                     <PopoverTrigger asChild>
@@ -452,7 +452,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                                 disabled={isSending || !canSendMessage}
                                 className={cn(isFaculty && "pl-10")}
                             />
-                            <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()}>
+                            <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()} size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
                                 {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
                             </Button>
                         </form>
@@ -767,7 +767,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 min-h-0">
                 <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} isFaculty={isFaculty} />
             </div>
         </div>
@@ -872,5 +872,3 @@ export function CourseContent({ course, selectedSubject, selectedChapter, select
 
     return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;
 }
-
-    
