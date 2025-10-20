@@ -1,5 +1,3 @@
-
-
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -19,6 +17,17 @@ export interface UrlMetadata {
     siteName: string;
 }
 
+export interface PollOption {
+    text: string;
+    voterIds: string[];
+}
+
+export interface Poll {
+    question: string;
+    options: PollOption[];
+}
+
+
 export interface Lesson {
   id: string;
   title: string;
@@ -29,6 +38,7 @@ export interface Lesson {
   notesAttachment?: UrlMetadata | null;
   status: 'live' | 'recorded' | 'scheduled';
   scheduledTime?: Timestamp | string | null;
+  poll?: Poll;
 }
 
 export interface StudyMaterialLink {
@@ -107,16 +117,6 @@ export interface Course {
   progress?: number;
 }
 
-
-export interface PollOption {
-    text: string;
-    voterIds: string[];
-}
-
-export interface Poll {
-    question: string;
-    options: PollOption[];
-}
 
 export interface CourseAnnouncement {
     id: string;
