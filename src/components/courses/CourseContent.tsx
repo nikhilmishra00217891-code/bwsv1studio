@@ -2,7 +2,7 @@
 "use client";
 
 import type { Course, Lesson, Subject, Chapter, LiveChatMessage, UrlMetadata, Poll } from "@/types";
-import { Button } from "../ui/button";
+import { Button, buttonVariants } from "../ui/button";
 import { PlayCircle, FileText, CheckCircle, Video, BookOpen, Heart, ThumbsUp, Info, ChevronRight, BookText, Send, LoaderCircle, Sparkles, Eye, Clock, Edit, Trash2, Link as LinkIcon, XCircle, Paperclip, BarChart3, Plus, TimerIcon, Pin, PinOff, PartyPopper } from 'lucide-react';
 import Image from "next/image";
 import { ScrollArea } from "../ui/scroll-area";
@@ -183,6 +183,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
     const [isSending, setIsSending] = useState(false);
     const [canSendMessage, setCanSendMessage] = useState(true);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
 
     useEffect(() => {
@@ -199,6 +200,14 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
             if (viewport) viewport.scrollTop = viewport.scrollHeight;
         }
     }, [messages]);
+    
+    const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setNewMessage(e.target.value);
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto'; // Reset height
+            textareaRef.current.style.height = `${e.target.scrollHeight}px`; // Set to scroll height
+        }
+    };
 
     const handleSendMessage = async (e: FormEvent) => {
         e.preventDefault();
@@ -218,6 +227,9 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                 }
             );
             setNewMessage('');
+             if (textareaRef.current) {
+                textareaRef.current.style.height = 'auto';
+            }
         } catch (error) {
             console.error("Failed to send message:", error);
             toast({ variant: 'destructive', title: 'Could not send message' });
@@ -398,7 +410,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                         <p className="font-bold text-primary/90">{msg.senderName}</p>
                         <p className="text-xs text-muted-foreground">{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}</p>
                     </div>
-                    <p className="break-words">{msg.text}</p>
+                    <p className="break-words whitespace-pre-wrap">{msg.text}</p>
                 </div>
                 {isFaculty && (
                      <button onClick={() => handlePinToggle(msg.id)} className="absolute top-0 right-0 p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
@@ -419,7 +431,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                     <h3 className="font-bold text-lg">Discussion</h3>
                 </div>
                  <div className="flex-1 flex flex-col min-h-0 relative">
-                    {pinnedMessages.length > 0 && (
+                     {pinnedMessages.length > 0 && (
                         <div className="p-2 border-b bg-muted/50 shrink-0">
                             {pinnedMessages.map(msg => renderMessage(msg))}
                         </div>
@@ -445,12 +457,20 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                                     </PopoverContent>
                                 </Popover>
                             )}
-                            <Input 
+                            <Textarea
+                                ref={textareaRef}
                                 placeholder={canSendMessage ? "Say something..." : "Please wait..."}
                                 value={newMessage}
-                                onChange={e => setNewMessage(e.target.value)}
+                                onInput={handleInput}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage(e);
+                                    }
+                                }}
                                 disabled={isSending || !canSendMessage}
-                                className={cn(isFaculty && "pl-10")}
+                                className={cn("pr-12 resize-none max-h-40", isFaculty && "pl-10")}
+                                rows={1}
                             />
                             <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()} size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
                                 {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
@@ -590,6 +610,9 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     const [attachment, setAttachment] = useState<UrlMetadata | null>(lesson.notesAttachment || null);
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    
+    const videoContainerRef = useRef<HTMLDivElement>(null);
+    const [chatHeight, setChatHeight] = useState('auto');
 
     const isCompleted = useMemo(() => 
         userProfile?.progress?.[course.id]?.completedLessons?.includes(lesson.id) || false,
@@ -599,6 +622,25 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
         setNotes(lesson.notes || '');
         setAttachment(lesson.notesAttachment || null);
     }, [lesson]);
+    
+    useEffect(() => {
+        const observer = new ResizeObserver(entries => {
+            const entry = entries[0];
+            if (entry) {
+                setChatHeight(`${entry.contentRect.height}px`);
+            }
+        });
+
+        if(videoContainerRef.current) {
+            observer.observe(videoContainerRef.current);
+        }
+        
+        return () => {
+            if(videoContainerRef.current) {
+                observer.unobserve(videoContainerRef.current);
+            }
+        }
+    }, [videoContainerRef]);
     
     const handleToggleComplete = async () => {
         if (!user) return;
@@ -666,7 +708,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
 
     return (
         <div className="grid lg:grid-cols-3 gap-8 p-4 md:p-8 max-w-full">
-            <div className="lg:col-span-2 min-w-0">
+            <div className="lg:col-span-2 min-w-0" ref={videoContainerRef}>
                 <div className="aspect-video bg-card rounded-lg overflow-hidden border shadow-lg relative">
                     {videoId ? (
                         <iframe
@@ -767,7 +809,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-1 min-w-0">
+            <div className="lg:col-span-1 min-w-0" style={{ height: chatHeight }}>
                 <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} isFaculty={isFaculty} />
             </div>
         </div>
@@ -872,5 +914,3 @@ export function CourseContent({ course, selectedSubject, selectedChapter, select
 
     return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;
 }
-
-    
