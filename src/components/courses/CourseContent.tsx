@@ -311,13 +311,18 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
 
         return (
              <div className="text-sm p-3 my-2 bg-card rounded-lg border relative group">
-                 {isFaculty && (
+                 {isFaculty && !isPinnedView && (
                      <button onClick={() => handlePinToggle(msg.id)} className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                          {msg.isPinned ? <PinOff className="w-4 h-4"/> : <Pin className="w-4 h-4"/>}
                     </button>
                  )}
+                 {isFaculty && isPinnedView && (
+                     <button onClick={() => handlePinToggle(msg.id)} className="absolute top-2 right-2 p-1 text-primary hover:text-primary/70">
+                         <PinOff className="w-4 h-4"/>
+                    </button>
+                 )}
                 <div className="flex justify-between items-center mb-2">
-                    <p className="font-bold">{poll.question}</p>
+                    <p className="font-bold pr-8">{poll.question}</p>
                     {poll.duration && (
                         <Badge variant={isPollOpen ? "default" : "secondary"} className="flex items-center gap-1">
                             <TimerIcon className="w-3 h-3"/>
@@ -357,7 +362,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                                         {!isPollOpen && <span className="text-xs font-mono">{percentage.toFixed(0)}%</span>}
                                     </div>
                                 </div>
-                                {isFaculty && !isPollOpen && (
+                                {isFaculty && !isPollOpen && poll.correctOptionIndex === undefined && (
                                      <button 
                                         className={cn("mt-1 text-xs h-7 flex items-center gap-1", isCorrectAnswer ? "text-green-600 font-bold" : "text-muted-foreground hover:text-foreground")}
                                         onClick={(e) => { e.stopPropagation(); handleSetCorrect(msg.id, index); }}
@@ -371,7 +376,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                 </div>
                  <p className="text-xs text-muted-foreground mt-2 text-right">{totalVotes} vote(s)</p>
                   {!isPollOpen && didUserVoteCorrectly && (
-                     <div className="mt-2 text-center text-sm font-semibold text-green-600 bg-green-100 p-2 rounded-md flex items-center justify-center gap-2">
+                     <div className="mt-2 text-center text-sm font-semibold text-green-600 bg-green-100/50 p-2 rounded-md flex items-center justify-center gap-2">
                         <PartyPopper className="w-4 h-4"/> You chose the correct answer!
                     </div>
                 )}
@@ -407,49 +412,51 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
     const pinnedMessages = messages.filter(m => m.isPinned).sort((a,b) => (b.pinnedAt?.toMillis() || 0) - (a.pinnedAt?.toMillis() || 0));
 
     return (
-        <Card className="mt-8 flex flex-col h-[80vh]">
-            <CardContent className="p-0 flex-grow flex flex-col">
+        <Card className="mt-8">
+            <CardContent className="p-0 flex flex-col h-full">
                 <div className="flex items-center gap-2 border-b p-4">
                     <Sparkles className="w-5 h-5 text-primary" />
                     <h3 className="font-bold text-lg">Discussion</h3>
                 </div>
-                 {pinnedMessages.length > 0 && (
-                    <div className="p-2 border-b bg-muted/50">
-                        {pinnedMessages.map(msg => <PollMessage key={msg.id} msg={msg} isPinnedView />)}
+                 <div className="flex-grow flex flex-col min-h-0">
+                    {pinnedMessages.length > 0 && (
+                        <div className="p-2 border-b bg-muted/50">
+                            {pinnedMessages.map(msg => <PollMessage key={msg.id} msg={msg} isPinnedView />)}
+                        </div>
+                    )}
+                    <ScrollArea className="flex-grow px-4" ref={scrollAreaRef}>
+                        <div className="space-y-4 py-4">
+                            {messages.filter(m => !m.isPinned).map(renderMessage)}
+                        </div>
+                    </ScrollArea>
+                    <div className="p-4 border-t">
+                        <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t relative">
+                            {isFaculty && (
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button size="icon" variant="ghost" className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8">
+                                            <Paperclip className="w-4 h-4"/>
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-1">
+                                        <Button variant="ghost" onClick={() => setIsCreatePollOpen(true)} className="w-full justify-start">
+                                            <BarChart3 className="mr-2 h-4 w-4"/> Poll
+                                        </Button>
+                                    </PopoverContent>
+                                </Popover>
+                            )}
+                            <Input 
+                                placeholder={canSendMessage ? "Say something..." : "Please wait..."}
+                                value={newMessage}
+                                onChange={e => setNewMessage(e.target.value)}
+                                disabled={isSending || !canSendMessage}
+                                className={cn(isFaculty && "pl-10")}
+                            />
+                            <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()}>
+                                {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
+                            </Button>
+                        </form>
                     </div>
-                )}
-                <ScrollArea className="flex-grow px-4" ref={scrollAreaRef}>
-                    <div className="space-y-4 py-4">
-                        {messages.filter(m => !m.isPinned).map(renderMessage)}
-                    </div>
-                </ScrollArea>
-                <div className="p-4 border-t">
-                    <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t relative">
-                        {isFaculty && (
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button size="icon" variant="ghost" className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8">
-                                        <Paperclip className="w-4 h-4"/>
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-1">
-                                    <Button variant="ghost" onClick={() => setIsCreatePollOpen(true)} className="w-full justify-start">
-                                        <BarChart3 className="mr-2 h-4 w-4"/> Poll
-                                    </Button>
-                                </PopoverContent>
-                            </Popover>
-                        )}
-                        <Input 
-                            placeholder={canSendMessage ? "Say something..." : "Please wait..."}
-                            value={newMessage}
-                            onChange={e => setNewMessage(e.target.value)}
-                            disabled={isSending || !canSendMessage}
-                            className={cn(isFaculty && "pl-10")}
-                        />
-                        <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()}>
-                            {isSending ? <LoaderCircle className="animate-spin" /> : <Send />}
-                        </Button>
-                    </form>
                 </div>
             </CardContent>
             <CreatePollDialog isOpen={isCreatePollOpen} onOpenChange={setIsCreatePollOpen} onSubmit={handleSendPoll} />
@@ -865,3 +872,5 @@ export function CourseContent({ course, selectedSubject, selectedChapter, select
 
     return <SubjectGrid course={course} onSubjectSelect={onSubjectSelect} />;
 }
+
+    
