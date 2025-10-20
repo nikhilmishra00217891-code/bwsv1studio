@@ -6,12 +6,15 @@ export interface LiveChatMessage {
   id: string;
   senderId: string;
   senderName: string;
-  text: string;
+  text?: string; // Made optional as polls don't need it
   timestamp: Timestamp;
   messageType: 'text' | 'poll';
   poll?: Poll;
   isPinned?: boolean;
   pinnedAt?: Timestamp | null;
+  isAiResponse?: boolean;
+  reactions?: { emoji: string, userIds: string[] }[];
+  replyTo?: { messageId: string, senderName: string, text: string };
 }
 
 export interface UrlMetadata {
@@ -30,10 +33,12 @@ export interface PollOption {
 export interface Poll {
     question: string;
     options: PollOption[];
+    type: 'single-choice' | 'multi-choice' | 'thumbs';
     status: 'open' | 'closed';
     duration?: number; // in seconds
     endsAt?: Timestamp | null;
     correctOptionIndex?: number | null;
+    autoDeleteSeconds?: number;
 }
 
 

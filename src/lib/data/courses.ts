@@ -584,23 +584,28 @@ export const voteOnPoll = async (courseId: string, subjectId: string, chapterId:
             }
         });
         
-        const hasVoted = pollData.options.some(opt => opt.voterIds.includes(userId));
-        if (hasVoted) {
-            // Allow changing vote
-            pollData.options.forEach(opt => {
-                const userIndex = opt.voterIds.indexOf(userId);
-                if (userIndex > -1) {
-                    opt.voterIds.splice(userIndex, 1);
-                }
-            });
+        const userHasVotedInOptionIndex = pollData.options.findIndex(opt => opt.voterIds.includes(userId));
+
+        // If multi-choice, allow multiple votes from the same user on different options
+        if (pollData.type === 'multi-choice') {
+            const hasVotedThisOption = pollData.options[optionIndex].voterIds.includes(userId);
+            if (hasVotedThisOption) {
+                // Deselect
+                 pollData.options[optionIndex].voterIds = pollData.options[optionIndex].voterIds.filter(id => id !== userId);
+            } else {
+                // Select
+                pollData.options[optionIndex].voterIds.push(userId);
+            }
+        } else { // For single-choice and thumbs
+            if (userHasVotedInOptionIndex !== -1) {
+                // User has already voted, remove old vote
+                pollData.options[userHasVotedInOptionIndex].voterIds = pollData.options[userHasVotedInOptionIndex].voterIds.filter(id => id !== userId);
+            }
+            // Add new vote, unless they clicked the same option again (which means un-voting)
+            if (userHasVotedInOptionIndex !== optionIndex) {
+                 pollData.options[optionIndex].voterIds.push(userId);
+            }
         }
-
-
-        if (optionIndex < 0 || optionIndex >= pollData.options.length) {
-            throw new Error("Invalid option selected.");
-        }
-
-        pollData.options[optionIndex].voterIds.push(userId);
 
         transaction.update(messageRef, { poll: pollData });
     });
@@ -645,4 +650,12 @@ export const toggleLiveChatPin = async (
         isPinned: !isCurrentlyPinned,
         pinnedAt: !isCurrentlyPinned ? serverTimestamp() : null
     });
+};
+
+export const deleteLiveChatMessage = async (
+  courseId: string, subjectId: string, chapterId: string, lessonId: string,
+  messageId: string
+) => {
+    const messageRef = doc(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`, messageId);
+    await deleteDoc(messageRef);
 };
