@@ -11,7 +11,6 @@ import { ArrowLeft, Library, Menu, Palette } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import CourseAnnouncementsPage from './announcements/page';
 import { useAuth } from '@/components/auth/AuthProvider';
 import TodaysMissionPage from './todays-mission/page';
 
@@ -55,9 +54,6 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
     }
     
     const renderContent = () => {
-        if (isAnnouncementsPage) {
-            return <CourseAnnouncementsPage />;
-        }
         if (isTodaysMissionPage) {
             return <TodaysMissionPage />
         }
