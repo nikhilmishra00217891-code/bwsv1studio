@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Course, Subject, Chapter, Lesson } from "@/types";
 import { CourseSidebar } from '@/components/courses/CourseSidebar';
 import { CourseContent } from '@/components/courses/CourseContent';

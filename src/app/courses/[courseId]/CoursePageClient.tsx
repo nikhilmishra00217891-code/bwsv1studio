@@ -250,7 +250,7 @@ export default function CoursePageClient({ initialCourse }: { initialCourse: Cou
             <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_duration_${course.id}`} defaultValue={textContent[`course_duration_${course.id}`] || "8 hours total"} /></div>
                 <div className="flex items-center gap-2"><BookText className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_lessons_count_${course.id}`} defaultValue={textContent[`course_lessons_count_${course.id}`] || `${totalLessons} lessons`} /></div>
-                <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> <EditableText onSave={handleSaveText} contentId={`course_completion_${course.id}`} defaultValue={textContent[`course_completion_${course.id}`] || "25% complete"} /></div>
+                <div className="flex items-center gap-2 font-medium"><CheckCircle2 className="w-5 h-5 text-primary" /> {course.progress || 0}% Complete</div>
             </div>
         </div>
     </div>
