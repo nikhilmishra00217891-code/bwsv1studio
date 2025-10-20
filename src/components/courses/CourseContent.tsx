@@ -236,13 +236,13 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                 {
                     senderId: user.uid,
                     senderName: userProfile.displayName || "Faculty",
-                    text: '',
                     messageType: 'poll',
-                    poll: poll
+                    poll: poll,
+                    isPinned: true, // Auto-pin polls
                 }
             );
             setIsCreatePollOpen(false);
-            toast({ title: 'Poll created successfully!' });
+            toast({ title: 'Poll created and pinned!' });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         }
@@ -276,7 +276,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
         }
     }
     
-    const PollMessage = ({ msg }: { msg: LiveChatMessage }) => {
+    const PollMessage = ({ msg, isPinnedView = false }: { msg: LiveChatMessage, isPinnedView?: boolean }) => {
         const poll = msg.poll;
         const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
@@ -358,14 +358,12 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                                     </div>
                                 </div>
                                 {isFaculty && !isPollOpen && (
-                                     <Button 
-                                        size="sm" 
-                                        variant={isCorrectAnswer ? "secondary" : "outline"} 
-                                        className="mt-1 text-xs h-7"
+                                     <button 
+                                        className={cn("mt-1 text-xs h-7 flex items-center gap-1", isCorrectAnswer ? "text-green-600 font-bold" : "text-muted-foreground hover:text-foreground")}
                                         onClick={(e) => { e.stopPropagation(); handleSetCorrect(msg.id, index); }}
                                     >
-                                        {isCorrectAnswer ? "Correct Answer" : "Set as Correct"}
-                                    </Button>
+                                        {isCorrectAnswer ? <><CheckCircle className="w-3 h-3"/> Correct Answer</> : 'Set as Correct'}
+                                    </button>
                                 )}
                             </div>
                         )
@@ -377,26 +375,6 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                         <PartyPopper className="w-4 h-4"/> You chose the correct answer!
                     </div>
                 )}
-            </div>
-        )
-    }
-
-    const PinnedMessagesBar = ({ messages }: { messages: LiveChatMessage[] }) => {
-        if (messages.length === 0) return null;
-        return (
-            <div className="bg-muted/50 border-b p-2">
-                {messages.map(msg => (
-                    <div key={msg.id} className="flex items-center gap-2 text-xs">
-                        <Pin className="w-4 h-4 text-primary shrink-0"/>
-                        <span className="font-semibold text-primary/80 truncate">{msg.senderName}:</span>
-                        <span className="text-muted-foreground truncate">{msg.poll?.question || msg.text}</span>
-                         {isFaculty && (
-                            <button onClick={() => handlePinToggle(msg.id)} className="ml-auto p-1 text-muted-foreground hover:text-destructive">
-                                <PinOff className="w-4 h-4"/>
-                            </button>
-                        )}
-                    </div>
-                ))}
             </div>
         )
     }
@@ -431,18 +409,20 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
     return (
         <Card className="mt-8 flex flex-col h-[80vh]">
             <CardContent className="p-0 flex-grow flex flex-col">
-                <div className="flex items-center gap-2 border-b pb-2 mb-4 p-4">
+                <div className="flex items-center gap-2 border-b p-4">
                     <Sparkles className="w-5 h-5 text-primary" />
                     <h3 className="font-bold text-lg">Discussion</h3>
                 </div>
-                <div className="relative flex-grow flex flex-col">
-                     <PinnedMessagesBar messages={pinnedMessages} />
-                    <ScrollArea className="flex-grow px-4" ref={scrollAreaRef}>
-                        <div className="space-y-4">
-                            {messages.map(renderMessage)}
-                        </div>
-                    </ScrollArea>
-                </div>
+                 {pinnedMessages.length > 0 && (
+                    <div className="p-2 border-b bg-muted/50">
+                        {pinnedMessages.map(msg => <PollMessage key={msg.id} msg={msg} isPinnedView />)}
+                    </div>
+                )}
+                <ScrollArea className="flex-grow px-4" ref={scrollAreaRef}>
+                    <div className="space-y-4 py-4">
+                        {messages.filter(m => !m.isPinned).map(renderMessage)}
+                    </div>
+                </ScrollArea>
                 <div className="p-4 border-t">
                     <form onSubmit={handleSendMessage} className="mt-4 flex gap-2 pt-4 border-t relative">
                         {isFaculty && (
