@@ -410,7 +410,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                         <p className="font-bold text-primary/90">{msg.senderName}</p>
                         <p className="text-xs text-muted-foreground">{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}</p>
                     </div>
-                    <p className="break-words whitespace-pre-wrap">{msg.text}</p>
+                    <p className="break-words whitespace-pre-wrap max-w-md">{msg.text}</p>
                 </div>
                 {isFaculty && (
                      <button onClick={() => handlePinToggle(msg.id)} className="absolute top-0 right-0 p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
@@ -469,7 +469,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                                     }
                                 }}
                                 disabled={isSending || !canSendMessage}
-                                className={cn("pr-12 resize-none max-h-40", isFaculty && "pl-10")}
+                                className={cn("pr-12 resize-none max-h-40 max-w-md mx-auto", isFaculty && "pl-10")}
                                 rows={1}
                             />
                             <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()} size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
@@ -612,7 +612,6 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     const [isLoading, setIsLoading] = useState(false);
     
     const videoContainerRef = useRef<HTMLDivElement>(null);
-    const [chatHeight, setChatHeight] = useState('auto');
 
     const isCompleted = useMemo(() => 
         userProfile?.progress?.[course.id]?.completedLessons?.includes(lesson.id) || false,
@@ -622,25 +621,6 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
         setNotes(lesson.notes || '');
         setAttachment(lesson.notesAttachment || null);
     }, [lesson]);
-    
-    useEffect(() => {
-        const observer = new ResizeObserver(entries => {
-            const entry = entries[0];
-            if (entry) {
-                setChatHeight(`${entry.contentRect.height}px`);
-            }
-        });
-
-        if(videoContainerRef.current) {
-            observer.observe(videoContainerRef.current);
-        }
-        
-        return () => {
-            if(videoContainerRef.current) {
-                observer.unobserve(videoContainerRef.current);
-            }
-        }
-    }, [videoContainerRef]);
     
     const handleToggleComplete = async () => {
         if (!user) return;
@@ -809,7 +789,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-1 min-w-0" style={{ height: chatHeight }}>
+            <div className="lg:col-span-1 min-w-0" style={{ height: videoContainerRef.current?.offsetHeight }}>
                 <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} isFaculty={isFaculty} />
             </div>
         </div>
