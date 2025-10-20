@@ -20,8 +20,9 @@ import {
   where,
   deleteDoc,
   increment,
+  runTransaction,
 } from "firebase/firestore";
-import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial, UserProfile } from "@/types";
+import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial, UserProfile, Poll } from "@/types";
 
 // --- Client-side callable functions ---
 
@@ -557,4 +558,35 @@ export const listenForLiveChatMessages = (
     return unsubscribe;
 };
 
-    
+export const voteOnPoll = async (courseId: string, subjectId: string, chapterId: string, lessonId: string, messageId: string, optionIndex: number, userId: string) => {
+    const messageRef = doc(db, `courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lessons/${lessonId}/liveChat`, messageId);
+
+    await runTransaction(db, async (transaction) => {
+        const messageDoc = await transaction.get(messageRef);
+        if (!messageDoc.exists() || messageDoc.data().messageType !== 'poll') {
+            throw new Error("Poll not found.");
+        }
+
+        const pollData = messageDoc.data().poll as Poll;
+
+        // Ensure voterIds array exists for all options
+        pollData.options.forEach(opt => {
+            if (!opt.voterIds) {
+                opt.voterIds = [];
+            }
+        });
+        
+        const hasVoted = pollData.options.some(opt => opt.voterIds.includes(userId));
+        if (hasVoted) {
+            throw new Error("You have already voted on this poll.");
+        }
+
+        if (optionIndex < 0 || optionIndex >= pollData.options.length) {
+            throw new Error("Invalid option selected.");
+        }
+
+        pollData.options[optionIndex].voterIds.push(userId);
+
+        transaction.update(messageRef, { poll: pollData });
+    });
+}

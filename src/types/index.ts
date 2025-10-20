@@ -40,7 +40,6 @@ export interface Lesson {
   notesAttachment?: UrlMetadata | null;
   status: 'live' | 'recorded' | 'scheduled';
   scheduledTime?: Timestamp | string | null;
-  poll?: Poll;
 }
 
 export interface StudyMaterialLink {
