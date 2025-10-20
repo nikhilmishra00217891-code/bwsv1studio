@@ -23,8 +23,12 @@ export default function CourseProgressPage() {
     const router = useRouter();
 
     const [course, setCourse] = useState<Course | null>(null);
-    const [progressValues, setProgressValues] = useState<Record<string, number>>({});
-    const [initialProgress, setInitialProgress] = useState<Record<string, number>>({});
+    const [mainProgress, setMainProgress] = useState(0);
+    const [subjectProgress, setSubjectProgress] = useState<Record<string, number>>({});
+    
+    const [initialMainProgress, setInitialMainProgress] = useState(0);
+    const [initialSubjectProgress, setInitialSubjectProgress] = useState<Record<string, number>>({});
+    
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
@@ -39,22 +43,28 @@ export default function CourseProgressPage() {
             const courseData = await getCourseById(courseId);
             setCourse(courseData);
             if (courseData) {
-                const initialVals = courseData.subjects.reduce((acc, subject) => {
+                const initialSubjectVals = courseData.subjects.reduce((acc, subject) => {
                     acc[subject.id] = subject.progress || 0;
                     return acc;
                 }, {} as Record<string, number>);
-                setProgressValues(initialVals);
-                setInitialProgress(initialVals);
+                
+                const initialMainVal = courseData.progress || 0;
+
+                setSubjectProgress(initialSubjectVals);
+                setInitialSubjectProgress(initialSubjectVals);
+
+                setMainProgress(initialMainVal);
+                setInitialMainProgress(initialMainVal);
             }
             setIsLoading(false);
         };
         fetchCourse();
     }, [courseId, userProfile, router]);
     
-    const hasChanges = JSON.stringify(progressValues) !== JSON.stringify(initialProgress);
+    const hasChanges = JSON.stringify(subjectProgress) !== JSON.stringify(initialSubjectProgress) || mainProgress !== initialMainProgress;
 
-    const handleProgressChange = (subjectId: string, value: number) => {
-        setProgressValues(prev => ({...prev, [subjectId]: value }));
+    const handleSubjectProgressChange = (subjectId: string, value: number) => {
+        setSubjectProgress(prev => ({...prev, [subjectId]: value }));
     }
 
     const handleSaveChanges = async () => {
@@ -63,12 +73,17 @@ export default function CourseProgressPage() {
         try {
             const updatedSubjects = course.subjects.map(subject => ({
                 ...subject,
-                progress: progressValues[subject.id] || subject.progress || 0
+                progress: subjectProgress[subject.id] || subject.progress || 0
             }));
             
-            await updateCourse(courseId, { subjects: updatedSubjects });
+            await updateCourse(courseId, { 
+                subjects: updatedSubjects,
+                progress: mainProgress,
+            });
             
-            setInitialProgress(progressValues);
+            setInitialSubjectProgress(subjectProgress);
+            setInitialMainProgress(mainProgress);
+
             toast({ title: 'Progress Saved!', description: 'Official course progress has been updated.' });
         } catch (error: any) {
              toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
@@ -106,6 +121,25 @@ export default function CourseProgressPage() {
                     Save Changes
                 </Button>
             </div>
+
+             <Card className="mb-6 shadow-lg border-primary/30">
+                <CardHeader>
+                    <CardTitle>Overall Course Progress</CardTitle>
+                    <CardDescription>Manually set the main completion percentage for the entire course.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <div className="flex items-center gap-4 mt-2">
+                        <Slider 
+                            value={[mainProgress]}
+                            onValueChange={([val]) => setMainProgress(val)}
+                            max={100}
+                            step={1}
+                        />
+                        <span className="font-bold text-primary text-2xl w-20 text-center">{mainProgress}%</span>
+                    </div>
+                </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {(course.subjects || []).map(subject => (
                     <Card key={subject.id}>
@@ -115,12 +149,12 @@ export default function CourseProgressPage() {
                         <CardContent>
                              <div className="flex items-center gap-4 mt-2">
                                 <Slider 
-                                    value={[progressValues[subject.id] || 0]}
-                                    onValueChange={([val]) => handleProgressChange(subject.id, val)}
+                                    value={[subjectProgress[subject.id] || 0]}
+                                    onValueChange={([val]) => handleSubjectProgressChange(subject.id, val)}
                                     max={100}
                                     step={1}
                                 />
-                                <span className="font-bold text-primary text-lg w-16 text-center">{progressValues[subject.id] || 0}%</span>
+                                <span className="font-bold text-primary text-lg w-16 text-center">{subjectProgress[subject.id] || 0}%</span>
                             </div>
                         </CardContent>
                     </Card>

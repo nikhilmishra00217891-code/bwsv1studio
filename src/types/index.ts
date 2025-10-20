@@ -104,6 +104,7 @@ export interface Course {
   isActive: boolean;
   youtubeLink?: string;
   isFree?: boolean;
+  progress?: number;
 }
 
 
