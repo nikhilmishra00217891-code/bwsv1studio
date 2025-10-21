@@ -120,10 +120,15 @@ export default function Header() {
       { href: "/parivartan", label: "Parivartan Chamber", icon: Users, isProtected: true, flag: featureFlags.parivartan ?? true },
   ];
 
-  const isLearnZone = pathname.startsWith('/courses/') && pathname.includes('/learnzone');
-  const isViewingStudentDashboard = pathname.startsWith('/admin/users/');
+  // More robust check for showing the back button
+  const isMainPage = mainNavPaths.some(mainPath => {
+    if (mainPath === "/") return pathname === "/";
+    return pathname.startsWith(mainPath);
+  });
   
-  const showBackButton = isClient && !isLearnZone && !mainNavPaths.includes(pathname) && !isViewingStudentDashboard;
+  const isSpecialFullScreen = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan');
+  
+  const showBackButton = isClient && !isMainPage && !isSpecialFullScreen;
 
 
   useEffect(() => {
@@ -180,12 +185,6 @@ export default function Header() {
                     <ArrowLeft />
                     <span className="sr-only">Back</span>
                  </Button>
-             ) : isViewingStudentDashboard ? (
-                <Button variant="ghost" className="mr-2" asChild>
-                    <Link href="/admin/users">
-                        <UserCog className="mr-2 h-4 w-4" /> Back to Admin
-                    </Link>
-                </Button>
              ) : (
                 <Link href="/" className="flex items-center gap-2 mr-4">
                     <Image src="https://i.postimg.cc/PxMF8kGK/full-transparent-bed-logi.png" alt="BiharWaleSirji Logo" width={40} height={40} />
