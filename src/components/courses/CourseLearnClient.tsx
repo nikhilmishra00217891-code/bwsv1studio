@@ -150,9 +150,6 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
             setSelectedChapter(null);
         } else if (selectedSubject) {
             setSelectedSubject(null);
-        } else {
-             // If nothing is selected, go back to course details
-            window.location.href = `/courses/${course.id}`;
         }
     };
     
@@ -209,6 +206,8 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
 
         return "Course Content";
     }
+    
+    const showContextualBackButton = selectedLesson || selectedChapter || selectedSubject;
 
     return (
         <TooltipProvider>
@@ -227,13 +226,21 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                                 variant="ghost" 
                                 size="icon" 
                                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                                className="text-muted-foreground md:hidden"
+                                className="text-muted-foreground"
                             >
                                 <Menu className="w-5 h-5"/>
                             </Button>
-                            <Button variant="outline" size="sm" onClick={handleBack}>
-                                <ArrowLeft className="w-4 h-4 mr-2"/> Back
-                            </Button>
+                            {showContextualBackButton ? (
+                                <Button variant="outline" size="sm" onClick={handleBack}>
+                                    <ArrowLeft className="w-4 h-4 mr-2"/> Back
+                                </Button>
+                            ) : (
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link href={`/courses/${course.id}`}>
+                                        <ArrowLeft className="w-4 h-4 mr-2"/> Back to Details
+                                    </Link>
+                                </Button>
+                            )}
                         </div>
                         <h2 className="text-lg font-bold font-headline hidden md:block truncate" title={renderHeaderTitle()}>{renderHeaderTitle()}</h2>
                         <div className="hidden md:flex items-center gap-4">

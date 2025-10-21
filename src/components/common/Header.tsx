@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -121,12 +120,9 @@ export default function Header() {
       { href: "/parivartan", label: "Parivartan Chamber", icon: Users, isProtected: true, flag: featureFlags.parivartan ?? true },
   ];
 
-  // A page is considered a "main page" if its path is one of the exact main navigation paths.
-  const isMainPage = mainNavPaths.includes(pathname);
-  const isSpecialFullScreen = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan');
+  const isSpecialFullScreen = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.includes('/learnzone');
   
-  // Show the back button if it's a client-side render and it's not a main page or a special full screen page.
-  const showBackButton = isClient && !isMainPage && !isSpecialFullScreen;
+  const showBackButton = isClient && !mainNavPaths.includes(pathname) && !isSpecialFullScreen;
 
   useEffect(() => {
     setIsClient(true);

@@ -37,11 +37,9 @@ export default function RootLayout({
   const headersList = headers();
   const pathname = headersList.get("x-pathname") || "";
 
-  const isOnboarding = pathname === '/onboarding';
+  // The header should only be hidden during the fullscreen onboarding process.
+  const showHeader = !pathname.startsWith('/onboarding');
   
-  // The header should be hidden ONLY during onboarding.
-  // Special full-screen pages like learnzone will manage their own layout within MainLayout.
-  const showHeader = !isOnboarding;
 
   return (
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
