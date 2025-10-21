@@ -1,0 +1,101 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =================================
+    // Helper Functions
+    // =================================
+    function isFaculty() {
+      // Checks if the requesting user has the 'faculty' role.
+      return request.auth.token.role == 'faculty';
+    }
+    
+    function isSignedIn() {
+      // Checks if the user is authenticated.
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      // Checks if the requesting user is the owner of the document.
+      return request.auth.uid == userId;
+    }
+
+    function isEnrolled(courseId) {
+      // Checks if a user is enrolled in a specific course.
+      // This is for students. Faculty access is handled by isFaculty().
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enrolledCourses.hasAny([courseId]);
+    }
+    
+    function isRoomMember(roomId) {
+        let roomDoc = get(/databases/$(database)/documents/rooms/$(roomId));
+        return request.auth.uid in roomDoc.data.memberIds;
+    }
+
+    // =================================
+    // Collection Rules
+    // =================================
+
+    // Site-wide content (for maintenance mode, feature flags, etc.)
+    match /siteContent/{docId} {
+      allow read: if true;
+      allow write: if isFaculty();
+    }
+    
+    // User profiles
+    match /users/{userId} {
+      allow read: if true;
+      allow update: if isOwner(userId) || isFaculty();
+    }
+    
+    // User private sub-collections (patra, missionCompletion)
+    match /users/{userId}/{subcollection}/{docId} {
+      allow read, write: if isOwner(userId) || isFaculty();
+    }
+
+    // Main course documents
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if isFaculty();
+    }
+    
+    // Subcollections within a course (like coupons)
+    match /courses/{courseId}/{collection}/{docId} {
+      allow read: if true;
+      allow write: if isFaculty();
+    }
+    
+    // Main announcements collection
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow create, update, delete: if isFaculty();
+      // Allow any signed-in user to update reactions
+      allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys.hasOnly(['reactions']);
+    }
+
+    // Live discussion chat for lessons
+    match /courses/{courseId}/subjects/{subjectId}/chapters/{chapterId}/lessons/{lessonId}/liveChat/{document=**} {
+      allow read: if isFaculty() || isEnrolled(courseId);
+      allow create: if isFaculty() || isEnrolled(courseId);
+      allow update, delete: if isFaculty();
+    }
+
+    // Testimonials collection
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isOwner(request.resource.data.userId) || isFaculty();
+      allow delete: if isFaculty();
+    }
+    
+    // Rooms for Focus Zone & Warzone
+    match /rooms/{roomId}/{document=**} {
+      allow read, write: if isSignedIn();
+    }
+    
+    // Chambers for Parivartan
+    match /chambers/{chamberId}/{document=**} {
+      allow read, write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chambers/$(chamberId)).data.memberIds;
+    }
+  }
+}
