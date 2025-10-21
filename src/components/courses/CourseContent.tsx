@@ -479,7 +479,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                         <p className="font-bold text-primary/90">{msg.senderName}</p>
                         <p className="text-xs text-muted-foreground">{msg.timestamp ? formatDistanceToNow(msg.timestamp.toDate(), { addSuffix: true }) : 'sending...'}</p>
                     </div>
-                    <p className="break-words whitespace-pre-wrap max-w-md">{msg.text}</p>
+                    <p className="whitespace-pre-wrap break-words max-w-md">{msg.text}</p>
                 </div>
                 {isFaculty && (
                      <div className="absolute top-0 right-0 p-1 flex items-center bg-card rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity">
@@ -519,7 +519,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                             {pinnedMessages.map(msg => <PollMessage key={msg.id} msg={msg} isPinnedView />)}
                         </div>
                     )}
-                    <ScrollArea className="flex-grow px-4" ref={scrollAreaRef}>
+                    <ScrollArea className="flex-grow px-4 min-h-0" ref={scrollAreaRef}>
                         <div className="space-y-4 py-4">
                             {messages.filter(m => !m.isPinned).map(renderMessage)}
                         </div>
@@ -552,7 +552,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                                     }
                                 }}
                                 disabled={isSending || !canSendMessage}
-                                className={cn("pr-12 resize-none max-h-40 max-w-md mx-auto", isFaculty && "pl-10")}
+                                className={cn("pr-12 resize-none max-h-40", isFaculty && "pl-10")}
                                 rows={1}
                             />
                             <Button type="submit" disabled={isSending || !canSendMessage || !newMessage.trim()} size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
