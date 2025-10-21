@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { updateCourse } from '@/lib/data/courses';
-import { LoaderCircle, PlusCircle, Trash2, Edit, Save, ArrowLeft, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { LoaderCircle, PlusCircle, Trash2, Edit, Save, ArrowLeft, Facebook, Instagram, Linkedin, Youtube } from 'lucide-react';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -26,7 +26,7 @@ const MentorFormDialog = ({ course, mentor, onSave, onOpenChange, isOpen }: { co
     
     React.useEffect(() => {
         if (isOpen) {
-            setFormData(mentor || { subjects: [], socials: { linkedin: '', instagram: '', facebook: '' } });
+            setFormData(mentor || { subjects: [], socials: { linkedin: '', instagram: '', facebook: '', youtube: '' } });
         }
     }, [mentor, isOpen]);
 
@@ -34,7 +34,7 @@ const MentorFormDialog = ({ course, mentor, onSave, onOpenChange, isOpen }: { co
         setFormData(prev => ({ ...prev, [field]: value }));
     };
     
-    const handleSocialChange = (social: 'linkedin' | 'instagram' | 'facebook', value: string) => {
+    const handleSocialChange = (social: 'linkedin' | 'instagram' | 'facebook' | 'youtube', value: string) => {
         setFormData(prev => ({ ...prev, socials: { ...(prev.socials || {}), [social]: value } }));
     };
     
@@ -142,7 +142,11 @@ const MentorFormDialog = ({ course, mentor, onSave, onOpenChange, isOpen }: { co
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="youtube" className="flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500"/> YouTube URL</Label>
+                                    <Input id="youtube" value={formData.socials?.youtube || ''} onChange={(e) => handleSocialChange('youtube', e.target.value)} />
+                                </div>
                                 <div>
                                     <Label htmlFor="linkedin" className="flex items-center gap-2"><Linkedin className="w-4 h-4 text-blue-500"/> LinkedIn URL</Label>
                                     <Input id="linkedin" value={formData.socials?.linkedin || ''} onChange={(e) => handleSocialChange('linkedin', e.target.value)} />
@@ -229,7 +233,7 @@ export default function MentorManagementClient({ initialCourse }: { initialCours
                          <Card key={mentor.id}>
                             <CardHeader>
                                 <div className="flex items-center gap-4">
-                                     <Image src={mentor.avatar} alt={mentor.name} width={64} height={64} className="rounded-full border-2 border-primary" />
+                                     <Image src={mentor.avatar || 'https://i.postimg.cc/6p7xNnB0/placeholder.png'} alt={mentor.name} width={64} height={64} className="rounded-full border-2 border-primary" />
                                     <div>
                                         <CardTitle>{mentor.name}</CardTitle>
                                         <CardDescription>{mentor.role}</CardDescription>
@@ -237,7 +241,7 @@ export default function MentorManagementClient({ initialCourse }: { initialCours
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-sm text-muted-foreground line-clamp-3 h-12">{mentor.bio}</p>
+                                <p className="text-sm text-muted-foreground line-clamp-3 h-[60px]">{mentor.bio}</p>
                                 <div className="flex justify-end gap-2 mt-4">
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>

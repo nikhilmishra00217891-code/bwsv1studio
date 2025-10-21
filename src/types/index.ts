@@ -120,6 +120,7 @@ export interface Mentor {
     subjects: string[];
     philosophy: string;
     socials: {
+        youtube?: string;
         instagram?: string;
         facebook?: string;
         linkedin?: string;
@@ -379,5 +380,3 @@ export interface Announcement {
     createdAt: Timestamp;
     updatedAt?: Timestamp;
 }
-
-    

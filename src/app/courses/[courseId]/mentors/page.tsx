@@ -46,6 +46,7 @@ export default async function MentorsPage({ params }: { params: { courseId: stri
                                             <CardDescription className="text-base">{mentor.role}</CardDescription>
                                         </div>
                                         <div className="flex gap-2 mt-2 md:mt-0">
+                                            {mentor.socials?.youtube && <Button asChild variant="outline" size="icon"><a href={mentor.socials.youtube} target="_blank" rel="noopener noreferrer"><Youtube className="w-4 h-4 text-red-500"/></a></Button>}
                                             {mentor.socials?.linkedin && <Button asChild variant="outline" size="icon"><a href={mentor.socials.linkedin} target="_blank" rel="noopener noreferrer"><Linkedin className="w-4 h-4"/></a></Button>}
                                             {mentor.socials?.instagram && <Button asChild variant="outline" size="icon"><a href={mentor.socials.instagram} target="_blank" rel="noopener noreferrer"><Instagram className="w-4 h-4"/></a></Button>}
                                             {mentor.socials?.facebook && <Button asChild variant="outline" size="icon"><a href={mentor.socials.facebook} target="_blank" rel="noopener noreferrer"><Facebook className="w-4 h-4"/></a></Button>}
@@ -79,5 +80,3 @@ export default async function MentorsPage({ params }: { params: { courseId: stri
         </div>
     );
 }
-
-    
