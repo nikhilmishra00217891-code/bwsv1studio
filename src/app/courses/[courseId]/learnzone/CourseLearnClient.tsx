@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, FormEvent } from 'react';
@@ -141,6 +142,16 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         setSelectedChapter(null);
         setSelectedLesson(null);
     }
+
+    const handleBack = () => {
+        if (selectedLesson) {
+            setSelectedLesson(null);
+        } else if (selectedChapter) {
+            setSelectedChapter(null);
+        } else if (selectedSubject) {
+            setSelectedSubject(null);
+        }
+    };
     
     const handleSendPoll = async (poll: Poll) => {
         if (!user || !selectedChapter || !selectedLesson || !selectedSubject) return;
@@ -188,8 +199,15 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         if (isTodaysMissionPage) return "Today's Mission";
         if (isEventsPage) return "Events";
         if (isResourcesPage) return "Course Resources";
+        
+        if (selectedLesson) return selectedLesson.title;
+        if (selectedChapter) return selectedChapter.title;
+        if (selectedSubject) return selectedSubject.title;
+
         return "Course Content";
     }
+    
+    const showContextualBackButton = selectedLesson || selectedChapter || selectedSubject;
 
     return (
         <TooltipProvider>
@@ -212,13 +230,18 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                             >
                                 <Menu className="w-5 h-5"/>
                             </Button>
+                            {showContextualBackButton && (
+                                <Button variant="outline" size="sm" onClick={handleBack}>
+                                    <ArrowLeft className="w-4 h-4 mr-2"/> Back
+                                </Button>
+                            )}
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={`/courses/${course.id}`}>
                                     <ArrowLeft className="w-4 h-4 mr-2"/> Back to Details
                                 </Link>
                             </Button>
                         </div>
-                        <h2 className="text-lg font-bold font-headline hidden md:block">{renderHeaderTitle()}</h2>
+                        <h2 className="text-lg font-bold font-headline hidden md:block truncate" title={renderHeaderTitle()}>{renderHeaderTitle()}</h2>
                         <div className="hidden md:flex items-center gap-4">
                             <div className="text-right">
                                 <p className="text-xs text-muted-foreground">Your Progress</p>
