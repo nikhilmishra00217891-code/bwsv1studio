@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { Course, Lesson, Subject, Chapter, LiveChatMessage, UrlMetadata, Poll } from "@/types";
@@ -251,7 +252,9 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
         if (!newMessage.trim() || !user || !canSendMessage) return;
 
         setIsSending(true);
-        setCanSendMessage(false);
+        if (!isFaculty) {
+            setCanSendMessage(false);
+        }
 
         try {
             await sendLiveChatMessage(
@@ -272,7 +275,9 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
             toast({ variant: 'destructive', title: 'Could not send message' });
         } finally {
             setIsSending(false);
-            setTimeout(() => setCanSendMessage(true), 10000); // 10-second cooldown
+            if (!isFaculty) {
+                setTimeout(() => setCanSendMessage(true), 10000); // 10-second cooldown for students
+            }
         }
     };
     
@@ -543,7 +548,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                             )}
                             <Textarea
                                 ref={textareaRef}
-                                placeholder={canSendMessage ? "Say something..." : "Please wait..."}
+                                placeholder={canSendMessage ? "Say something..." : "Please wait before sending another message."}
                                 value={newMessage}
                                 onInput={handleInput}
                                 onKeyDown={(e) => {
