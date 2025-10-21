@@ -20,7 +20,7 @@ const StarRating = ({ rating, setRating }: { rating: number, setRating: (rating:
             {[...Array(5)].map((_, index) => {
                 const starValue = index + 1;
                 return (
-                    <button key={starValue} onClick={() => setRating(starValue)}>
+                    <button type="button" key={starValue} onClick={() => setRating(starValue)}>
                         <Star className={`w-10 h-10 transition-colors ${starValue <= rating ? 'text-accent fill-accent' : 'text-muted-foreground/50'}`} />
                     </button>
                 );

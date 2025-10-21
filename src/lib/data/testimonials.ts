@@ -32,7 +32,7 @@ export const submitTestimonial = async (
         const testimonialRef = doc(db, 'testimonials', existingId);
         await updateDoc(testimonialRef, {
             ...data,
-            createdAt: serverTimestamp(),
+            createdAt: serverTimestamp(), // Update timestamp on edit
         });
     } else {
         // Create new testimonial
