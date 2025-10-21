@@ -13,31 +13,44 @@ export default function OnboardingPage() {
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading) {
-            if (!user) {
-                // Not logged in, redirect to login
-                router.replace('/login');
-            } else if (userProfile && userProfile.onboardingComplete) {
-                // Already onboarded, redirect to dashboard
-                router.replace('/dashboard');
-            }
-            // If userProfile exists but onboarding is not complete, stay on this page.
+        if (loading) {
+            return; // Wait until the authentication state is fully resolved
         }
+
+        if (!user) {
+            // Not logged in, redirect to login
+            router.replace('/login');
+        } else if (userProfile && userProfile.onboardingComplete) {
+            // Logged in AND onboarding is marked as complete
+            router.replace('/dashboard');
+        }
+        // If user is logged in but profile is loading or onboarding is not complete,
+        // this effect does nothing, allowing the component to render the form.
+
     }, [user, userProfile, loading, router]);
     
-    // Show a loader while checking auth state or if the user is not ready
-    if (loading || !user || (userProfile && userProfile.onboardingComplete)) {
+    // Show a loader while checking auth state or if user exists but profile is still loading.
+    if (loading || !userProfile) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
             </div>
         );
     }
+    
+    // If we reach here, the user is logged in, the profile is loaded, but onboarding is not complete.
+    if (userProfile && !userProfile.onboardingComplete) {
+         return (
+            <div className="h-screen w-screen">
+                <OnboardingForm />
+            </div>
+        );
+    }
 
-    // Only render the form if the user is logged in and HAS NOT completed onboarding
+    // Fallback loader for any transitional states.
     return (
-      <div className="h-screen w-screen">
-        <OnboardingForm />
-      </div>
+        <div className="flex h-screen items-center justify-center">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
     );
 }

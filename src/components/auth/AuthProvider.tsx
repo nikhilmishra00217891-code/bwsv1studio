@@ -45,7 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     });
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setLoading(true);
       setUser(user);
       if (user) {
         // Listen for real-time updates to the user's profile
@@ -62,6 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUserProfile(null);
           }
            setLoading(false); // Set loading to false after the first profile fetch/update
+        }, (error) => {
+            console.error("Error fetching user profile:", error);
+            setUserProfile(null);
+            setLoading(false);
         });
         
         return () => unsubscribeProfile(); // Cleanup the profile listener
