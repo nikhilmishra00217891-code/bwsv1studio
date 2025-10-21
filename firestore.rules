@@ -1,143 +1,72 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // =================================
     // Helper Functions
-    // =================================
     function isFaculty() {
-      // Checks if the requesting user has the 'faculty' role.
       return request.auth.token.role == 'faculty';
     }
-
+    
     function isSignedIn() {
-      // Checks if the user is authenticated.
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
-      // Checks if the requesting user is the owner of the document.
       return request.auth.uid == userId;
     }
 
     function isEnrolled(courseId) {
-      // Checks if a user is enrolled in a specific course.
-      // This is for students. Faculty access is handled by isFaculty().
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      return request.auth.uid != null && userDoc.data.enrolledCourses.hasAny([courseId]);
+      // Check if the user is authenticated before trying to access their data
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enrolledCourses.hasAny([courseId]);
     }
     
-    function isRoomMember(roomId) {
-        let roomDoc = get(/databases/$(database)/documents/rooms/$(roomId));
-        return request.auth.uid in roomDoc.data.memberIds;
-    }
-
-    // =================================
-    // Top-Level Collections
-    // =================================
-
-    // Site-wide content (Announcements, Text Content, etc.)
-    // Only faculty can write, anyone can read.
+    // Anyone can read site content, only faculty can write it.
     match /siteContent/{docId} {
       allow read: if true;
       allow write: if isFaculty();
     }
-    
-    // User profiles
+
+    // User profiles are readable by anyone, but can only be updated by the owner or faculty.
     match /users/{userId} {
-      // Anyone can read a user profile for display names, avatars, etc.
       allow read: if true;
-      // Only the owner or a faculty member can update a user's profile.
       allow update: if isOwner(userId) || isFaculty();
-      // Only faculty can create/delete users (implicitly through server-side functions).
-      allow create, delete: if isFaculty();
+      // Creation and deletion is handled by backend logic, protected by faculty role checks there.
     }
     
-    // User subcollections (e.g., patra, missionCompletion)
+    // User sub-collections (like 'patra' or 'missionCompletion') are private to the user and faculty.
     match /users/{userId}/{subcollection}/{docId} {
-        // A user can manage their own subcollections. Faculty can also manage them.
-        allow read, write, create, delete: if isOwner(userId) || isFaculty();
+        allow read, write: if isOwner(userId) || isFaculty();
     }
 
-    // Courses can be read by anyone, but only modified by faculty.
+    // Courses are readable by anyone, writable only by faculty.
     match /courses/{courseId} {
       allow read: if true;
       allow write: if isFaculty();
     }
     
-    // Course subcollections (coupons, general announcements)
+    // All course subcollections (coupons, announcements, etc.) follow the course's write rule.
     match /courses/{courseId}/{collection}/{docId} {
         allow read: if true;
         allow write: if isFaculty();
     }
-
-    // Main Announcements (Parivaar announcements)
+    
+    // Anyone can read announcements, only faculty can manage them.
     match /announcements/{announcementId} {
         allow read: if true;
-        allow create, update, delete: if isFaculty(); // Only faculty can post/manage global announcements
-        // Reactions are handled in a specific rule below
+        allow create, update, delete: if isFaculty();
     }
      match /announcements/{announcementId} {
-        // Any signed-in user can react (update the reactions array)
+        // Any signed-in user can update reactions.
         allow update: if isSignedIn() && request.resource.data.keys().hasOnly(['reactions']);
      }
-
-
-    // Testimonials
-    match /testimonials/{testimonialId} {
-        allow read: if true;
-        // Any signed-in user can create a testimonial.
-        allow create: if isSignedIn();
-        // The owner can update their own testimonial. Faculty can manage any testimonial.
-        allow update: if isOwner(request.resource.data.userId) || isFaculty();
-        allow delete: if isFaculty();
-    }
     
-    // Rooms for Focus Zone / Warzone
-    match /rooms/{roomId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn();
-        // Only members of the room can update it (e.g., their own status).
-        // The host has special privileges handled by security rules in the functions.
-        allow update: if isRoomMember(roomId);
-        // Only the host can delete the room.
-        allow delete: if resource.data.hostId == request.auth.uid;
-    }
-    
-    // Chat messages within a room
-    match /rooms/{roomId}/messages/{messageId} {
-        // Only room members can read/write chat messages.
-        allow read, create: if isRoomMember(roomId);
-        // Only the room host or faculty can moderate (delete) messages.
-        allow delete: if isFaculty() || get(/databases/$(database)/documents/rooms/$(roomId)).data.hostId == request.auth.uid;
-    }
-    
-    // =============================================================
-    // CRITICAL: Live Discussion Chat for Course Lessons
-    // =============================================================
+    // --- Live Discussion Chat for Lessons ---
+    // This is the simplified, crucial rule.
     match /courses/{courseId}/subjects/{subjectId}/chapters/{chapterId}/lessons/{lessonId}/liveChat/{messageId} {
-      // Anyone can read the live chat.
-      allow read: if true;
-      // Any signed-in user can create messages (students and faculty).
-      allow create: if isSignedIn();
-      // Only faculty can update or delete messages (for moderation, pinning, polls).
-      allow update, delete: if isFaculty();
+      allow read: if true; // Everybody can read the chat
+      allow create: if isFaculty() || isEnrolled(courseId); // Faculty or enrolled students can send messages
+      allow update, delete: if isFaculty(); // Only faculty can moderate
     }
-    
-    // Chambers (Parivartan)
-    match /chambers/{chamberId} {
-        allow read, update: if request.auth.uid in resource.data.memberIds;
-        allow create: if isSignedIn();
-        allow delete: if resource.data.creatorId == request.auth.uid;
-    }
-    
-    // Chamber Messages
-     match /chambers/{chamberId}/channels/{channelId}/messages/{messageId} {
-        allow read: if get(/databases/$(database)/documents/chambers/$(chamberId)).data.memberIds.hasAny([request.auth.uid]);
-        allow create: if get(/databases/$(database)/documents/chambers/$(chamberId)).data.memberIds.hasAny([request.auth.uid]);
-        allow update, delete: if get(/databases/$(database)/documents/chambers/$(chamberId)).data.creatorId == request.auth.uid;
-     }
   }
 }
