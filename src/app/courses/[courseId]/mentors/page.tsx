@@ -16,8 +16,7 @@ export default async function MentorsPage({ params }: { params: { courseId: stri
         notFound();
     }
     
-    // In a real app, you would fetch mentor data related to the course.
-    // For now, we use the dummy data.
+    // Now we use the dynamic mentor data
     const mentors = mentorData.mentors;
 
     return (
@@ -78,4 +77,5 @@ export default async function MentorsPage({ params }: { params: { courseId: stri
         </div>
     );
 }
+
 

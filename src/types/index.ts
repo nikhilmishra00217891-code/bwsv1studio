@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -109,6 +110,20 @@ export interface Coupon {
   isActive: boolean;
   createdAt: Timestamp;
   timesUsed: number;
+}
+
+export interface Mentor {
+    id: string;
+    name: string;
+    role: string;
+    avatar: string;
+    bio: string;
+    subjects: string[];
+    philosophy: string;
+    socials: {
+        youtube: string;
+        linkedin: string;
+    }
 }
 
 export interface Course {

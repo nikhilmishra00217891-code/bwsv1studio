@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox, UserCog, Wrench, TicketPercent, CreditCard, MessageSquareHeart, Image as ImageIcon, KeyRound, FileText } from "lucide-react";
+import { Menu, BookOpenCheck, LogOut, Pencil, Home, Compass, Info, UserCircle, Target, Swords, BrainCircuit, Megaphone, ArrowLeft, Phone, Rocket, VenetianMask, Award, StarIcon, Bird, FerrisWheel, Brain, Trophy, Users, Gamepad2, Workflow, Radio, Mailbox, UserCog, Wrench, TicketPercent, CreditCard, MessageSquareHeart, Image as ImageIcon, KeyRound, FileText, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -264,6 +264,7 @@ export default function Header() {
                           <div className="my-2 border-t border-border/50"></div>
                           <p className="px-2 text-sm font-semibold text-muted-foreground">Faculty Tools</p>
                           <NavLink href="/admin/users" label="User Management" icon={Users} onSelect={handleLinkClick} isProtected />
+                          <NavLink href="/admin/mentors" label="Mentor Management" icon={UserPlus} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/payments" label="Payment Settings" icon={CreditCard} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/reviews" label="Review Management" icon={MessageSquareHeart} onSelect={handleLinkClick} isProtected />
                           <NavLink href="/admin/ai-controls" label="AI Controls" icon={BrainCircuit} onSelect={handleLinkClick} isProtected />
@@ -312,4 +313,3 @@ export default function Header() {
   );
 }
 
-    

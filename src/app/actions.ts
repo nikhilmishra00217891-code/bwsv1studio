@@ -3,11 +3,13 @@
 "use server";
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat, recommendContent } from "@/ai/flows";
-import type { UserProfile } from "@/types";
+import type { UserProfile, Mentor } from "@/types";
 import { JSDOM } from 'jsdom';
 import { getAdminDb } from "@/lib/firebase/admin";
 import { getMessaging } from "firebase-admin/messaging";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import fs from 'fs/promises';
+import path from 'path';
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -298,6 +300,54 @@ export async function saveRazorpayKeys(keys: { keyId: string; keySecret: string 
   } catch (error: any) {
     return { success: false, message: error.message || "An unexpected error occurred while saving." };
   }
+}
+
+const MENTORS_FILE_PATH = path.join(process.cwd(), 'src', 'app', 'lib', 'mentors.json');
+
+async function readMentorsFile(): Promise<{ mentors: Mentor[] }> {
+    try {
+        const fileContent = await fs.readFile(MENTORS_FILE_PATH, 'utf-8');
+        return JSON.parse(fileContent);
+    } catch (error) {
+        // If file doesn't exist, return empty structure
+        return { mentors: [] };
+    }
+}
+
+async function writeMentorsFile(data: { mentors: Mentor[] }): Promise<void> {
+    await fs.writeFile(MENTORS_FILE_PATH, JSON.stringify(data, null, 4), 'utf-8');
+}
+
+
+export async function saveMentor(mentorData: Mentor): Promise<{ success: boolean; message: string }> {
+    try {
+        const data = await readMentorsFile();
+        const existingIndex = data.mentors.findIndex(m => m.id === mentorData.id);
+
+        if (existingIndex !== -1) {
+            // Update existing mentor
+            data.mentors[existingIndex] = mentorData;
+        } else {
+            // Add new mentor
+            data.mentors.push(mentorData);
+        }
+
+        await writeMentorsFile(data);
+        return { success: true, message: "Mentor saved successfully." };
+    } catch (error: any) {
+        return { success: false, message: error.message || "An error occurred." };
+    }
+}
+
+export async function deleteMentor(mentorId: string): Promise<{ success: boolean; message: string }> {
+    try {
+        const data = await readMentorsFile();
+        data.mentors = data.mentors.filter(m => m.id !== mentorId);
+        await writeMentorsFile(data);
+        return { success: true, message: "Mentor deleted successfully." };
+    } catch (error: any) {
+        return { success: false, message: error.message || "An error occurred." };
+    }
 }
 
     
