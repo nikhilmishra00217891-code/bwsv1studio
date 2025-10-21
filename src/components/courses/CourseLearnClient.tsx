@@ -6,7 +6,7 @@ import type { Course, Subject, Chapter, Lesson, LiveChatMessage, UrlMetadata, Po
 import { CourseSidebar } from '@/components/courses/CourseSidebar';
 import { CourseContent } from '@/components/courses/CourseContent';
 import { Button } from '@/components/ui/button';
-import { Library, Menu, Paperclip, BarChart3, Plus } from 'lucide-react';
+import { ArrowLeft, Library, Menu, Paperclip, BarChart3, Plus } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -142,6 +142,19 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         setSelectedChapter(null);
         setSelectedLesson(null);
     }
+
+    const handleBack = () => {
+        if (selectedLesson) {
+            setSelectedLesson(null);
+        } else if (selectedChapter) {
+            setSelectedChapter(null);
+        } else if (selectedSubject) {
+            setSelectedSubject(null);
+        } else {
+             // If nothing is selected, go back to course details
+            window.location.href = `/courses/${course.id}`;
+        }
+    };
     
     const handleSendPoll = async (poll: Poll) => {
         if (!user || !selectedChapter || !selectedLesson || !selectedSubject) return;
@@ -189,6 +202,11 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
         if (isTodaysMissionPage) return "Today's Mission";
         if (isEventsPage) return "Events";
         if (isResourcesPage) return "Course Resources";
+        
+        if (selectedLesson) return selectedLesson.title;
+        if (selectedChapter) return selectedChapter.title;
+        if (selectedSubject) return selectedSubject.title;
+
         return "Course Content";
     }
 
@@ -203,7 +221,32 @@ export default function CourseLearnClient({ course, userProgress }: { course: Co
                 />
 
                 <main className="flex-1 flex flex-col transition-all duration-300 overflow-hidden">
-                    {/* The main Header component is now rendered by RootLayout, this internal header is removed */}
+                    <header className="flex-shrink-0 bg-background/80 backdrop-blur-sm border-b p-3 flex items-center justify-between h-16">
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                className="text-muted-foreground md:hidden"
+                            >
+                                <Menu className="w-5 h-5"/>
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={handleBack}>
+                                <ArrowLeft className="w-4 h-4 mr-2"/> Back
+                            </Button>
+                        </div>
+                        <h2 className="text-lg font-bold font-headline hidden md:block truncate" title={renderHeaderTitle()}>{renderHeaderTitle()}</h2>
+                        <div className="hidden md:flex items-center gap-4">
+                            <div className="text-right">
+                                <p className="text-xs text-muted-foreground">Your Progress</p>
+                                <div className="flex items-center gap-2">
+                                    <Progress value={userProgress} className="w-32 h-2" />
+                                    <span className="text-xs font-bold w-8">{userProgress}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
                     <div className="flex-grow overflow-y-auto w-full">
                         <div className="mx-auto w-full h-full">
                             {renderContent()}

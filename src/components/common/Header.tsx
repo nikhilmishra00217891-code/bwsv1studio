@@ -123,9 +123,10 @@ export default function Header() {
 
   // A page is considered a "main page" if its path is one of the exact main navigation paths.
   const isMainPage = mainNavPaths.includes(pathname);
+  const isSpecialFullScreen = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan');
   
-  // Show the back button if it's a client-side render and it's not a main page.
-  const showBackButton = isClient && !isMainPage;
+  // Show the back button if it's a client-side render and it's not a main page or a special full screen page.
+  const showBackButton = isClient && !isMainPage && !isSpecialFullScreen;
 
   useEffect(() => {
     setIsClient(true);
