@@ -577,7 +577,7 @@ const LinkPreview = ({ metadata, onRemove, isFaculty }: { metadata: UrlMetadata,
                             <Image src={metadata.image} alt={metadata.title || 'Link preview'} fill className="object-cover"/>
                         </div>
                     )}
-                    <div className="p-3 flex flex-col justify-center overflow-hidden flex-grow">
+                    <div className="p-3 flex flex-col justify-center overflow-hidden flex-grow min-w-0">
                         <p className="text-xs text-muted-foreground truncate">{metadata.siteName}</p>
                         <p className="font-semibold break-words">{metadata.title}</p>
                         <p className="text-xs text-muted-foreground line-clamp-2 break-words">{metadata.description}</p>
@@ -694,8 +694,6 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     
-    const videoContainerRef = useRef<HTMLDivElement>(null);
-
     const isCompleted = useMemo(() => 
         userProfile?.progress?.[course.id]?.completedLessons?.includes(lesson.id) || false,
     [userProfile, course.id, lesson.id]);
@@ -771,7 +769,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
 
     return (
         <div className="grid lg:grid-cols-3 gap-8 p-4 md:p-8 max-w-full">
-            <div className="lg:col-span-2 min-w-0" ref={videoContainerRef}>
+            <div className="lg:col-span-2 min-w-0">
                 <div className="aspect-video bg-card rounded-lg overflow-hidden border shadow-lg relative">
                     {videoId ? (
                         <iframe
@@ -872,7 +870,7 @@ const LectureView = ({ course, subject, chapter, lesson }: { course: Course; sub
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-1 min-w-0" style={{ height: videoContainerRef.current?.offsetHeight }}>
+            <div className="lg:col-span-1 min-w-0">
                 <LiveChat course={course} subject={subject} chapter={chapter} lesson={lesson} isFaculty={isFaculty} />
             </div>
         </div>
