@@ -48,6 +48,18 @@ const MentorFormDialog = ({ course, mentor, onSave, onOpenChange, isOpen }: { co
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validation for at least one social link
+        const hasSocialLink = formData.socials && Object.values(formData.socials).some(link => link && link.trim() !== '');
+        if (!hasSocialLink) {
+            toast({
+                variant: 'destructive',
+                title: 'Missing Social Link',
+                description: 'Please provide at least one social media link for the mentor.',
+            });
+            return;
+        }
+
         startTransition(async () => {
             try {
                 const dataToSave: Mentor = {
