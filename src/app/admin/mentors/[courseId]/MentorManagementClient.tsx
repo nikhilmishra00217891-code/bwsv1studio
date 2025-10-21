@@ -26,7 +26,7 @@ const MentorFormDialog = ({ course, mentor, onSave, onOpenChange, isOpen }: { co
     
     React.useEffect(() => {
         if (isOpen) {
-            setFormData(mentor || { subjects: [], socials: { linkedin: '', instagram: '', facebook: '', youtube: '' } });
+            setFormData(mentor || { subjects: [], socials: { youtube: '', linkedin: '', instagram: '', facebook: '' } });
         }
     }, [mentor, isOpen]);
 
@@ -34,7 +34,7 @@ const MentorFormDialog = ({ course, mentor, onSave, onOpenChange, isOpen }: { co
         setFormData(prev => ({ ...prev, [field]: value }));
     };
     
-    const handleSocialChange = (social: 'linkedin' | 'instagram' | 'facebook' | 'youtube', value: string) => {
+    const handleSocialChange = (social: 'youtube' | 'linkedin' | 'instagram' | 'facebook', value: string) => {
         setFormData(prev => ({ ...prev, socials: { ...(prev.socials || {}), [social]: value } }));
     };
     
