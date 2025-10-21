@@ -24,6 +24,8 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import type { Course, Subject, Chapter, Lesson, LiveChatMessage, StudyMaterial, UserProfile, Poll } from "@/types";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 // --- Client-side callable functions ---
 
@@ -342,7 +344,14 @@ export const sendLiveChatMessage = async (
         finalMessage.pinnedAt = serverTimestamp();
     }
 
-    await addDoc(chatColRef, finalMessage);
+    addDoc(chatColRef, finalMessage).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: chatColRef.path,
+            operation: 'create',
+            requestResourceData: finalMessage
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
 };
 
 const findAndModifyMaterial = (
