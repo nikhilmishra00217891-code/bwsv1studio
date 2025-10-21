@@ -98,13 +98,13 @@ const MentorFormDialog = ({ course, mentor, onSave, onOpenChange, isOpen }: { co
     
     return (
          <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl">
-                <DialogHeader>
+            <DialogContent className="max-w-3xl flex flex-col h-full max-h-[90vh] p-0">
+                <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle>{mentor ? 'Edit Mentor' : 'Add New Mentor'}</DialogTitle>
                     <DialogDescription>Manage mentor details for "{course.title}".</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit}>
-                    <ScrollArea className="max-h-[70vh] -mx-6 px-6">
+                <form onSubmit={handleSubmit} className="flex-grow flex flex-col min-h-0">
+                    <ScrollArea className="flex-grow px-6">
                         <div className="space-y-4 py-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
                                 <div className="md:col-span-1">
@@ -154,7 +154,7 @@ const MentorFormDialog = ({ course, mentor, onSave, onOpenChange, isOpen }: { co
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-4 pt-4 border-t">
                                 <div>
                                     <Label htmlFor="youtube" className="flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500"/> YouTube URL</Label>
                                     <Input id="youtube" value={formData.socials?.youtube || ''} onChange={(e) => handleSocialChange('youtube', e.target.value)} />
@@ -174,7 +174,7 @@ const MentorFormDialog = ({ course, mentor, onSave, onOpenChange, isOpen }: { co
                             </div>
                         </div>
                     </ScrollArea>
-                    <DialogFooter className="pt-4 border-t">
+                    <DialogFooter className="p-6 pt-4 border-t shrink-0">
                         <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
                         <Button type="submit" disabled={isSaving}>
                             {isSaving ? <LoaderCircle className="animate-spin" /> : <Save className="mr-2 h-4 w-4"/>}
