@@ -2,11 +2,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, BookOpen, Bot, Linkedin, Youtube } from "lucide-react";
+import { ArrowLeft, BookOpen, Bot, Linkedin, Youtube, Instagram, Facebook } from "lucide-react";
 import Link from "next/link";
 import { getCourseById } from "@/lib/data";
 import { notFound } from "next/navigation";
-import mentorData from "@/app/lib/mentors.json";
 import Image from "next/image";
 
 export default async function MentorsPage({ params }: { params: { courseId: string } }) {
@@ -16,8 +15,8 @@ export default async function MentorsPage({ params }: { params: { courseId: stri
         notFound();
     }
     
-    // Now we use the dynamic mentor data
-    const mentors = mentorData.mentors;
+    // Now we use the dynamic mentor data from the course object
+    const mentors = course.mentors || [];
 
     return (
         <div className="bg-card/50 min-h-screen py-16 md:py-24">
@@ -30,11 +29,11 @@ export default async function MentorsPage({ params }: { params: { courseId: stri
 
                 <div className="text-center mb-12">
                     <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Meet Your Mentors</h1>
-                    <p className="text-lg text-muted-foreground mt-4">The team dedicated to your success.</p>
+                    <p className="text-lg text-muted-foreground mt-4">The team dedicated to your success for "{course.title}".</p>
                 </div>
 
                 <div className="space-y-12">
-                    {mentors.map((mentor) => (
+                    {mentors.length > 0 ? mentors.map((mentor) => (
                         <Card key={mentor.id} className="shadow-lg overflow-hidden grid md:grid-cols-3">
                             <div className="relative w-full h-64 md:h-full">
                                 <Image src={mentor.avatar} alt={mentor.name} fill className="object-cover" />
@@ -47,12 +46,9 @@ export default async function MentorsPage({ params }: { params: { courseId: stri
                                             <CardDescription className="text-base">{mentor.role}</CardDescription>
                                         </div>
                                         <div className="flex gap-2 mt-2 md:mt-0">
-                                            <Button asChild variant="outline" size="icon">
-                                                <a href={mentor.socials.youtube} target="_blank" rel="noopener noreferrer"><Youtube className="w-4 h-4"/></a>
-                                            </Button>
-                                             <Button asChild variant="outline" size="icon">
-                                                <a href={mentor.socials.linkedin} target="_blank" rel="noopener noreferrer"><Linkedin className="w-4 h-4"/></a>
-                                            </Button>
+                                            {mentor.socials?.linkedin && <Button asChild variant="outline" size="icon"><a href={mentor.socials.linkedin} target="_blank" rel="noopener noreferrer"><Linkedin className="w-4 h-4"/></a></Button>}
+                                            {mentor.socials?.instagram && <Button asChild variant="outline" size="icon"><a href={mentor.socials.instagram} target="_blank" rel="noopener noreferrer"><Instagram className="w-4 h-4"/></a></Button>}
+                                            {mentor.socials?.facebook && <Button asChild variant="outline" size="icon"><a href={mentor.socials.facebook} target="_blank" rel="noopener noreferrer"><Facebook className="w-4 h-4"/></a></Button>}
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -71,11 +67,17 @@ export default async function MentorsPage({ params }: { params: { courseId: stri
                                 </CardContent>
                             </div>
                         </Card>
-                    ))}
+                    )) : (
+                         <Card>
+                            <CardContent className="p-8 text-center text-muted-foreground">
+                                <p>No mentors have been assigned to this course yet.</p>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
 
-
+    

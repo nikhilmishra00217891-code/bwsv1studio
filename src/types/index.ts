@@ -1,5 +1,4 @@
 
-
 import { Timestamp } from "firebase/firestore";
 import type { GenerateQuizInput, GenerateQuizOutput } from "@/ai/flows/generate-quiz-flow";
 
@@ -121,8 +120,9 @@ export interface Mentor {
     subjects: string[];
     philosophy: string;
     socials: {
-        youtube: string;
-        linkedin: string;
+        instagram?: string;
+        facebook?: string;
+        linkedin?: string;
     }
 }
 
@@ -133,7 +133,8 @@ export interface Course {
   grade: string;
   price: number;
   thumbnail: string;
-  mentorName: string;
+  mentorName: string; // This can now be the primary mentor
+  mentors?: Mentor[]; // New field for multiple mentors
   description: string;
   tags?: string[];
   // lessons is deprecated but kept for safety, use subjects instead
@@ -378,3 +379,5 @@ export interface Announcement {
     createdAt: Timestamp;
     updatedAt?: Timestamp;
 }
+
+    
