@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useTransition, useRef } from 'react';
@@ -887,4 +886,6 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
     </>
   );
 }
+    
+
     
