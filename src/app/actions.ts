@@ -1,6 +1,5 @@
 
-
-"use server";
+'use server';
 
 import { answerQuestionsAboutCourse, helpStudentsFindRelevantCourses, genericChat, recommendContent } from "@/ai/flows";
 import type { UserProfile, Mentor } from "@/types";
@@ -10,6 +9,8 @@ import { getMessaging } from "firebase-admin/messaging";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import fs from 'fs/promises';
 import path from 'path';
+import { auth as adminAuth } from "firebase-admin";
+
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -105,6 +106,37 @@ export async function submitFeedback(userId: string, feedback: string): Promise<
     return { success: false, message: "An unexpected error occurred while submitting your feedback." };
   }
 }
+
+export async function createFacultyUser(username: string, email: string, password: string):Promise<{success: boolean, message: string}> {
+    try {
+        const userRecord = await adminAuth().createUser({
+            email,
+            password,
+            displayName: username,
+        });
+
+        await adminAuth().setCustomUserClaims(userRecord.uid, { role: 'faculty' });
+
+        const newUserProfile: UserProfile = {
+            uid: userRecord.uid,
+            email: userRecord.email,
+            displayName: userRecord.displayName,
+            photoURL: userRecord.photoURL || '',
+            role: 'faculty',
+            onboardingComplete: true,
+            createdAt: new Date().toISOString(),
+        };
+
+        const adminDb = getAdminDb();
+        await adminDb.collection('users').doc(userRecord.uid).set(newUserProfile, { merge: true });
+
+        return { success: true, message: "Faculty account created successfully!"};
+    } catch(error: any) {
+        console.error("Error creating faculty user:", error);
+        return { success: false, message: error.message || "An unknown error occurred." };
+    }
+}
+
 
 export async function suspendUser(userId: string, reason: string): Promise<{success: boolean, message: string}> {
   try {
@@ -289,8 +321,6 @@ export async function saveRazorpayKeys(keys: { keyId: string; keySecret: string 
     const adminDb = getAdminDb();
     const contentDocRef = adminDb.doc(CONTENT_DOC_REF_PATH);
     
-    // We only update the keys. If the document doesn't exist, we let it fail,
-    // as it should have been created on app startup.
     await updateDoc(contentDocRef, {
         razorpayKeyId: keys.keyId,
         razorpayKeySecret: keys.keySecret

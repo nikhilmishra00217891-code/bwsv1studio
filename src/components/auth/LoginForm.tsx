@@ -31,7 +31,8 @@ import { Separator } from "@/components/ui/separator";
 import { KeyRound, Mail, User as UserIcon, LoaderCircle, Sparkles, LockKeyhole, Phone } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { createStudentProfile, createFacultyProfile } from "@/lib/data/user";
+import { createStudentProfile } from "@/lib/data/user";
+import { createFacultyUser } from "@/app/actions";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { PhoneNumberInput } from "../common/PhoneNumberInput";
@@ -187,18 +188,19 @@ export function LoginForm() {
         setIsLoading(false);
         return;
     }
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        await updateProfile(user, { displayName: username });
-        await createFacultyProfile(user);
+    
+    const result = await createFacultyUser(username, email, password);
+    
+    if (result.success) {
+        // Since the user is created on the server, we need to sign them in on the client
+        await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Faculty Account created!", description: "Welcome to the team!" });
         router.push(redirectUrl);
-    } catch(error: any) {
-        handleFirebaseAuthError(error);
-    } finally {
-        setIsLoading(false);
+    } else {
+        toast({ variant: 'destructive', title: 'Creation Failed', description: result.message });
     }
+    
+    setIsLoading(false);
   }
 
   const handleEmailLogin = async () => {
@@ -515,3 +517,5 @@ export function LoginForm() {
     </>
   );
 }
+
+    

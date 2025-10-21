@@ -1,78 +1,62 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // =================================
     // Helper Functions
-    // =================================
     function isFaculty() {
-      // Checks if the requesting user has the 'faculty' role.
+      // Checks if the requesting user has the 'faculty' role via custom claims.
       return request.auth.token.role == 'faculty';
     }
     
     function isSignedIn() {
-      // Checks if the user is authenticated.
       return request.auth != null;
     }
 
     function isOwner(userId) {
-      // Checks if the requesting user is the owner of the document.
       return request.auth.uid == userId;
     }
 
     function isEnrolled(courseId) {
-      // Checks if a user is enrolled in a specific course.
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enrolledCourses.hasAny([courseId]);
     }
     
-    function isRoomMember(roomId) {
-        // Checks if a user is a member of a specific room.
-        return isSignedIn() && get(/databases/$(database)/documents/rooms/$(roomId)).data.memberIds.hasAny([request.auth.uid]);
-    }
+    // ================== Rules ==================
 
-    // =================================
-    // Collection Rules
-    // =================================
-
-    // Site-wide content (maintenance mode, feature flags, etc.)
-    // CRITICAL: Faculty must be able to write here.
+    // Site-wide content (for maintenance mode, feature flags, etc.)
+    // Anyone can read, but only faculty with a custom claim can write.
     match /siteContent/{docId} {
       allow read: if true;
       allow write: if isFaculty();
     }
-    
-    // User profiles
+
+    // User profiles are readable by anyone.
+    // A user can update their own profile, and faculty can update any profile.
     match /users/{userId} {
       allow read: if true;
       allow update: if isOwner(userId) || isFaculty();
     }
     
-    // User's private sub-collections (e.g., 'patra', 'missionCompletion')
+    // User's private sub-collections (e.g., 'patra').
     match /users/{userId}/{subcollection}/{docId=**} {
       allow read, write: if isOwner(userId) || isFaculty();
     }
 
-    // Main course documents
+    // Courses are readable by anyone, writable only by faculty.
     match /courses/{courseId} {
       allow read: if true;
       allow write: if isFaculty();
     }
     
-    // All subcollections within a course, including live chat, announcements, coupons.
+    // All subcollections within a course (live chat, coupons, etc.)
     match /courses/{courseId}/{collection}/{docId=**} {
-      // Enrolled students and faculty can read and create.
+      // Enrolled students can read and create. Faculty have full access.
       allow read, create: if isFaculty() || isEnrolled(courseId);
-      // Only faculty can moderate (update/delete).
+      // Only faculty can update or delete.
       allow update, delete: if isFaculty();
     }
     
-    // Global announcements collection (on the home page)
-    match /announcements/{announcementId} {
-      allow read: if true;
-      allow create, update, delete: if isFaculty();
-    }
-
     // Testimonials collection
     match /testimonials/{testimonialId} {
       allow read: if true;
@@ -81,16 +65,25 @@ service cloud.firestore {
       allow delete: if isFaculty();
     }
     
-    // Rooms for Focus Zone & Warzone, and their subcollections (messages).
+    // Rooms for Focus Zone & Warzone, and their subcollections
     match /rooms/{roomId}/{document=**} {
-      // Only authenticated users who are members of the room can access its content.
-      allow read, write: if isRoomMember(roomId);
+      allow read, write: if isSignedIn();
     }
     
-    // Chambers for Parivartan, and their subcollections (messages).
+    // Chambers for Parivartan, and their subcollections
     match /chambers/{chamberId}/{document=**} {
-      // Only authenticated users who are members of the chamber can access its content.
+      // Only members of the chamber can access its content.
       allow read, write: if get(/databases/$(database)/documents/chambers/$(chamberId)).data.memberIds.hasAny([request.auth.uid]);
+    }
+    
+    // Main announcements collection, writable only by faculty
+    match /announcements/{announcementId} {
+        allow read: if true;
+        allow create, update, delete: if isFaculty();
+        // Exception: allow any signed-in user to update just the reactions
+        allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys.hasOnly(['reactions']);
     }
   }
 }
+
+    

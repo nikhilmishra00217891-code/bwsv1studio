@@ -30,9 +30,9 @@ export const createStudentProfile = async (user: User) => {
     await setDoc(userDocRef, newUserProfile, { merge: true });
 }
 
-/**
- * Creates a new faculty profile document in Firestore.
- */
+// This function is no longer needed on the client, as creation is handled by a server action.
+// We keep it commented out for reference in case of future refactoring.
+/*
 export const createFacultyProfile = async (user: User) => {
     const userDocRef = doc(db, "users", user.uid);
     const newUserProfile: UserProfile = {
@@ -46,7 +46,7 @@ export const createFacultyProfile = async (user: User) => {
     };
     await setDoc(userDocRef, newUserProfile, { merge: true });
 }
-
+*/
 
 /**
  * Saves a push notification token to the user's profile.
@@ -98,3 +98,5 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Use
     const cleanedData = cleanDataForFirestore(profileData);
     await updateDoc(userDocRef, cleanedData);
 }
+
+    
