@@ -780,7 +780,7 @@ export function UserTableClient({ initialUsers, allCourses }: { initialUsers: Us
                      }
                   </TableCell>
                    <TableCell>
-                    {user.createdAt ? format(new Date(user.createdAt), 'PP') : 'N/A'}
+                    {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) ? format(new Date(user.createdAt), 'PP') : 'N/A'}
                   </TableCell>
                   <TableCell>
                     {user.onboardingComplete ? 
