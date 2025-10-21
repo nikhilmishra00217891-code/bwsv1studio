@@ -18,35 +18,18 @@ import {
  */
 export const createStudentProfile = async (user: User) => {
     const userDocRef = doc(db, "users", user.uid);
+    // Ensure onboardingComplete is explicitly set to false for new users.
     const newUserProfile: UserProfile = {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL || '',
         role: 'student',
-        onboardingComplete: false,
+        onboardingComplete: false, // Explicitly set to false
         createdAt: new Date().toISOString(),
     };
     await setDoc(userDocRef, newUserProfile, { merge: true });
 }
-
-// This function is no longer needed on the client, as creation is handled by a server action.
-// We keep it commented out for reference in case of future refactoring.
-/*
-export const createFacultyProfile = async (user: User) => {
-    const userDocRef = doc(db, "users", user.uid);
-    const newUserProfile: UserProfile = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL || '',
-        role: 'faculty',
-        onboardingComplete: true, // Faculty members bypass student onboarding
-        createdAt: new Date().toISOString(),
-    };
-    await setDoc(userDocRef, newUserProfile, { merge: true });
-}
-*/
 
 /**
  * Saves a push notification token to the user's profile.

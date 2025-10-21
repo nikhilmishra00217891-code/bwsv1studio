@@ -225,7 +225,8 @@ export function LoginForm() {
             const userDocRef = doc(db, "users", result.user.uid);
             const userDocSnap = await getDoc(userDocRef);
 
-            if (!userDocSnap.exists()) {
+            if (!userDocSnap.exists() || !userDocSnap.data()?.onboardingComplete) {
+                // If it's a new user OR an existing user who never finished onboarding
                 await createStudentProfile(result.user);
                  toast({ title: "Welcome!", description: "Let's get you set up." });
                  router.push("/onboarding");
@@ -269,7 +270,7 @@ export function LoginForm() {
       const userDocRef = doc(db, "users", result.user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
-      if (!userDocSnap.exists()) {
+      if (!userDocSnap.exists() || !userDocSnap.data()?.onboardingComplete) {
           if (isSignUp) {
                 if(!username) {
                     toast({ variant: 'destructive', title: 'Username is required.' });
@@ -456,7 +457,7 @@ export function LoginForm() {
                         <span className="text-xs text-muted-foreground">OR</span>
                         <Separator className="flex-1"/>
                     </div>
-                     <Button type="button" variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isSignupDisabled}>
+                     <Button type="button" variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || (isSignUp && !agreedToTerms)}>
                         <svg
                             version="1.1"
                             xmlns="http://www.w3.org/2000/svg"
@@ -517,5 +518,3 @@ export function LoginForm() {
     </>
   );
 }
-
-    
