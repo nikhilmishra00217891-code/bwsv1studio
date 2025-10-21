@@ -14,22 +14,36 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
+    if (loading) {
+      return; // Wait until loading is complete
     }
-  }, [user, loading, router]);
+
+    if (!user) {
+      // If no user, send to login
+      router.replace("/login");
+      return;
+    }
+    
+    if (user && userProfile && !userProfile.onboardingComplete) {
+      // If user is logged in but has NOT completed onboarding,
+      // strictly enforce redirection to the onboarding page.
+      router.replace("/onboarding");
+      return;
+    }
+
+  }, [user, userProfile, loading, router]);
   
   if (pathname === '/dashboard' && !loading && user) {
     return <>{children}</>;
   }
 
 
-  if (loading || !user) {
+  if (loading || !user || !userProfile || !userProfile.onboardingComplete) {
     return (
       <div className="flex h-screen items-center justify-center">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />

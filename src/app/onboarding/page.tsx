@@ -14,13 +14,13 @@ export default function OnboardingPage() {
 
     useEffect(() => {
         if (loading) {
-            return; // Wait until the authentication state is fully resolved
+            return; // Wait until auth state is fully resolved
         }
 
         if (!user) {
             // Not logged in, redirect to login
             router.replace('/login');
-        } else if (userProfile && userProfile.onboardingComplete) {
+        } else if (userProfile?.onboardingComplete) {
             // Logged in AND onboarding is marked as complete
             router.replace('/dashboard');
         }
@@ -30,7 +30,7 @@ export default function OnboardingPage() {
     }, [user, userProfile, loading, router]);
     
     // Show a loader while checking auth state or if user exists but profile is still loading.
-    if (loading || !userProfile) {
+    if (loading || !user) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -38,7 +38,8 @@ export default function OnboardingPage() {
         );
     }
     
-    // If we reach here, the user is logged in, the profile is loaded, but onboarding is not complete.
+    // If we reach here, the user is logged in.
+    // If their profile is loaded and onboarding is NOT complete, show the form.
     if (userProfile && !userProfile.onboardingComplete) {
          return (
             <div className="h-screen w-screen">
@@ -46,8 +47,8 @@ export default function OnboardingPage() {
             </div>
         );
     }
-
-    // Fallback loader for any transitional states.
+    
+    // Fallback loader for any other transitional states (e.g., profile is loading)
     return (
         <div className="flex h-screen items-center justify-center">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
