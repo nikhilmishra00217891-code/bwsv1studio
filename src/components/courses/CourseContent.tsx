@@ -444,12 +444,13 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                                     </div>
                                 </div>
                                 {isFaculty && !isPollOpen && poll.correctOptionIndex === undefined && (
-                                     <button 
+                                     <div 
                                         className={cn("mt-1 text-xs h-7 flex items-center gap-1", isCorrectAnswer ? "text-green-600 font-bold" : "text-muted-foreground hover:text-foreground")}
-                                        onClick={(e) => { e.stopPropagation(); handleSetCorrect(msg.id, index); }}
                                     >
-                                        {isCorrectAnswer ? <><CheckCircle className="w-3 h-3"/> Correct Answer</> : 'Set as Correct'}
-                                    </button>
+                                        <Button size="sm" variant="outline" className="mt-1" onClick={(e) => { e.stopPropagation(); handleSetCorrect(msg.id, index); }}>
+                                            {isCorrectAnswer ? <><CheckCircle className="w-3 h-3"/> Correct Answer</> : 'Set as Correct'}
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
                         )
@@ -513,7 +514,7 @@ const LiveChat = ({ course, subject, chapter, lesson, isFaculty }: { course: Cou
                     <Sparkles className="w-5 h-5 text-primary" />
                     <h3 className="font-bold text-lg">Discussion</h3>
                 </div>
-                 <div className="flex-1 flex flex-col min-h-0 relative">
+                <div className="flex-1 flex flex-col min-h-0 relative">
                      {pinnedMessages.length > 0 && (
                         <div className="p-2 border-b bg-muted/50 shrink-0">
                             {pinnedMessages.map(msg => <PollMessage key={msg.id} msg={msg} isPinnedView />)}

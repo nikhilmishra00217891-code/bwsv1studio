@@ -90,7 +90,6 @@ const ScheduleLessonDialog = ({
                     </div>
                     
                     <div className="flex items-center space-x-2 pt-2">
-                        <Radio className="h-5 w-5"/>
                         <Label htmlFor="schedule-toggle">Schedule for later</Label>
                         <Switch id="schedule-toggle" checked={isScheduled} onCheckedChange={setIsScheduled} />
                     </div>
@@ -124,7 +123,7 @@ const ScheduleLessonDialog = ({
                             </div>
                             <div>
                                 <Label>Time (IST)</Label>
-                                <Select value={time} onValueChange={setTime}>
+                                <Select value={time} onValueChange={(value) => setTime(String(value))}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select time" />
                                     </SelectTrigger>
