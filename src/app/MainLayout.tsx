@@ -32,6 +32,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const featureFlags = (textContent.featureFlags as Record<string, boolean>) || {};
     const isMaintenanceBypass = searchParams.get('bypass') === 'true';
 
+    // Hide layout for special full-screen experiences
+    const isSpecialFullScreen = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.includes('/learnzone');
+
+    if (isSpecialFullScreen) {
+        return (
+            <div className="flex min-h-screen flex-col">
+                <main className="flex-1">{children}</main>
+            </div>
+        )
+    }
+
     if (!isMounted) {
         return (
              <div className="flex min-h-screen flex-col">

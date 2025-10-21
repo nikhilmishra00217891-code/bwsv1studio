@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -76,7 +77,7 @@ const NavLink = ({ href, label, icon: Icon, onSelect, isProtected, isDesktop = f
 };
 
 
-const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/warzone", "/dashboard", "/profile", "/patra", "/reviews"];
+const mainNavPaths = ["/", "/courses", "/announcements", "/about", "/contact", "/games", "/focus-zone", "/warzone", "/dashboard", "/profile", "/patra", "/reviews", "/parivartan", "/login", "/onboarding"];
 
 
 const avatarIcons: { [key: string]: React.ElementType } = {
@@ -120,16 +121,11 @@ export default function Header() {
       { href: "/parivartan", label: "Parivartan Chamber", icon: Users, isProtected: true, flag: featureFlags.parivartan ?? true },
   ];
 
-  // More robust check for showing the back button
-  const isMainPage = mainNavPaths.some(mainPath => {
-    if (mainPath === "/") return pathname === "/";
-    return pathname.startsWith(mainPath);
-  });
+  // A page is considered a "main page" if its path is one of the exact main navigation paths.
+  const isMainPage = mainNavPaths.includes(pathname);
   
-  const isSpecialFullScreen = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan');
-  
-  const showBackButton = isClient && !isMainPage && !isSpecialFullScreen;
-
+  // Show the back button if it's a client-side render and it's not a main page.
+  const showBackButton = isClient && !isMainPage;
 
   useEffect(() => {
     setIsClient(true);
