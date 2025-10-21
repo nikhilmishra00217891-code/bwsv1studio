@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useTransition } from 'react';
+import React, { useState, useTransition } from 'react';
 import type { Course, Mentor } from '@/types';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -276,5 +276,3 @@ export default function MentorManagementClient({ initialCourse }: { initialCours
         </>
     );
 }
-
-    
