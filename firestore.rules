@@ -15,7 +15,7 @@ service cloud.firestore {
       // Checks if the user is authenticated.
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       // Checks if the requesting user is the owner of the document.
       return request.auth.uid == userId;
@@ -23,20 +23,20 @@ service cloud.firestore {
 
     function isEnrolled(courseId) {
       // Checks if a user is enrolled in a specific course.
-      // This is for students. Faculty access is handled by isFaculty().
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enrolledCourses.hasAny([courseId]);
     }
     
     function isRoomMember(roomId) {
-        let roomDoc = get(/databases/$(database)/documents/rooms/$(roomId));
-        return request.auth.uid in roomDoc.data.memberIds;
+        // Checks if a user is a member of a specific room.
+        return isSignedIn() && get(/databases/$(database)/documents/rooms/$(roomId)).data.memberIds.hasAny([request.auth.uid]);
     }
 
     // =================================
     // Collection Rules
     // =================================
 
-    // Site-wide content (for maintenance mode, feature flags, etc.)
+    // Site-wide content (maintenance mode, feature flags, etc.)
+    // CRITICAL: Faculty must be able to write here.
     match /siteContent/{docId} {
       allow read: if true;
       allow write: if isFaculty();
@@ -48,8 +48,8 @@ service cloud.firestore {
       allow update: if isOwner(userId) || isFaculty();
     }
     
-    // User private sub-collections (patra, missionCompletion)
-    match /users/{userId}/{subcollection}/{docId} {
+    // User's private sub-collections (e.g., 'patra', 'missionCompletion')
+    match /users/{userId}/{subcollection}/{docId=**} {
       allow read, write: if isOwner(userId) || isFaculty();
     }
 
@@ -59,25 +59,18 @@ service cloud.firestore {
       allow write: if isFaculty();
     }
     
-    // Subcollections within a course (like coupons)
-    match /courses/{courseId}/{collection}/{docId} {
-      allow read: if true;
-      allow write: if isFaculty();
+    // All subcollections within a course, including live chat, announcements, coupons.
+    match /courses/{courseId}/{collection}/{docId=**} {
+      // Enrolled students and faculty can read and create.
+      allow read, create: if isFaculty() || isEnrolled(courseId);
+      // Only faculty can moderate (update/delete).
+      allow update, delete: if isFaculty();
     }
     
-    // Main announcements collection
+    // Global announcements collection (on the home page)
     match /announcements/{announcementId} {
       allow read: if true;
       allow create, update, delete: if isFaculty();
-      // Allow any signed-in user to update reactions
-      allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys.hasOnly(['reactions']);
-    }
-
-    // Live discussion chat for lessons
-    match /courses/{courseId}/subjects/{subjectId}/chapters/{chapterId}/lessons/{lessonId}/liveChat/{document=**} {
-      allow read: if isFaculty() || isEnrolled(courseId);
-      allow create: if isFaculty() || isEnrolled(courseId);
-      allow update, delete: if isFaculty();
     }
 
     // Testimonials collection
@@ -88,14 +81,16 @@ service cloud.firestore {
       allow delete: if isFaculty();
     }
     
-    // Rooms for Focus Zone & Warzone
+    // Rooms for Focus Zone & Warzone, and their subcollections (messages).
     match /rooms/{roomId}/{document=**} {
-      allow read, write: if isSignedIn();
+      // Only authenticated users who are members of the room can access its content.
+      allow read, write: if isRoomMember(roomId);
     }
     
-    // Chambers for Parivartan
+    // Chambers for Parivartan, and their subcollections (messages).
     match /chambers/{chamberId}/{document=**} {
-      allow read, write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chambers/$(chamberId)).data.memberIds;
+      // Only authenticated users who are members of the chamber can access its content.
+      allow read, write: if get(/databases/$(database)/documents/chambers/$(chamberId)).data.memberIds.hasAny([request.auth.uid]);
     }
   }
 }
