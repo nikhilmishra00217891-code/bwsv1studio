@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 export default function ReviewManagementPage() {
     const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [filter, setFilter] = useState(0); // 0 means all stars
     const { toast } = useToast();
 
     useEffect(() => {
@@ -31,6 +32,13 @@ export default function ReviewManagementPage() {
         });
         return () => unsubscribe();
     }, []);
+
+    const filteredTestimonials = useMemo(() => {
+        if (filter === 0) {
+            return testimonials;
+        }
+        return testimonials.filter(t => t.rating === filter);
+    }, [testimonials, filter]);
 
     const handleFeatureToggle = async (testimonialId: string, isFeatured: boolean) => {
         try {
@@ -58,6 +66,8 @@ export default function ReviewManagementPage() {
         );
     }
 
+    const starFilters = [5, 4, 3, 2, 1];
+
     return (
         <div className="p-4 md:p-8 animate-fade-in">
             <div className="mb-8">
@@ -67,11 +77,21 @@ export default function ReviewManagementPage() {
 
             <Card>
                 <CardHeader>
-                    <div className="flex items-center gap-3">
-                         <MessageSquareHeart className="w-6 h-6 text-primary"/>
-                        <div>
-                            <CardTitle>Student Testimonials</CardTitle>
-                            <CardDescription>Toggle the switch to feature or unfeature a review on the homepage.</CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <MessageSquareHeart className="w-6 h-6 text-primary"/>
+                            <div>
+                                <CardTitle>Student Testimonials</CardTitle>
+                                <CardDescription>Toggle the switch to feature or unfeature a review on the homepage.</CardDescription>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <Button variant={filter === 0 ? 'default' : 'outline'} onClick={() => setFilter(0)}>All</Button>
+                             {starFilters.map(star => (
+                                <Button key={star} variant={filter === star ? 'default' : 'outline'} size="icon" onClick={() => setFilter(star)}>
+                                    {star} <Star className="w-4 h-4 ml-1 fill-current"/>
+                                </Button>
+                             ))}
                         </div>
                     </div>
                 </CardHeader>
@@ -88,7 +108,7 @@ export default function ReviewManagementPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {testimonials.length > 0 ? testimonials.map(t => (
+                            {filteredTestimonials.length > 0 ? filteredTestimonials.map(t => (
                                 <TableRow key={t.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
@@ -143,7 +163,7 @@ export default function ReviewManagementPage() {
                             )) : (
                                 <TableRow>
                                     <TableCell colSpan={6} className="h-24 text-center">
-                                        No reviews have been submitted yet.
+                                        No reviews match the current filter.
                                     </TableCell>
                                 </TableRow>
                             )}

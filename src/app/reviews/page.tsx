@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { listenForAllTestimonials } from '@/lib/data/testimonials';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const ReviewCard = ({ testimonial }: { testimonial: Testimonial }) => {
     return (
@@ -42,15 +43,31 @@ export default function ReviewsPage() {
     const router = useRouter();
     const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
     const [dataLoading, setDataLoading] = useState(true);
+    const [filter, setFilter] = useState(0); // 0 for all
 
     useEffect(() => {
         setDataLoading(true);
+        // We fetch all testimonials and filter on the client side
         const unsubscribe = listenForAllTestimonials((data) => {
             setTestimonials(data);
             setDataLoading(false);
         });
         return () => unsubscribe();
     }, []);
+
+    const { averageRating, filteredTestimonials } = useMemo(() => {
+        if (testimonials.length === 0) {
+            return { averageRating: 0, filteredTestimonials: [] };
+        }
+        const totalRating = testimonials.reduce((acc, t) => acc + t.rating, 0);
+        const avg = totalRating / testimonials.length;
+
+        const filtered = filter === 0 
+            ? testimonials 
+            : testimonials.filter(t => t.rating === filter);
+
+        return { averageRating: avg, filteredTestimonials: filtered };
+    }, [testimonials, filter]);
 
     const handleWriteReview = () => {
         if (!user) {
@@ -59,6 +76,8 @@ export default function ReviewsPage() {
             router.push('/reviews/form');
         }
     };
+    
+    const starFilters = [5, 4, 3, 2, 1];
 
     if (loading || dataLoading) {
         return (
@@ -79,21 +98,43 @@ export default function ReviewsPage() {
                     <p className="text-lg text-muted-foreground mt-4">
                         Read what our students have to say about their journey with us.
                     </p>
+
+                    <Card className="max-w-xs mx-auto mt-8">
+                        <CardContent className="p-4">
+                             <p className="text-sm text-muted-foreground">Overall Rating</p>
+                             <div className="flex items-center justify-center gap-2 mt-1">
+                                 <p className="text-3xl font-bold">{averageRating.toFixed(1)}</p>
+                                 <Star className="w-7 h-7 text-accent fill-accent" />
+                             </div>
+                              <p className="text-xs text-muted-foreground mt-1">based on {testimonials.length} reviews</p>
+                        </CardContent>
+                    </Card>
+
                     <Button size="lg" className="mt-8" onClick={handleWriteReview}>
                         Write Your Own Review
                     </Button>
                 </div>
 
-                {testimonials.length > 0 ? (
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
+                    <Button variant={filter === 0 ? 'default' : 'outline'} onClick={() => setFilter(0)}>All Reviews</Button>
+                    {starFilters.map(star => (
+                        <Button key={star} variant={filter === star ? 'default' : 'outline'} onClick={() => setFilter(star)} className="flex items-center gap-1">
+                            {star} <Star className="w-4 h-4" />
+                        </Button>
+                    ))}
+                </div>
+
+
+                {filteredTestimonials.length > 0 ? (
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {testimonials.map(testimonial => (
+                        {filteredTestimonials.map(testimonial => (
                             <ReviewCard key={testimonial.id} testimonial={testimonial} />
                         ))}
                     </div>
                 ) : (
                     <Card>
                         <CardContent className="p-12 text-center">
-                            <p className="text-muted-foreground">No reviews have been shared yet. Be the first!</p>
+                            <p className="text-muted-foreground">No reviews match your filter. Try selecting 'All Reviews'.</p>
                         </CardContent>
                     </Card>
                 )}
