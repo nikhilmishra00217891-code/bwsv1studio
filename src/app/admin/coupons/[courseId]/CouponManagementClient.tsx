@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -49,6 +50,7 @@ import { Timestamp } from 'firebase/firestore';
 const CreateCouponDialog = ({ courseId, onCouponCreated }: { courseId: string, onCouponCreated: () => void }) => {
     const [code, setCode] = useState('');
     const [discount, setDiscount] = useState<number>(10);
+    const [maxUses, setMaxUses] = useState<number>(0);
     const [isLoading, setIsLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const { toast } = useToast();
@@ -65,7 +67,7 @@ const CreateCouponDialog = ({ courseId, onCouponCreated }: { courseId: string, o
         }
         setIsLoading(true);
         try {
-            await createCoupon(courseId, code, discount);
+            await createCoupon(courseId, code, discount, maxUses > 0 ? maxUses : undefined);
             toast({
                 title: "Coupon Created!",
                 description: `Code "${code.toUpperCase()}" is now active.`,
@@ -74,6 +76,7 @@ const CreateCouponDialog = ({ courseId, onCouponCreated }: { courseId: string, o
             setIsOpen(false);
             setCode('');
             setDiscount(10);
+            setMaxUses(0);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -110,6 +113,11 @@ const CreateCouponDialog = ({ courseId, onCouponCreated }: { courseId: string, o
                             <Label htmlFor="discount" className="text-right">Discount (%)</Label>
                             <Input id="discount" type="number" value={discount} onChange={(e) => setDiscount(Number(e.target.value))} className="col-span-3" required min="1" max="100"/>
                         </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="maxUses" className="text-right">Usage Limit</Label>
+                            <Input id="maxUses" type="number" value={maxUses} onChange={(e) => setMaxUses(Number(e.target.value))} className="col-span-3" min="0"/>
+                        </div>
+                         <p className="text-xs text-muted-foreground text-center col-span-4 -mt-2">Set to 0 for unlimited uses.</p>
                     </div>
                     <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
@@ -216,8 +224,8 @@ export default function CouponManagementClient({ initialCourse }: { initialCours
                                 <TableRow>
                                     <TableHead>Code</TableHead>
                                     <TableHead>Discount</TableHead>
+                                    <TableHead>Usage</TableHead>
                                     <TableHead>Created</TableHead>
-                                    <TableHead>Times Used</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
@@ -227,8 +235,10 @@ export default function CouponManagementClient({ initialCourse }: { initialCours
                                     <TableRow key={coupon.id} className={cn(!coupon.isActive && 'bg-muted/50')}>
                                         <TableCell className="font-mono font-semibold">{coupon.code}</TableCell>
                                         <TableCell>{coupon.discountPercentage}%</TableCell>
+                                        <TableCell>
+                                            {coupon.timesUsed} / {coupon.maxUses ? coupon.maxUses : '∞'}
+                                        </TableCell>
                                         <TableCell>{format(getCouponDate(coupon), 'PPP')}</TableCell>
-                                        <TableCell>{coupon.timesUsed}</TableCell>
                                         <TableCell>
                                             <Badge variant={coupon.isActive ? 'default' : 'secondary'} className={cn(coupon.isActive && 'bg-green-600')}>{coupon.isActive ? 'Active' : 'Inactive'}</Badge>
                                         </TableCell>

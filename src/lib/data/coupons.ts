@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { db } from "@/lib/firebase/client";
@@ -36,7 +37,8 @@ const serializeCoupon = (doc: any): Coupon => {
 export const createCoupon = async (
   courseId: string,
   code: string,
-  discountPercentage: number
+  discountPercentage: number,
+  maxUses?: number
 ): Promise<Coupon> => {
   const couponCode = code.toUpperCase();
   const couponsColRef = collection(db, `courses/${courseId}/coupons`);
@@ -59,6 +61,7 @@ export const createCoupon = async (
     isActive: true,
     createdAt: serverTimestamp(),
     timesUsed: 0,
+    maxUses: maxUses || 0, // 0 means unlimited
   };
 
   const docRef = await addDoc(couponsColRef, newCouponData);
@@ -151,7 +154,9 @@ export const applyCoupon = async (courseId: string, code: string): Promise<{ suc
             return { success: false, message: 'This coupon is no longer active.' };
         }
         
-        // This is a placeholder. A real implementation might check usage limits, expiry dates, etc.
+        if (coupon.maxUses && coupon.timesUsed >= coupon.maxUses) {
+            return { success: false, message: 'This coupon has reached its usage limit.' };
+        }
 
         return { success: true, discount: coupon.discountPercentage, message: 'Coupon applied successfully!' };
 
