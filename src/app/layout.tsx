@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/common/ThemeProvider";
 import { EditModeProvider } from "@/components/common/EditModeProvider";
-import MainLayout from "./MainLayout";
 import CustomThemeProvider from "@/components/common/CustomThemeProvider";
 import Header from "@/components/common/Header";
 import { headers } from "next/headers";
@@ -58,9 +57,7 @@ export default function RootLayout({
             <CustomThemeProvider>
               <EditModeProvider>
                 {showHeader && <Header />}
-                <MainLayout>
-                  {children}
-                </MainLayout>
+                <main>{children}</main>
                 <Toaster />
               </EditModeProvider>
             </CustomThemeProvider>
