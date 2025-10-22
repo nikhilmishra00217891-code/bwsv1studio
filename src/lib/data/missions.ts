@@ -1,4 +1,6 @@
 
+"use client";
+
 import { db } from "@/lib/firebase/client";
 import {
     collection,
@@ -12,6 +14,9 @@ import {
     Timestamp,
     addDoc,
     orderBy,
+    updateDoc,
+    arrayUnion,
+    arrayRemove,
 } from "firebase/firestore";
 import type { DailyMission, Course, UserMission, UserProfile } from "@/types";
 
@@ -141,4 +146,16 @@ export const toggleMissionComplete = async (userId: string, missionKey: string, 
             completedMissions: [missionKey]
         });
     }
+};
+
+export const getCompletedMissionsForUser = async (userId: string): Promise<Set<string>> => {
+    const today = new Date().toISOString().split('T')[0];
+    const docRef = doc(db, `users/${userId}/missionCompletion`, today);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists) {
+        const data = docSnap.data();
+        return new Set(data?.completedMissions || []);
+    }
+    return new Set();
 };

@@ -82,4 +82,17 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Use
     await updateDoc(userDocRef, cleanedData);
 }
 
-    
+export const listenForUserProfile = (
+    userId: string,
+    callback: (profile: UserProfile | null) => void
+): (() => void) => {
+    const userDocRef = doc(db, 'users', userId);
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            callback(docSnap.data() as UserProfile);
+        } else {
+            callback(null);
+        }
+    });
+    return unsubscribe;
+};

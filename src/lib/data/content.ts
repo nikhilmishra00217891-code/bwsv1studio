@@ -1,6 +1,8 @@
 
 
-import { db } from "@/lib/firebase";
+"use client";
+
+import { db } from "@/lib/firebase/client";
 import { doc, getDoc, setDoc, updateDoc, writeBatch } from "firebase/firestore";
 
 const CONTENT_DOC_REF = doc(db, "siteContent", "text");
