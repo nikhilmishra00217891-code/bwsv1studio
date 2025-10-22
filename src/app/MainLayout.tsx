@@ -16,8 +16,6 @@ import { useState, useEffect } from "react";
 import PwaInstall from "@/components/common/PwaInstall";
 import CourseDrawer from "@/components/common/CourseDrawer";
 import PushNotificationManager from "@/components/auth/PushNotificationManager";
-import Header from "@/components/common/Header";
-
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
