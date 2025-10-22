@@ -33,7 +33,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const isMaintenanceBypass = searchParams.get('bypass') === 'true';
 
     // Hide layout for special full-screen experiences
-    const isSpecialFullScreen = pathname.startsWith('/focus-zone') || pathname.startsWith('/warzone') || pathname.startsWith('/parivartan') || pathname.includes('/learnzone');
+    const isSpecialFullScreen = pathname.startsWith('/focus-zone/room/') || pathname.startsWith('/warzone/room/') || pathname.startsWith('/parivartan') || pathname.includes('/learnzone');
 
     if (isSpecialFullScreen) {
         return (

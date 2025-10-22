@@ -37,8 +37,9 @@ export default function RootLayout({
   const headersList = headers();
   const pathname = headersList.get("x-pathname") || "";
 
-  // The header should only be hidden during the fullscreen onboarding process.
-  const showHeader = !pathname.startsWith('/onboarding');
+  // The header is hidden for onboarding, focus zone rooms, and warzone rooms.
+  const isFullScreenPage = pathname.startsWith('/onboarding') || pathname.startsWith('/focus-zone/room/') || pathname.startsWith('/warzone/room/');
+  const showHeader = !isFullScreenPage;
   
 
   return (
