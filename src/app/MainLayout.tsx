@@ -71,9 +71,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     const FloatingCTA = () => (
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-        <Button asChild className="rounded-full shadow-lg animate-fade-in">
+        <Button asChild className="rounded-full shadow-lg animate-fade-in text-sm px-4 py-2 h-auto" size="sm">
           <Link href="/dashboard">
-            Continue Learning <ArrowRight className="ml-2 h-5 w-5" />
+            Continue Learning <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </div>
