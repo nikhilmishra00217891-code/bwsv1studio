@@ -119,10 +119,8 @@ export default function Header() {
       { href: "/warzone", label: "Warzone", icon: Swords, isProtected: true, flag: featureFlags.warzone ?? true },
       { href: "/parivartan", label: "Parivartan Chamber", icon: Users, isProtected: true, flag: featureFlags.parivartan ?? true },
   ];
-
-  const isSpecialFullScreen = pathname.startsWith('/focus-zone/room/') || pathname.startsWith('/warzone/room/') || pathname.startsWith('/parivartan') || pathname.includes('/learnzone');
   
-  const showBackButton = isClient && !mainNavPaths.includes(pathname) && !isSpecialFullScreen;
+  const showBackButton = isClient && !mainNavPaths.includes(pathname);
 
   useEffect(() => {
     setIsClient(true);

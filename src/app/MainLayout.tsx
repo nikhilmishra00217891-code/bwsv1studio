@@ -30,7 +30,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const featureFlags = (textContent.featureFlags as Record<string, boolean>) || {};
     const isMaintenanceBypass = searchParams.get('bypass') === 'true';
 
-    // Hide layout for special full-screen experiences
+    // This check is now redundant because of the root layout logic, but kept as a safeguard.
     const isSpecialFullScreen = pathname.startsWith('/focus-zone/room/') || pathname.startsWith('/warzone/room/') || pathname.startsWith('/parivartan') || pathname.includes('/learnzone');
 
     if (isSpecialFullScreen) {

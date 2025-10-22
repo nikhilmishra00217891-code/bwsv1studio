@@ -9,6 +9,7 @@ import { EditModeProvider } from "@/components/common/EditModeProvider";
 import CustomThemeProvider from "@/components/common/CustomThemeProvider";
 import Header from "@/components/common/Header";
 import { headers } from "next/headers";
+import MainLayout from "./MainLayout";
 
 
 const poppins = Poppins({
@@ -38,8 +39,6 @@ export default function RootLayout({
 
   // The header is hidden for onboarding, focus zone rooms, and warzone rooms.
   const isFullScreenPage = pathname.startsWith('/onboarding') || pathname.startsWith('/focus-zone/room/') || pathname.startsWith('/warzone/room/');
-  const showHeader = !isFullScreenPage;
-  
 
   return (
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
@@ -56,9 +55,20 @@ export default function RootLayout({
           >
             <CustomThemeProvider>
               <EditModeProvider>
-                {showHeader && <Header />}
-                <main>{children}</main>
-                <Toaster />
+                {isFullScreenPage ? (
+                  <>
+                    <main>{children}</main>
+                    <Toaster />
+                  </>
+                ) : (
+                  <>
+                    <Header />
+                    <MainLayout>
+                        {children}
+                    </MainLayout>
+                    <Toaster />
+                  </>
+                )}
               </EditModeProvider>
             </CustomThemeProvider>
           </ThemeProvider>
