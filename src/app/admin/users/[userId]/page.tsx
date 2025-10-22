@@ -1,12 +1,10 @@
 
 import { getUserProfile } from "@/lib/firebase/server";
 import { notFound } from "next/navigation";
-import StudentDashboard from "@/components/dashboard/StudentDashboard";
-import { getEnrolledCoursesForUser, getCompletedMissionsForUser } from "@/lib/data";
-import { getMissionsForUser } from "@/lib/data/missions";
 import type { UserProfile } from "@/types";
+import ViewStudentDashboardClient from "./ViewStudentDashboardClient";
 
-// This is the server component that fetches the student's data
+// This is the server component. It can only fetch server-side data.
 export default async function ViewStudentDashboardPage({ params }: { params: { userId: string } }) {
     const rawUserProfile = await getUserProfile(params.userId);
 
@@ -14,22 +12,13 @@ export default async function ViewStudentDashboardPage({ params }: { params: { u
         notFound();
     }
     
-    // Serialize the user profile to convert Timestamps to strings
+    // Serialize the user profile to convert Timestamps to strings, making it safe to pass to a client component.
     const userProfile: UserProfile = JSON.parse(JSON.stringify(rawUserProfile));
 
-    const enrolledCourses = await getEnrolledCoursesForUser(params.userId);
-    const todaysMissions = await getMissionsForUser(params.userId);
-    const completedMissions = await getCompletedMissionsForUser(params.userId);
-
+    // We pass the userProfile to a Client Component, which will handle all client-side data fetching.
     return (
         <div className="animate-fade-in">
-           <StudentDashboard 
-                userProfile={userProfile}
-                enrolledCourses={enrolledCourses}
-                todaysMissions={todaysMissions}
-                initialCompletedMissions={completedMissions}
-                isReadOnly={true}
-           />
+           <ViewStudentDashboardClient userProfile={userProfile} />
         </div>
     );
 }
