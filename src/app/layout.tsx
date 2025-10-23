@@ -37,8 +37,9 @@ export default function RootLayout({
   const headersList = headers();
   const pathname = headersList.get("x-pathname") || "";
 
-  // The header is hidden for onboarding, focus zone rooms, and warzone rooms.
-  const isFullScreenPage = pathname.startsWith('/onboarding') || pathname.startsWith('/focus-zone/room/') || pathname.startsWith('/warzone/room/');
+  // The header is hidden for onboarding, focus zone rooms, warzone rooms, and the learnzone.
+  const isFullScreenPage = pathname.startsWith('/onboarding') || pathname.startsWith('/focus-zone/room/') || pathname.startsWith('/warzone/room/') || pathname.includes('/learnzone') || pathname.startsWith('/parivartan');
+
 
   return (
     <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
