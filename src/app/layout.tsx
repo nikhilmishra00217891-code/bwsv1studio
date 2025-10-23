@@ -38,7 +38,31 @@ export default function RootLayout({
   const pathname = headersList.get("x-pathname") || "";
 
   // The header is hidden for onboarding, focus zone rooms, warzone rooms, and the learnzone.
-  const isFullScreenPage = pathname.startsWith('/onboarding') || pathname.startsWith('/focus-zone/room/') || pathname.startsWith('/warzone/room/') || pathname.includes('/learnzone') || pathname.startsWith('/parivartan');
+  const isFullScreenPage = pathname.startsWith('/onboarding') || pathname.startsWith('/parivartan');
+  
+  // A new check specifically for room "lockdown"
+  const isInRoom = pathname.startsWith('/focus-zone/room/') || pathname.startsWith('/warzone/room/') || pathname.includes('/learnzone');
+
+  if (isInRoom) {
+      // For rooms, render a minimal layout with just the content. This prevents header/nav rendering.
+      return (
+        <html lang="en" className="!scroll-smooth" suppressHydrationWarning>
+            <head>
+                <meta name="theme-color" content="#000000" />
+            </head>
+            <body className={`${poppins.variable} font-body antialiased select-none`}>
+                <AuthProvider>
+                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem themes={["light", "dark", "proudshe", "retrogamer", "custom", "yinyang"]}>
+                        <CustomThemeProvider>
+                             <main>{children}</main>
+                             <Toaster />
+                        </CustomThemeProvider>
+                    </ThemeProvider>
+                </AuthProvider>
+            </body>
+        </html>
+      )
+  }
 
 
   return (
